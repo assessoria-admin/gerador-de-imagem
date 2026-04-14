@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Acesso</title>
+  <style>
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal;
+    }
+
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Card ─────────────────────────────────────────────────── */
+    .gate {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 52px 44px 44px;
+      text-align: center;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .logo-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .logo-row span {
+      flex: 1; height: 1px; max-width: 48px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .logo-row span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    .logo-row h1 {
+      font-size: 15px; font-weight: 800;
+      letter-spacing: 5px; text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    /* ── PIN boxes ────────────────────────────────────────────── */
+    .pin-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .pin-digit {
+      width: 54px; height: 66px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--teal);
+      font-family: 'Neue Machina', sans-serif;
+      font-size: 28px; font-weight: 800;
+      text-align: center;
+      outline: none;
+      /* Hide typed char, show dot */
+      -webkit-text-security: disc;
+      transition: border-color .2s, background .2s;
+    }
+    .pin-digit:focus {
+      border-color: var(--teal);
+      background: rgba(65,193,194,0.06);
+    }
+    .pin-digit.filled {
+      border-color: rgba(65,193,194,0.35);
+    }
+
+    /* ── Status ───────────────────────────────────────────────── */
+    .pin-status {
+      font-size: 12px; letter-spacing: 1px;
+      color: transparent; min-height: 18px;
+      transition: color .2s;
+    }
+    .pin-status.err  { color: #ff6b6b; }
+    .pin-status.ok   { color: var(--teal); }
+
+    /* ── Animations ───────────────────────────────────────────── */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%  { transform: translateX(-8px); }
+      40%  { transform: translateX(8px); }
+      60%  { transform: translateX(-5px); }
+      80%  { transform: translateX(5px); }
+    }
+    .shake { animation: shake 0.38s ease; }
+
+    @keyframes fadeOut {
+      to { opacity: 0; transform: scale(0.96); }
+    }
+    .fade-out { animation: fadeOut 0.4s ease forwards; }
+  </style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="logo-row">
+    <span></span>
+    <h1>Rede&nbsp;Líderes</h1>
+    <span></span>
+  </div>
+  <p class="subtitle">Insira o código de acesso</p>
+
+  <div class="pin-row" id="pinRow">
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+  </div>
+
+  <div class="pin-status" id="pinStatus"></div>
+</div>
+
+<script>
+  const CODE   = '34456';
+  const digits = Array.from(document.querySelectorAll('.pin-digit'));
+  const status = document.getElementById('pinStatus');
+  const gate   = document.getElementById('gate');
+  const row    = document.getElementById('pinRow');
+
+  // Auto-focus first box on load
+  digits[0].focus();
+
+  digits.forEach((input, i) => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Backspace') {
+        input.value = '';
+        input.classList.remove('filled');
+        if (i > 0) digits[i - 1].focus();
+        e.preventDefault();
+      }
+    });
+
+    input.addEventListener('input', () => {
+      const val = input.value.replace(/\D/g, '');
+      input.value = val;
+      if (val) {
+        input.classList.add('filled');
+        if (i < digits.length - 1) {
+          digits[i + 1].focus();
+        } else {
+          validate();
+        }
+      } else {
+        input.classList.remove('filled');
+      }
+    });
+  });
+
+  function validate() {
+    const entered = digits.map(d => d.value).join('');
+    if (entered === CODE) {
+      status.textContent = 'Acesso liberado ✓';
+      status.className   = 'pin-status ok';
+      gate.classList.add('fade-out');
+      sessionStorage.setItem('unlocked', '1');
+      setTimeout(() => window.location.href = '/app.html', 480);
+    } else {
+      status.textContent = 'Código incorreto';
+      status.className   = 'pin-status err';
+      row.classList.add('shake');
+      setTimeout(() => {
+        row.classList.remove('shake');
+        digits.forEach(d => { d.value = ''; d.classList.remove('filled'); });
+        status.className = 'pin-status';
+        digits[0].focus();
+      }, 600);
+    }
+  }
+</script>
+
+</body>
+</html>
