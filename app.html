@@ -509,7 +509,9 @@ document.getElementById('form').addEventListener('submit', async e => {
 
   try {
     setStatus('Preparando foto de referência…');
-    const dataUrl   = await readAsDataURL(photoFile);
+    // Reduz para máx. 1024px e converte para JPEG (~80% qualidade)
+    // Mantém o payload < 1MB para não exceder o limite do Vercel (4.5MB)
+    const dataUrl   = await resizeImage(photoFile, 1024, 0.82);
     const base64Img = dataUrl.split(',')[1];
 
     setStatus('Enviando para Freepik API…');
@@ -703,6 +705,26 @@ document.getElementById('btnDownload').addEventListener('click', () => {
 /* ════════════════════════════════════════════════════════════════
    HELPERS
 ════════════════════════════════════════════════════════════════ */
+// Redimensiona a imagem client-side antes de enviar (evita limite Vercel 4.5MB)
+function resizeImage(file, maxSide = 1024, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+      const w = Math.round(img.width  * ratio);
+      const h = Math.round(img.height * ratio);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(URL.createObjectURL(file)); };
+    img.src = url;
+  });
+}
+
 function readAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();

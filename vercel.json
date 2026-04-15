@@ -1,49 +1,17 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "app.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "fonts/**/*",
-      "use": "@vercel/static"
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
     }
-  ],
+  },
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server.js"
-    },
-    {
-      "src": "/fonts/(.*)",
-      "dest": "/fonts/$1"
-    },
-    {
-      "src": "/(.*)\\.html$",
-      "dest": "/$1.html"
-    },
-    {
-      "src": "/app",
-      "dest": "/app.html"
-    },
-    {
-      "src": "/",
-      "dest": "/index.html"
-    }
-  ],
-  "env": {
-    "FREEPIK_KEY": "@freepik_key",
-    "FREEPIK_EDIT": "@freepik_edit",
-    "NOTION_KEY": "@notion_key",
-    "NOTION_DB": "@notion_db"
-  }
+    { "src": "/api/generate/([^/]+)", "dest": "/api/generate/[taskId]" },
+    { "src": "/api/notion/search",    "dest": "/api/notion/search" },
+    { "src": "/api/proxy-image",      "dest": "/api/proxy-image" },
+    { "src": "/api/generate",         "dest": "/api/generate" },
+    { "src": "/app",                  "dest": "/app.html" },
+    { "src": "/fonts/(.*)",           "dest": "/fonts/$1" },
+    { "src": "/",                     "dest": "/index.html" }
+  ]
 }

@@ -1,4 +1,4 @@
-// ─── Local development server ──────────────────────────────────────────────
+// ─── Local development server ────────────────────────────────────────────────
 // Para rodar localmente: npm start
 // Para Vercel: use api/index.js (serverless)
 require('dotenv').config();
@@ -118,35 +118,34 @@ app.get('/api/notion/search', async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        filter: {
-          or: [
-            {
-              property: 'Name',
-              title: { contains: q }
-            }
-          ]
-        },
-        page_size: 10
+        filter: { property: 'user', title: { contains: q } },
+        page_size: 10,
+        sorts: [{ property: 'user', direction: 'ascending' }]
       })
     });
 
     if (!notionRes.ok) {
-      console.error('[notion-search] erro Notion:', notionRes.status);
-      return res.json({ results: [] });
+      // Fallback: tenta como rich_text
+      const notionRes2 = await fetch(`https://api.notion.com/v1/databases/${NOTION_DB}/query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTION_KEY}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filter: { property: 'user', rich_text: { contains: q } },
+          page_size: 10
+        })
+      });
+      if (!notionRes2.ok) return res.json({ results: [] });
+      const data2 = await notionRes2.json();
+      return res.json({ results: mapNotionResults(data2.results || []) });
     }
 
     const data = await notionRes.json();
 
-    const results = (data.results || []).map(page => {
-      const props = page.properties || {};
-      return {
-        id: page.id,
-        name: props.Name?.title?.[0]?.plain_text || '',
-        cargo: props.Cargo?.rich_text?.[0]?.plain_text || '',
-        empresas: props.Empresas?.rich_text?.[0]?.plain_text || '',
-        linkedin: props.LinkedIn?.url || ''
-      };
-    }).filter(r => r.name);
+    const results = mapNotionResults(data.results || []);
 
     res.json({ results });
 
@@ -155,6 +154,40 @@ app.get('/api/notion/search', async (req, res) => {
     res.json({ results: [] });
   }
 });
+
+// ── Helper: mapeia resultados do Notion ───────────────────────────────────────
+function extractProp(prop) {
+  if (!prop) return '';
+  switch (prop.type) {
+    case 'title':        return (prop.title        || []).map(t => t.plain_text).join('');
+    case 'rich_text':    return (prop.rich_text     || []).map(t => t.plain_text).join('');
+    case 'select':       return prop.select?.name  || '';
+    case 'multi_select': return (prop.multi_select || []).map(s => s.name).join(', ');
+    case 'url':          return prop.url           || '';
+    case 'email':        return prop.email         || '';
+    default:             return '';
+  }
+}
+
+function mapNotionResults(pages) {
+  return pages.map(page => {
+    const props = page.properties || {};
+    let linkedin = '';
+    for (const [key, val] of Object.entries(props)) {
+      if (key.toLowerCase().includes('linkedin')) {
+        linkedin = extractProp(val);
+        if (linkedin) break;
+      }
+    }
+    return {
+      id:       page.id,
+      name:     extractProp(props.user),
+      cargo:    extractProp(props.cargo_rede),
+      empresas: extractProp(props.ultimas_empresa),
+      linkedin
+    };
+  }).filter(r => r.name);
+}
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
