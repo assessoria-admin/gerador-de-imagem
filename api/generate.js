@@ -4,18 +4,15 @@
 const FREEPIK_KEY  = process.env.FREEPIK_KEY;
 const FREEPIK_EDIT = process.env.FREEPIK_EDIT;
 
-// Aumenta o limite do body parser para suportar imagens base64
-module.exports.config = {
-  api: { bodyParser: { sizeLimit: '10mb' } }
-};
-
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   if (!FREEPIK_KEY || !FREEPIK_EDIT) {
-    return res.status(500).json({ message: 'Variáveis de ambiente FREEPIK_KEY / FREEPIK_EDIT não configuradas no Vercel.' });
+    return res.status(500).json({
+      message: 'Variáveis de ambiente FREEPIK_KEY / FREEPIK_EDIT não configuradas no Vercel.'
+    });
   }
 
   try {
@@ -37,3 +34,10 @@ module.exports = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+handler.config = {
+  api: { bodyParser: { sizeLimit: '10mb' } }
+};
+
+module.exports = handler;
+module.exports.config = handler.config;

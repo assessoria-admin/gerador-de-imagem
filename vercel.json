@@ -1,15 +1,15 @@
 {
   "version": 2,
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
-    }
-  },
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "*.html",      "use": "@vercel/static" },
+    { "src": "fonts/**",    "use": "@vercel/static" }
+  ],
   "routes": [
-    { "src": "/api/generate/([^/]+)", "dest": "/api/generate/[taskId]" },
-    { "src": "/api/notion/search",    "dest": "/api/notion/search" },
-    { "src": "/api/proxy-image",      "dest": "/api/proxy-image" },
-    { "src": "/api/generate",         "dest": "/api/generate" },
+    { "src": "/api/generate/([^/]+)", "dest": "/api/generate/[taskId].js?taskId=$1" },
+    { "src": "/api/notion/search",    "dest": "/api/notion/search.js" },
+    { "src": "/api/proxy-image",      "dest": "/api/proxy-image.js" },
+    { "src": "/api/generate",         "dest": "/api/generate.js" },
     { "src": "/app",                  "dest": "/app.html" },
     { "src": "/fonts/(.*)",           "dest": "/fonts/$1" },
     { "src": "/",                     "dest": "/index.html" }
