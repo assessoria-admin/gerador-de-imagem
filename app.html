@@ -261,6 +261,12 @@
       cursor: pointer; transition: all .2s;
     }
     .btn-download:hover { background: var(--teal); color: #000; }
+    .btn-download.secondary {
+      border-color: var(--border); color: #aaa;
+    }
+    .btn-download.secondary:hover {
+      background: transparent; border-color: var(--teal); color: var(--teal);
+    }
   </style>
 </head>
 <body>
@@ -349,7 +355,8 @@
     <div class="divider"></div>
     <div class="result-label">Resultado</div>
     <canvas id="canvas"></canvas>
-    <button class="btn-download" id="btnDownload">↓ &nbsp; Download PNG</button>
+    <button class="btn-download" id="btnDownload">↓ &nbsp; Download com Texto</button>
+    <button class="btn-download secondary" id="btnDownloadRaw">↓ &nbsp; Download Foto Original (sem texto)</button>
   </div>
 
 </div><!-- /.wrap -->
@@ -359,6 +366,7 @@
    CONFIG
 ════════════════════════════════════════════════════════════════ */
 const API_BASE = '';
+let lastGeneratedSrc = null;
 
 const PROMPT = `High-quality professional studio portrait. Lightly textured black background. Dramatic lighting: a main light for primary illumination and a faint, not very apparent cyan (blue-green) contour light coming from the right, projecting a distinct cool glow along the right side of the face and shoulder, creating a dark shadow effect that also reflects slightly in the background. Split light effect. Cinematic quality, photorealistic, shallow depth of field, sharp focus on the eyes, ultra-detailed skin texture. Maintain the originality of the features and the photo as it was taken.`;
 
@@ -526,6 +534,7 @@ document.getElementById('form').addEventListener('submit', async e => {
     }
 
     setStatus('Compondo imagem final…');
+    lastGeneratedSrc = imageSrc;
     await renderCanvas(imageSrc, firstName, lastName, jobTitle, companies);
 
     setStatus('');
@@ -699,6 +708,26 @@ document.getElementById('btnDownload').addEventListener('click', () => {
     a.click();
   } catch {
     setStatus('Download bloqueado por CORS. Clique com botão direito → Salvar imagem.', true);
+  }
+});
+
+document.getElementById('btnDownloadRaw').addEventListener('click', async () => {
+  if (!lastGeneratedSrc) {
+    setStatus('Nenhuma imagem gerada ainda.', true);
+    return;
+  }
+  try {
+    const img = await loadImage(lastGeneratedSrc);
+    const c   = document.createElement('canvas');
+    c.width   = img.naturalWidth  || img.width;
+    c.height  = img.naturalHeight || img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    const a    = document.createElement('a');
+    a.download = 'profile-raw.png';
+    a.href     = c.toDataURL('image/png');
+    a.click();
+  } catch (err) {
+    setStatus('Erro ao baixar foto original: ' + err.message, true);
   }
 });
 
