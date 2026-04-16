@@ -851,7 +851,17 @@
 const API_BASE = '';
 let lastGeneratedSrc = null;
 
-const PROMPT = `High-quality professional studio portrait. Lightly textured black background. Dramatic lighting: a main light for primary illumination and a faint, not very apparent cyan (blue-green) contour light coming from the right, projecting a distinct cool glow along the right side of the face and shoulder, creating a dark shadow effect that also reflects slightly in the background. Split light effect. Cinematic quality, photorealistic, shallow depth of field, sharp focus on the eyes, ultra-detailed skin texture. Maintain the originality of the features and the photo as it was taken.`;
+const PROMPT = `Apply Rede Líderes visual identity to this photo while preserving the person exactly as they appear. Do NOT change the person's face, body, expression, pose, clothing, hair, or any physical characteristic — replicate everything about the subject with absolute fidelity. Only change the background and lighting.
+
+Background: replace the existing background with seamless deep teal-black (#001E23), clean, smooth, no patterns, no text, no texture — the subject must remain naturally integrated into this new background, not pasted or cut-out.
+
+Lighting: add a teal rim light (#03d8d2) tracing the edges of the shoulders and silhouette, as if lit from behind by a teal source. Add a subtle teal color cast to the shadows and dark areas of the image.
+
+Color grade: lift the blacks toward deep teal (#001E23), apply a teal-green shadow cast preserving skin warmth in the midtones, slightly crush the highlights for a cinematic feel.
+
+The person's clothing, skin, expression, and body must look identical to the original photo — only the environment and color grading change.
+
+CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO logos visible anywhere. Do NOT alter the subject's face, body shape, weight, clothing, or pose. Clean photograph only.`;
 
 /* ════════════════════════════════════════════════════════════════
    NOTION AUTOCOMPLETE
