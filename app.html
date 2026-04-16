@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rede Líderes — Gerador de Imagem</title>
+  <title>Rede Líderes — Ferramentas de Imagem</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <!-- Proteção: redireciona se não passou pela tela de senha -->
   <script>
@@ -267,6 +268,305 @@
     .btn-download.secondary:hover {
       background: transparent; border-color: var(--teal); color: var(--teal);
     }
+
+    /* ─── Tab Navigation ────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 36px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--teal);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Mudança de Cargo — scoped ─────────────────────────────── */
+    #tab-cargo { font-family: 'Space Grotesk', 'Neue Machina', sans-serif; }
+
+    #tab-cargo .cargo-wrap {
+      width: 420px;
+      flex-shrink: 0;
+      margin: 0 auto;
+    }
+    @media (max-width: 460px) {
+      #tab-cargo .cargo-wrap {
+        transform: scale(calc((100vw - 32px) / 420));
+        transform-origin: top center;
+      }
+    }
+
+    #tab-cargo .c-card {
+      width: 420px;
+      height: 525px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 32px 96px rgba(0,0,0,0.85);
+    }
+    #tab-cargo .c-bg-photo {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center top;
+      z-index: 0;
+    }
+    #tab-cargo .c-bg-placeholder {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #1a2a2a 0%, #0d1a1a 40%, #07111a 100%);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 0;
+    }
+    #tab-cargo .c-bg-placeholder svg { opacity: 0.15; }
+    #tab-cargo .c-overlay-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.05) 25%,
+        rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.90) 80%, rgba(0,0,0,0.97) 100%);
+      z-index: 1;
+    }
+    #tab-cargo .c-top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #03d8d2, #007887);
+      z-index: 10;
+    }
+    #tab-cargo .c-logo-rl {
+      position: absolute; top: 16px; left: 20px;
+      z-index: 10; display: flex; align-items: center;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+    }
+    #tab-cargo .c-badge {
+      position: absolute; top: 20px; right: 18px;
+      z-index: 10; display: flex; align-items: center;
+      gap: 5px; padding: 5px 10px;
+      background: rgba(3,216,210,0.12);
+      border: 1px solid rgba(3,216,210,0.40);
+      border-radius: 20px; backdrop-filter: blur(4px);
+    }
+    #tab-cargo .c-badge .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%; background: #03d8d2; flex-shrink: 0;
+    }
+    #tab-cargo .c-badge span {
+      font-size: 8.5px; font-weight: 700;
+      letter-spacing: 1.5px; color: #03d8d2;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    #tab-cargo .c-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0 26px 28px; z-index: 5;
+    }
+    #tab-cargo .c-tag-conquista {
+      display: inline-flex; align-items: center;
+      gap: 7px; margin-bottom: 12px;
+    }
+    #tab-cargo .c-tag-conquista .line {
+      width: 20px; height: 2px;
+      background: #03d8d2; border-radius: 1px;
+    }
+    #tab-cargo .c-tag-conquista span {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 2.5px; color: #03d8d2;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    #tab-cargo .c-cargo-bloco { margin-bottom: 12px; }
+    #tab-cargo .c-cargo-label1 {
+      font-size: 14px; font-weight: 600;
+      color: rgba(3,216,210,0.7);
+      letter-spacing: 2.2px; text-transform: uppercase;
+      margin-bottom: 1px; white-space: nowrap;
+    }
+    #tab-cargo .c-cargo-label {
+      font-size: 18px; font-weight: 800;
+      color: rgba(3,216,210,0.7);
+      letter-spacing: 2.2px; text-transform: uppercase;
+      margin-bottom: 5px; white-space: nowrap;
+    }
+    #tab-cargo .c-cargo-nome {
+      font-size: 30px; font-weight: 800;
+      color: #ffffff; line-height: 1.05; letter-spacing: -0.4px;
+    }
+    #tab-cargo .c-nome-bloco {
+      display: flex; align-items: center;
+      gap: 8px; margin-bottom: 14px;
+    }
+    #tab-cargo .c-nome-bloco .separador-v {
+      width: 2px; height: 14px;
+      background: rgba(3,216,210,0.5);
+      border-radius: 1px; flex-shrink: 0;
+    }
+    #tab-cargo .c-nome {
+      font-size: 15px; font-weight: 600;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.2; white-space: nowrap;
+    }
+    #tab-cargo .c-nome .sobrenome {
+      color: rgba(255,255,255,0.85); font-weight: 700;
+    }
+    #tab-cargo .c-empresa-destaque {
+      margin-bottom: 14px;
+      display: flex; flex-direction: column; gap: 2px;
+      border-left: 3px solid #03d8d2; padding-left: 12px;
+    }
+    #tab-cargo .c-empresa-label {
+      font-size: 11px; font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    #tab-cargo .c-empresa-nome {
+      font-size: 22px; font-weight: 700;
+      color: #ffffff; letter-spacing: -0.2px;
+    }
+
+    /* Painel de inputs do cargo */
+    #tab-cargo .c-painel {
+      margin-top: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    #tab-cargo .c-painel-row { display: flex; gap: 10px; }
+    #tab-cargo .c-field {
+      display: flex; flex-direction: column; gap: 5px; flex: 1;
+    }
+    #tab-cargo .c-field label {
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 1.8px; text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+    }
+    #tab-cargo .c-field input[type=text] {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(3,216,210,0.25);
+      border-radius: 8px; padding: 9px 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 500;
+      color: #ffffff; outline: none;
+      transition: border-color 0.2s, background 0.2s; width: 100%;
+    }
+    #tab-cargo .c-field input[type=text]::placeholder { color: rgba(255,255,255,0.2); }
+    #tab-cargo .c-field input[type=text]:focus {
+      border-color: rgba(3,216,210,0.65);
+      background: rgba(3,216,210,0.06);
+    }
+    #tab-cargo .c-divider {
+      width: 100%; height: 1px;
+      background: rgba(255,255,255,0.07); margin: 4px 0;
+    }
+    #tab-cargo .c-actions { display: flex; gap: 10px; }
+    #tab-cargo .c-btn {
+      flex: 1; display: flex; align-items: center;
+      justify-content: center; gap: 6px;
+      padding: 9px 20px; border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+      border: 1px solid rgba(3,216,210,0.3);
+      background: rgba(3,216,210,0.10); color: #03d8d2;
+    }
+    #tab-cargo .c-btn:hover { background: rgba(3,216,210,0.22); border-color: rgba(3,216,210,0.6); }
+    #tab-cargo .c-btn-foto { position: relative; overflow: hidden; }
+    #tab-cargo .c-btn-foto input[type=file] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; font-size: 0;
+    }
+
+    /* Copy section */
+    #tab-cargo .c-copy-section {
+      margin-top: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    #tab-cargo .c-copy-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #tab-cargo .c-copy-header span {
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 1.8px; text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+    }
+    #tab-cargo .c-copy-header button {
+      padding: 4px 12px; border-radius: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid rgba(3,216,210,0.3);
+      background: rgba(3,216,210,0.08); color: #03d8d2;
+      transition: all 0.2s;
+    }
+    #tab-cargo .c-copy-header button:hover { background: rgba(3,216,210,0.2); }
+    #tab-cargo .c-copy-header button.copied { background: rgba(3,216,210,0.25); color: #fff; border-color: #03d8d2; }
+    #tab-cargo .c-copy-text {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 14px 16px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12.5px; font-weight: 400;
+      color: rgba(255,255,255,0.65); line-height: 1.65;
+      white-space: pre-wrap; word-break: break-word;
+      resize: none; width: 100%; outline: none;
+      border-bottom: none;
+      border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+    }
+    #tab-cargo .c-copy-text:focus { border-color: rgba(3,216,210,0.25); color: rgba(255,255,255,0.85); }
+    #tab-cargo .c-copy-footer {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top: none;
+      border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+      font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 0.3px;
+    }
+
+    /* Autocomplete no tab cargo */
+    #tab-cargo .c-ac-wrap { position: relative; }
+    #tab-cargo .c-ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      z-index: 200; background: #141414;
+      border: 1px solid rgba(65,193,194,.25);
+      border-radius: 8px; overflow: hidden;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    #tab-cargo .c-ac-dropdown.open { display: block; }
+    #tab-cargo .c-ac-item {
+      padding: 11px 15px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    #tab-cargo .c-ac-item:last-child { border-bottom: none; }
+    #tab-cargo .c-ac-item:hover { background: rgba(65,193,194,.08); }
+    #tab-cargo .c-ac-item-name { font-size: 14px; color: #fff; }
+    #tab-cargo .c-ac-item-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    #tab-cargo .c-ac-empty {
+      padding: 13px 15px; font-size: 12px;
+      color: var(--muted); text-align: center; letter-spacing: .5px;
+    }
+    #tab-cargo .c-ac-loading {
+      padding: 13px 15px; font-size: 12px; color: var(--teal);
+      display: flex; align-items: center; gap: 8px;
+    }
   </style>
 </head>
 <body>
@@ -279,8 +579,19 @@
       <h1>Rede&nbsp;Líderes</h1>
       <span></span>
     </div>
-    <p>Gerador de imagem profissional com IA · Freepik API</p>
+    <p>Ferramentas de imagem para a comunidade</p>
   </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-foto" onclick="switchTab('foto')">Gerador de Foto IA</button>
+    <button class="tab-btn" id="tab-btn-cargo" onclick="switchTab('cargo')">Mudança de Cargo</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 1 — Gerador de Foto IA
+  ══════════════════════════════════════════════════════════ -->
+  <div id="tab-foto" class="tab-panel active">
 
   <!-- Form card -->
   <div class="card">
@@ -358,6 +669,121 @@
     <button class="btn-download" id="btnDownload">↓ &nbsp; Download com Texto</button>
     <button class="btn-download secondary" id="btnDownloadRaw">↓ &nbsp; Download Foto Original (sem texto)</button>
   </div>
+
+  </div><!-- /#tab-foto -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 2 — Mudança de Cargo
+  ══════════════════════════════════════════════════════════ -->
+  <div id="tab-cargo" class="tab-panel">
+
+    <div class="cargo-wrap">
+
+      <!-- Card preview -->
+      <div class="c-card" id="c-card">
+        <div class="c-top-bar"></div>
+
+        <div class="c-logo-rl">
+          <img style="height:28px; width:auto;" src="/logo-rl.png" alt="Rede Líderes" />
+        </div>
+
+        <div class="c-badge">
+          <div class="dot"></div>
+          <span>Nova Conquista</span>
+        </div>
+
+        <div class="c-bg-placeholder" id="c-placeholder">
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="42" r="26" stroke="white" stroke-width="2"/>
+            <path d="M12 108 C12 80 108 80 108 108" stroke="white" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <img class="c-bg-photo" id="c-bg-photo" src="" alt="" style="display:none;">
+
+        <div class="c-overlay-gradient"></div>
+
+        <div class="c-content">
+          <div class="c-tag-conquista">
+            <div class="line"></div>
+            <span>Nova Conquista</span>
+          </div>
+
+          <div class="c-nome-bloco">
+            <div class="separador-v"></div>
+            <div class="c-nome">
+              <span id="c-txt-nome">Nome</span> <span class="sobrenome" id="c-txt-sobrenome">Sobrenome</span>
+            </div>
+          </div>
+
+          <div class="c-cargo-bloco">
+            <div class="c-cargo-label1">Conselheiro assume</div>
+            <div class="c-cargo-label">nova posição de</div>
+            <div class="c-cargo-nome" id="c-txt-cargo">Cargo</div>
+          </div>
+
+          <div class="c-empresa-destaque">
+            <div class="c-empresa-label">Na empresa</div>
+            <div class="c-empresa-nome" id="c-txt-empresa">Empresa</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de inputs -->
+      <div class="c-painel">
+
+        <!-- Busca Notion -->
+        <div class="c-field">
+          <label>Buscar na Rede Líderes</label>
+          <div class="c-ac-wrap" id="cAcWrap">
+            <input type="text" id="c-search" placeholder="Digite o nome para buscar…" autocomplete="off" oninput="cAcInput(this.value)" />
+            <div class="c-ac-dropdown" id="cAcDropdown"></div>
+          </div>
+        </div>
+
+        <div class="c-painel-row">
+          <div class="c-field">
+            <label>Nome</label>
+            <input type="text" id="c-inp-nome" value="" placeholder="Nome" oninput="cAtualizar()">
+          </div>
+          <div class="c-field">
+            <label>Sobrenome</label>
+            <input type="text" id="c-inp-sobrenome" value="" placeholder="Sobrenome" oninput="cAtualizar()">
+          </div>
+        </div>
+
+        <div class="c-field">
+          <label>Cargo</label>
+          <input type="text" id="c-inp-cargo" value="" placeholder="Ex: VP de Tecnologia" oninput="cAtualizar()">
+        </div>
+
+        <div class="c-field">
+          <label>Empresa</label>
+          <input type="text" id="c-inp-empresa" value="" placeholder="Ex: TechCorp" oninput="cAtualizar()">
+        </div>
+
+        <div class="c-divider"></div>
+
+        <div class="c-actions">
+          <button class="c-btn c-btn-foto">
+            📷 Selecionar foto
+            <input type="file" accept="image/*" onchange="cCarregarFoto(this)">
+          </button>
+          <button class="c-btn" onclick="cExportar()">⬇ Exportar PNG</button>
+        </div>
+      </div>
+
+      <!-- Copy LinkedIn -->
+      <div class="c-copy-section">
+        <div class="c-copy-header">
+          <span>Copy para LinkedIn</span>
+          <button id="c-btn-copiar" onclick="cCopiarTexto()">Copiar</button>
+        </div>
+        <textarea class="c-copy-text" id="c-copy-text" rows="9" readonly></textarea>
+        <div class="c-copy-footer">Rede Lideres · www.redelideres.com</div>
+      </div>
+
+    </div>
+  </div><!-- /#tab-cargo -->
 
 </div><!-- /.wrap -->
 
@@ -787,6 +1213,164 @@ function setLoading(on) {
   document.getElementById('spinner').style.display = on ? 'block' : 'none';
   document.getElementById('btnGenerate').disabled  = on;
 }
+</script>
+
+<!-- dom-to-image-more: captura fiel do card de mudança de cargo -->
+<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   TAB SWITCHING
+════════════════════════════════════════════════════════════════ */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MUDANÇA DE CARGO — Autocomplete Notion
+════════════════════════════════════════════════════════════════ */
+let cAcTimer = null;
+
+function cAcInput(q) {
+  clearTimeout(cAcTimer);
+  const dd = document.getElementById('cAcDropdown');
+  if (q.length < 2) { dd.classList.remove('open'); return; }
+  dd.innerHTML = '<div class="c-ac-loading"><div class="ac-spin"></div>Buscando…</div>';
+  dd.classList.add('open');
+  cAcTimer = setTimeout(() => cNotionSearch(q), 350);
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('cAcWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('cAcDropdown').classList.remove('open');
+  }
+});
+
+async function cNotionSearch(q) {
+  const dd = document.getElementById('cAcDropdown');
+  try {
+    const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    cAcRender(data.results || []);
+  } catch {
+    dd.innerHTML = '<div class="c-ac-empty">Erro ao buscar no Notion</div>';
+  }
+}
+
+function cAcRender(results) {
+  const dd = document.getElementById('cAcDropdown');
+  if (results.length === 0) {
+    dd.innerHTML = '<div class="c-ac-empty">Nenhum resultado encontrado</div>';
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = '';
+  results.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'c-ac-item';
+    el.innerHTML = `
+      <div class="c-ac-item-name">${esc(person.name)}</div>
+      ${person.cargo ? `<div class="c-ac-item-role">${esc(person.cargo)}</div>` : ''}
+    `;
+    el.addEventListener('mousedown', e => { e.preventDefault(); cAcSelect(person); });
+    dd.appendChild(el);
+  });
+  dd.classList.add('open');
+}
+
+function cAcSelect(person) {
+  document.getElementById('c-search').value = person.name || '';
+  if (person.name) {
+    const parts = (person.name || '').split(/\s+/);
+    document.getElementById('c-inp-nome').value      = parts[0] || '';
+    document.getElementById('c-inp-sobrenome').value = parts.slice(1).join(' ') || '';
+  }
+  if (person.cargo)    document.getElementById('c-inp-cargo').value   = person.cargo;
+  if (person.empresas) {
+    const firstEmpresa = (person.empresas || '').split(',')[0].trim();
+    document.getElementById('c-inp-empresa').value = firstEmpresa;
+  }
+  document.getElementById('cAcDropdown').classList.remove('open');
+  cAtualizar();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MUDANÇA DE CARGO — Card & Copy
+════════════════════════════════════════════════════════════════ */
+function cAtualizar() {
+  const nome      = document.getElementById('c-inp-nome').value      || 'Nome';
+  const sobrenome = document.getElementById('c-inp-sobrenome').value  || 'Sobrenome';
+  const cargo     = document.getElementById('c-inp-cargo').value      || 'Cargo';
+  const empresa   = document.getElementById('c-inp-empresa').value    || 'Empresa';
+
+  document.getElementById('c-txt-nome').textContent      = nome;
+  document.getElementById('c-txt-sobrenome').textContent = sobrenome;
+  document.getElementById('c-txt-cargo').textContent     = cargo;
+  document.getElementById('c-txt-empresa').textContent   = empresa;
+
+  document.getElementById('c-copy-text').value = cGerarCopy(nome, sobrenome, cargo, empresa);
+}
+
+function cGerarCopy(nome, sobrenome, cargo, empresa) {
+  return `Parabenizamos ${nome} ${sobrenome} pela sua nova posição como ${cargo} na ${empresa}!
+
+Trajetórias como a de ${nome} mostram o que a liderança comprometida é capaz de construir com consistência, visão de futuro e orientação genuína às pessoas.
+
+Na Rede Líderes, celebramos cada conquista que inspira outros líderes a também evoluírem.
+
+${nome}, continue transformando. O melhor ainda está por vir.
+
+🔗 www.redelideres.com`;
+}
+
+function cCopiarTexto() {
+  const ta  = document.getElementById('c-copy-text');
+  const btn = document.getElementById('c-btn-copiar');
+  navigator.clipboard.writeText(ta.value).then(() => {
+    btn.textContent = 'Copiado ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function cCarregarFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('c-bg-photo');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('c-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function cExportar() {
+  const nome      = document.getElementById('c-inp-nome').value      || 'lider';
+  const sobrenome = document.getElementById('c-inp-sobrenome').value  || '';
+
+  await document.fonts.ready;
+
+  const card = document.getElementById('c-card');
+  const dataUrl = await domtoimage.toPng(card, { scale: 1080 / 420 });
+
+  const slug = (nome + '-' + sobrenome).toLowerCase()
+    .replace(/\s+/g, '-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const link = document.createElement('a');
+  link.download = 'parabenizacao-' + slug + '.png';
+  link.href = dataUrl;
+  link.click();
+}
+
+// Inicializa card com campos vazios ao carregar
+document.addEventListener('DOMContentLoaded', cAtualizar);
 </script>
 </body>
 </html>
