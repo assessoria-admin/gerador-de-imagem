@@ -586,6 +586,28 @@
       padding: 13px 15px; font-size: 12px; color: var(--teal);
       display: flex; align-items: center; gap: 8px;
     }
+
+    /* Gender toggle */
+    #tab-cargo .c-gender-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(3,216,210,0.2);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #tab-cargo .c-gender-toggle button {
+      flex: 1; padding: 9px 0;
+      border: none; background: transparent;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer; transition: all .15s;
+    }
+    #tab-cargo .c-gender-toggle button.active {
+      background: rgba(3,216,210,0.15);
+      color: #03d8d2;
+    }
   </style>
 </head>
 <body>
@@ -765,6 +787,15 @@
       <!-- COLUNA DIREITA: inputs -->
       <div class="cargo-col-right">
         <div class="c-painel">
+
+          <!-- Gênero -->
+          <div class="c-field">
+            <label>Gênero</label>
+            <div class="c-gender-toggle">
+              <button id="c-gen-m" class="active" onclick="cSetGenero('m')">Masculino</button>
+              <button id="c-gen-f" onclick="cSetGenero('f')">Feminino</button>
+            </div>
+          </div>
 
           <!-- Busca Notion — preenche nome, cargo e empresa automaticamente -->
           <div class="c-field">
@@ -1330,16 +1361,27 @@ function cAcSelect(person) {
 /* ════════════════════════════════════════════════════════════════
    MUDANÇA DE CARGO — Card & Copy
 ════════════════════════════════════════════════════════════════ */
+let cGenero = 'm';
+
+function cSetGenero(g) {
+  cGenero = g;
+  document.getElementById('c-gen-m').classList.toggle('active', g === 'm');
+  document.getElementById('c-gen-f').classList.toggle('active', g === 'f');
+  cAtualizar();
+}
+
 function cAtualizar() {
   const nome      = document.getElementById('c-inp-nome').value      || 'Nome';
   const sobrenome = document.getElementById('c-inp-sobrenome').value  || 'Sobrenome';
   const cargo     = document.getElementById('c-inp-cargo').value      || 'Cargo';
   const empresa   = document.getElementById('c-inp-empresa').value    || 'Empresa';
+  const titulo    = cGenero === 'f' ? 'Conselheira' : 'Conselheiro';
 
   document.getElementById('c-txt-nome').textContent      = nome;
   document.getElementById('c-txt-sobrenome').textContent = sobrenome;
   document.getElementById('c-txt-cargo').textContent     = cargo;
   document.getElementById('c-txt-empresa').textContent   = empresa;
+  document.querySelector('#c-card .c-cargo-label1').textContent = titulo + ' assume';
 
   document.getElementById('c-copy-text').value = cGerarCopy(nome, sobrenome, cargo, empresa);
 }
