@@ -82,6 +82,10 @@ app.get('/api/proxy-image', async (req, res) => {
   try {
     console.log('[proxy-image] baixando:', url.slice(0, 80));
     const imgRes = await fetch(url);
+    if (!imgRes.ok) {
+      console.error('[proxy-image] resposta não-ok:', imgRes.status, url.slice(0, 80));
+      return res.status(502).json({ message: `Imagem retornou status ${imgRes.status}` });
+    }
     const contentType = imgRes.headers.get('content-type') || 'image/png';
     const buffer = await imgRes.arrayBuffer();
 
@@ -180,19 +184,29 @@ function mapNotionResults(pages) {
   return pages.map(page => {
     const props = page.properties || {};
     let linkedin = '';
+    let fotoProp = null;
+
     for (const [key, val] of Object.entries(props)) {
-      if (key.toLowerCase().includes('linkedin')) {
+      const k = key.toLowerCase();
+      if (k.includes('linkedin') && !linkedin) {
         linkedin = extractProp(val);
-        if (linkedin) break;
+      }
+      if ((k === 'foto' || k === 'photo') && !fotoProp && val?.type === 'files') {
+        fotoProp = val;
       }
     }
+
+    const photoUrl = extractPhotoUrl(fotoProp);
+    const name = extractProp(props.user);
+    console.log(`[notion] ${name || '?'} — foto: ${photoUrl ? photoUrl.slice(0, 60) + '…' : 'VAZIO'}`);
+
     return {
       id:       page.id,
-      name:     extractProp(props.user),
+      name,
       cargo:    extractProp(props.cargo_rede),
       empresas: extractProp(props.ultimas_empresa),
       linkedin,
-      photoUrl: extractPhotoUrl(props.foto)
+      photoUrl
     };
   }).filter(r => r.name);
 }

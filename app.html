@@ -1410,7 +1410,13 @@ function cAcSelect(person) {
   }
   document.getElementById('cAcDropdown').classList.remove('open');
   cAtualizar();
-  if (person.photoUrl) cCarregarFotoUrl(person.photoUrl);
+  console.log('[cargo] selecionado:', person.name, '| photoUrl:', person.photoUrl || 'AUSENTE');
+  if (person.photoUrl) {
+    cCarregarFotoUrl(person.photoUrl);
+  } else {
+    cSetStatus('Foto não encontrada no Notion para este líder.', false);
+    setTimeout(() => cSetStatus('', false), 4000);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════
