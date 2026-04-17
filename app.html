@@ -830,12 +830,19 @@
           <div class="c-divider"></div>
 
           <div class="c-actions">
-            <button class="c-btn c-btn-foto">
+            <button class="c-btn c-btn-foto" id="c-btn-foto-wrap">
               📷 Selecionar foto
-              <input type="file" accept="image/*" onchange="cCarregarFoto(this)">
+              <input type="file" accept="image/*" id="c-file-foto" onchange="cCarregarFoto(this)">
             </button>
             <button class="c-btn" onclick="cExportar()">⬇ Exportar PNG</button>
           </div>
+
+          <!-- Status da geração de foto IA -->
+          <div class="status-bar" id="c-status-bar" style="margin-top:12px; display:none;">
+            <div class="spinner" id="c-spinner" style="display:none;"></div>
+            <span class="status-msg" id="c-status-msg"></span>
+          </div>
+
         </div>
       </div><!-- /.cargo-col-right -->
 
@@ -1462,33 +1469,17 @@ function cCopiarTexto() {
   });
 }
 
-function cCarregarFoto(input) {
+async function cCarregarFoto(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => cDefinirFotoCard(e.target.result);
+  reader.onload = e => {
+    const img = document.getElementById('c-bg-photo');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('c-placeholder').style.display = 'none';
+  };
   reader.readAsDataURL(file);
-}
-
-async function cCarregarFotoUrl(url) {
-  try {
-    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
-    const res     = await fetch(proxied);
-    const blob    = await res.blob();
-    const dataUrl = await new Promise(resolve => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.readAsDataURL(blob);
-    });
-    cDefinirFotoCard(dataUrl);
-  } catch { /* sem foto — mantém placeholder */ }
-}
-
-function cDefinirFotoCard(dataUrl) {
-  const img = document.getElementById('c-bg-photo');
-  img.src = dataUrl;
-  img.style.display = 'block';
-  document.getElementById('c-placeholder').style.display = 'none';
 }
 
 async function cExportar() {
