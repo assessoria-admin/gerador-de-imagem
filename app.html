@@ -270,6 +270,89 @@
       background: transparent; border-color: var(--teal); color: var(--teal);
     }
 
+    /* ─── Tab 1 — layout lado a lado ───────────────────────────── */
+    #tab-foto .foto-wrap {
+      display: flex;
+      gap: 36px;
+      align-items: flex-start;
+    }
+    #tab-foto .foto-col-form {
+      flex: 1;
+      min-width: 0;
+    }
+    #tab-foto .foto-col-preview {
+      flex-shrink: 0;
+      width: 300px;
+      position: sticky;
+      top: 24px;
+    }
+    #tab-foto .foto-prev-card {
+      width: 300px;
+      height: 400px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #071118;
+    }
+    #tab-foto .foto-prev-bg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center top;
+      display: none; z-index: 0;
+    }
+    #tab-foto .foto-prev-placeholder {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #0d1a1a 0%, #071118 100%);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 0;
+    }
+    #tab-foto .foto-prev-placeholder svg { opacity: 0.12; }
+    #tab-foto .foto-prev-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0) 30%, rgba(0,0,0,0.50) 60%, rgba(0,0,0,0.85) 100%);
+      z-index: 1;
+    }
+    #tab-foto .foto-prev-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 14px 18px 18px; z-index: 2;
+    }
+    #tab-foto .foto-prev-name {
+      font-size: 24px; font-weight: 800; line-height: 1.1;
+      margin-bottom: 6px; font-family: var(--font);
+    }
+    #tab-foto .foto-prev-name .fn { color: #fff; }
+    #tab-foto .foto-prev-name .ln { color: var(--teal); }
+    #tab-foto .foto-prev-job {
+      font-size: 11px; color: #fff; opacity: .85;
+      font-family: var(--font); margin-bottom: 6px;
+    }
+    #tab-foto .foto-prev-minibio {
+      font-size: 8px; font-weight: 800; color: var(--teal);
+      letter-spacing: 2.5px; margin-bottom: 4px; font-family: var(--font);
+    }
+    #tab-foto .foto-prev-companies {
+      font-size: 10px; color: rgba(255,255,255,.75); font-family: var(--font);
+    }
+    #tab-foto .btn-enviar-ia {
+      width: 100%; margin-top: 12px;
+      background: rgba(65,193,194,.12);
+      border: 1px solid rgba(65,193,194,.35);
+      color: var(--teal);
+      border-radius: 8px; padding: 13px;
+      font-family: var(--font); font-size: 11px; font-weight: 800;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    #tab-foto .btn-enviar-ia:hover { background: rgba(65,193,194,.22); border-color: var(--teal); }
+    #tab-foto .btn-enviar-ia:disabled { opacity: .3; cursor: not-allowed; }
+    @media (max-width: 900px) {
+      #tab-foto .foto-wrap { flex-direction: column; }
+      #tab-foto .foto-col-preview { width: 100%; position: static; }
+      #tab-foto .foto-prev-card { width: 100%; height: auto; aspect-ratio: 3/4; }
+    }
+
     /* ─── Tab Navigation ────────────────────────────────────────── */
     .tabs {
       display: flex;
@@ -620,8 +703,10 @@
        TAB 1 — Gerador de Foto IA
   ══════════════════════════════════════════════════════════ -->
   <div id="tab-foto" class="tab-panel active">
+  <div class="foto-wrap">
 
-  <!-- Form card -->
+  <!-- COLUNA ESQUERDA: form -->
+  <div class="foto-col-form">
   <div class="card">
     <form id="form" novalidate>
 
@@ -697,7 +782,36 @@
     <button class="btn-download" id="btnDownload">↓ &nbsp; Download com Texto</button>
     <button class="btn-download secondary" id="btnDownloadRaw">↓ &nbsp; Download Foto Original (sem texto)</button>
   </div>
+  </div><!-- /.foto-col-form -->
 
+  <!-- COLUNA DIREITA: preview -->
+  <div class="foto-col-preview">
+    <div class="foto-prev-card" id="foto-prev-card">
+      <div class="foto-prev-placeholder" id="foto-prev-placeholder">
+        <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
+          <circle cx="60" cy="42" r="26" stroke="white" stroke-width="2"/>
+          <path d="M12 108 C12 80 108 80 108 108" stroke="white" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <img class="foto-prev-bg" id="foto-prev-bg" src="" alt="" />
+      <div class="foto-prev-gradient"></div>
+      <div class="foto-prev-content">
+        <div class="foto-prev-name">
+          <span class="fn" id="foto-prev-fn">Nome</span>
+          <span class="ln" id="foto-prev-ln"></span>
+        </div>
+        <div class="foto-prev-job" id="foto-prev-job">Cargo</div>
+        <div class="foto-prev-minibio">MINI BIO</div>
+        <div class="foto-prev-companies" id="foto-prev-companies">Empresa | Empresa</div>
+      </div>
+    </div>
+    <button class="btn-enviar-ia" id="btnEnviarIA"
+      onclick="document.getElementById('form').requestSubmit()">
+      ✨ &nbsp; Enviar para IA
+    </button>
+  </div><!-- /.foto-col-preview -->
+
+  </div><!-- /.foto-wrap -->
   </div><!-- /#tab-foto -->
 
   <!-- ══════════════════════════════════════════════════════════
@@ -843,23 +957,25 @@
 const API_BASE = '';
 let lastGeneratedSrc = null;
 
-const PROMPT = `Edit this photo by changing only the background and adding Rede Líderes lighting. Preserve absolutely everything about the person — face, expression, pose, clothing, hair, body shape, weight — with zero alteration.
+const PROMPT = `Edit this photo by changing only the background and adding a very subtle Rede Líderes lighting effect. Preserve absolutely everything about the person — face, expression, pose, clothing, hair, body shape, weight — with zero alteration.
 
 BACKGROUND: Replace the existing background with seamless deep teal-black (#001E23). Clean, smooth, no patterns, no texture. The person must remain naturally integrated — no cutout or pasted appearance.
 
-LIGHTING ONLY — do not change the person's features, only add these light effects on top:
-- Add a teal blue rim light (#03d8d2) tracing the edges of the shoulders, neck, and sides of the face — as if a teal source is illuminating from behind and slightly to the side
-- Add a subtle cold teal fill light on the face: a gentle blue-teal cast in the shadow areas of the face, especially cheekbones and forehead — keep it subtle, not overpowering
-- The skin warmth in the midtones must be preserved — the teal should only affect shadows and edges, not wash out the natural skin tone
+LIGHTING — subtle and directional, right side only:
+- Add a very faint, soft blue light (#03d8d2) touching only the RIGHT side of the person's face (from the viewer's perspective) — cheekbone, temple, and jaw on the right side only
+- The light must be extremely subtle — barely visible, like a distant colored ambient source, NOT a spotlight
+- Opacity of the light effect: very low — think 15% to 20% intensity, just a whisper of blue on the skin
+- The left side of the face receives NO teal light — keep it with its natural lighting from the original photo
+- Do NOT add rim light on the shoulders or body — face right side only
 
-COLOR GRADE:
-- Lift the blacks and deep shadows toward teal (#001E23)
-- Apply a teal-green shadow cast in the darker areas
-- Keep highlights natural and slightly crushed for a cinematic feel
+COLOR GRADE — minimal:
+- Slightly lift the deep blacks toward teal (#001E23) in the background areas only
+- Keep the person's skin tones exactly as in the original photo
+- No crushing of highlights, no aggressive color cast on the subject
 
-RESULT: The person looks exactly as in the original photo — same clothes, same expression, same pose — but now placed in a dark teal studio environment with professional Rede Líderes lighting.
+RESULT: The person looks identical to the original photo, now placed against a dark teal Rede Líderes background, with only a very gentle cold blue touch on the right cheek and temple — like ambient light from the background catching the edge of the face.
 
-CRITICAL: Do NOT alter face, body, expression, clothing, or pose. NO text overlays, NO watermarks, NO logos. Clean photograph only.`;
+CRITICAL: Do NOT alter face, body, expression, clothing, or pose. NO text overlays, NO watermarks, NO logos. Clean photograph only. The teal light on the face must be barely perceptible — subtle is the goal.`;
 
 /* ════════════════════════════════════════════════════════════════
    NOTION AUTOCOMPLETE
@@ -945,6 +1061,8 @@ function acSelect(person) {
     card.style.display = 'none';
   }
 
+  fotoPreviewAtualizar();
+
   if (person.photoUrl) loadNotionPhoto(person.photoUrl);
 
   acClose();
@@ -967,6 +1085,7 @@ async function loadNotionPhoto(url) {
     document.getElementById('uploadPreview').style.display = 'flex';
     // Guarda como File simulado para o submit do form usar
     window._notionPhotoDataUrl = dataUrl;
+    fotoPreviewSetFoto(dataUrl);
     setStatus('Foto carregada — iniciando geração…');
     // Auto-gera imagem se todos os campos estiverem preenchidos
     const fullName  = document.getElementById('fullName').value.trim();
@@ -996,6 +1115,37 @@ function esc(str) {
 /* ════════════════════════════════════════════════════════════════
    PHOTO UPLOAD PREVIEW
 ════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════
+   TAB 1 — PREVIEW AO VIVO
+════════════════════════════════════════════════════════════════ */
+function fotoPreviewAtualizar() {
+  const fullName = document.getElementById('fullName').value.trim();
+  const parts    = fullName.split(/\s+/);
+  const fn       = parts[0] || 'Nome';
+  const ln       = parts.slice(1).join(' ') || '';
+  const job      = document.getElementById('jobTitle').value.trim()  || 'Cargo';
+  const rawComp  = document.getElementById('companies').value.trim();
+  const comp     = rawComp
+    ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
+    : 'Empresa | Empresa';
+  document.getElementById('foto-prev-fn').textContent       = fn;
+  document.getElementById('foto-prev-ln').textContent       = ln ? ' ' + ln : '';
+  document.getElementById('foto-prev-job').textContent      = job;
+  document.getElementById('foto-prev-companies').textContent = comp;
+}
+
+function fotoPreviewSetFoto(dataUrl) {
+  const bg = document.getElementById('foto-prev-bg');
+  bg.src = dataUrl;
+  bg.style.display = 'block';
+  document.getElementById('foto-prev-placeholder').style.display = 'none';
+}
+
+// Hooks nos inputs
+document.getElementById('fullName').addEventListener('input', fotoPreviewAtualizar);
+document.getElementById('jobTitle').addEventListener('input', fotoPreviewAtualizar);
+document.getElementById('companies').addEventListener('input', fotoPreviewAtualizar);
+
 document.getElementById('photoFile').addEventListener('change', function () {
   const file = this.files[0];
   if (!file) return;
@@ -1006,6 +1156,7 @@ document.getElementById('photoFile').addEventListener('change', function () {
     document.getElementById('uploadIdle').style.display = 'none';
     document.getElementById('uploadPreview').style.display = 'flex';
     window._notionPhotoDataUrl = null;
+    fotoPreviewSetFoto(e.target.result);
   };
   reader.readAsDataURL(file);
 });
@@ -1344,9 +1495,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('tab-btn-' + tab).classList.add('active');
-  // Expande o wrap para o layout lado a lado do cargo
-  const wrap = document.querySelector('.wrap');
-  wrap.classList.toggle('wide', tab === 'cargo');
+  document.querySelector('.wrap').classList.add('wide');
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1598,8 +1747,12 @@ async function cExportar() {
   link.click();
 }
 
-// Inicializa card com campos vazios ao carregar
-document.addEventListener('DOMContentLoaded', cAtualizar);
+// Inicializa ao carregar
+document.addEventListener('DOMContentLoaded', () => {
+  cAtualizar();
+  fotoPreviewAtualizar();
+  document.querySelector('.wrap').classList.add('wide');
+});
 </script>
 </body>
 </html>
