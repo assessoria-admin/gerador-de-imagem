@@ -976,7 +976,16 @@ async function loadNotionPhoto(url) {
     document.getElementById('uploadPreview').style.display = 'flex';
     // Guarda como File simulado para o submit do form usar
     window._notionPhotoDataUrl = dataUrl;
-    setStatus('Foto carregada do Notion ✓');
+    setStatus('Foto carregada — iniciando geração…');
+    // Auto-gera imagem se todos os campos estiverem preenchidos
+    const fullName  = document.getElementById('fullName').value.trim();
+    const jobTitle  = document.getElementById('jobTitle').value.trim();
+    const companies = document.getElementById('companies').value.trim();
+    if (fullName && jobTitle && companies) {
+      document.getElementById('form').requestSubmit();
+    } else {
+      setStatus('Foto carregada do Notion ✓');
+    }
   } catch {
     setStatus('Não foi possível carregar a foto do Notion.', true);
   }
@@ -1469,17 +1478,97 @@ function cCopiarTexto() {
   });
 }
 
+/* ── cCarregarFotoUrl: carrega foto do Notion e dispara Freepik ──────────── */
+async function cCarregarFotoUrl(url) {
+  try {
+    cSetStatus('Carregando foto do Notion…', true);
+    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res     = await fetch(proxied);
+    const blob    = await res.blob();
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+    cDefinirFotoCard(dataUrl); // mostra foto bruta enquanto Freepik processa
+    await cGerarFotoFreepik(dataUrl);
+  } catch (err) {
+    cSetStatus('Erro ao carregar foto: ' + err.message, false);
+  }
+}
+
+function cDefinirFotoCard(dataUrl) {
+  const img = document.getElementById('c-bg-photo');
+  img.src = dataUrl;
+  img.style.display = 'block';
+  document.getElementById('c-placeholder').style.display = 'none';
+}
+
 async function cCarregarFoto(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.getElementById('c-bg-photo');
-    img.src = e.target.result;
-    img.style.display = 'block';
-    document.getElementById('c-placeholder').style.display = 'none';
+  reader.onload = async e => {
+    cDefinirFotoCard(e.target.result);
+    await cGerarFotoFreepik(e.target.result);
   };
   reader.readAsDataURL(file);
+}
+
+async function cGerarFotoFreepik(dataUrl) {
+  try {
+    cSetStatus('Enviando para Freepik…', true);
+    const resized = await resizeDataUrl(dataUrl, 1024, 0.82);
+    const base64  = resized.split(',')[1];
+    const genResult = await startGeneration(base64);
+
+    let imageSrc;
+    if (genResult.type === 'immediate') {
+      imageSrc = genResult.data;
+    } else {
+      cSetStatus('Gerando com IA… (aguarde ~30s)', true);
+      imageSrc = await cPollGeneration(genResult.taskId);
+    }
+
+    // Carrega resultado e coloca como fundo do card
+    const final = imageSrc.startsWith('http')
+      ? `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`
+      : imageSrc;
+    const imgEl = document.getElementById('c-bg-photo');
+    imgEl.src = final;
+    imgEl.style.display = 'block';
+    document.getElementById('c-placeholder').style.display = 'none';
+    cSetStatus('Foto IA pronta ✓', false);
+    setTimeout(() => cSetStatus('', false), 3000);
+  } catch (err) {
+    cSetStatus('Erro Freepik: ' + err.message, false);
+  }
+}
+
+async function cPollGeneration(taskId) {
+  for (let i = 0; i < 80; i++) {
+    await sleep(3000);
+    const res = await fetch(`${API_BASE}/api/generate/${taskId}`);
+    if (!res.ok) continue;
+    const json   = await res.json().catch(() => null);
+    const status = (json?.data?.status || json?.status || '').toUpperCase();
+    if (status === 'COMPLETED') {
+      const generated = json?.data?.generated;
+      if (Array.isArray(generated) && generated.length > 0) return generated[0];
+    }
+    if (status === 'FAILED' || status === 'ERROR') throw new Error('A geração falhou na Freepik.');
+    cSetStatus(`Gerando com IA… ${(i + 1) * 3}s`, true);
+  }
+  throw new Error('Timeout na geração Freepik.');
+}
+
+function cSetStatus(msg, loading) {
+  const bar     = document.getElementById('c-status-bar');
+  const spinner = document.getElementById('c-spinner');
+  const msgEl   = document.getElementById('c-status-msg');
+  bar.style.display     = msg ? 'flex' : 'none';
+  spinner.style.display = loading ? 'block' : 'none';
+  msgEl.textContent     = msg;
 }
 
 async function cExportar() {
