@@ -191,14 +191,15 @@ function mapNotionResults(pages) {
       if (k.includes('linkedin') && !linkedin) {
         linkedin = extractProp(val);
       }
-      if ((k === 'foto' || k === 'photo') && !fotoProp && val?.type === 'files') {
+      if ((k === 'foto' || k === 'photo') && !fotoProp) {
         fotoProp = val;
+        console.log(`[notion-debug] prop foto raw:`, JSON.stringify(val).slice(0, 300));
       }
     }
 
     const photoUrl = extractPhotoUrl(fotoProp);
     const name = extractProp(props.user);
-    console.log(`[notion] ${name || '?'} — foto: ${photoUrl ? photoUrl.slice(0, 60) + '…' : 'VAZIO'}`);
+    console.log(`[notion] ${name || '?'} — fotoType: ${fotoProp?.type || 'NÃO ENCONTRADO'} — photoUrl: ${photoUrl ? photoUrl.slice(0, 60) + '…' : 'VAZIO'}`);
 
     return {
       id:       page.id,

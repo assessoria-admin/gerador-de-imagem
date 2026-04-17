@@ -843,17 +843,23 @@
 const API_BASE = '';
 let lastGeneratedSrc = null;
 
-const PROMPT = `Apply Rede Líderes visual identity to this photo while preserving the person exactly as they appear. Do NOT change the person's face, body, expression, pose, clothing, hair, or any physical characteristic — replicate everything about the subject with absolute fidelity. Only change the background and lighting.
+const PROMPT = `Edit this photo by changing only the background and adding Rede Líderes lighting. Preserve absolutely everything about the person — face, expression, pose, clothing, hair, body shape, weight — with zero alteration.
 
-Background: replace the existing background with seamless deep teal-black (#001E23), clean, smooth, no patterns, no text, no texture — the subject must remain naturally integrated into this new background, not pasted or cut-out.
+BACKGROUND: Replace the existing background with seamless deep teal-black (#001E23). Clean, smooth, no patterns, no texture. The person must remain naturally integrated — no cutout or pasted appearance.
 
-Lighting: add a teal rim light (#03d8d2) tracing the edges of the shoulders and silhouette, as if lit from behind by a teal source. Add a subtle teal color cast to the shadows and dark areas of the image.
+LIGHTING ONLY — do not change the person's features, only add these light effects on top:
+- Add a teal blue rim light (#03d8d2) tracing the edges of the shoulders, neck, and sides of the face — as if a teal source is illuminating from behind and slightly to the side
+- Add a subtle cold teal fill light on the face: a gentle blue-teal cast in the shadow areas of the face, especially cheekbones and forehead — keep it subtle, not overpowering
+- The skin warmth in the midtones must be preserved — the teal should only affect shadows and edges, not wash out the natural skin tone
 
-Color grade: lift the blacks toward deep teal (#001E23), apply a teal-green shadow cast preserving skin warmth in the midtones, slightly crush the highlights for a cinematic feel.
+COLOR GRADE:
+- Lift the blacks and deep shadows toward teal (#001E23)
+- Apply a teal-green shadow cast in the darker areas
+- Keep highlights natural and slightly crushed for a cinematic feel
 
-The person's clothing, skin, expression, and body must look identical to the original photo — only the environment and color grading change.
+RESULT: The person looks exactly as in the original photo — same clothes, same expression, same pose — but now placed in a dark teal studio environment with professional Rede Líderes lighting.
 
-CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO logos visible anywhere. Do NOT alter the subject's face, body shape, weight, clothing, or pose. Clean photograph only.`;
+CRITICAL: Do NOT alter face, body, expression, clothing, or pose. NO text overlays, NO watermarks, NO logos. Clean photograph only.`;
 
 /* ════════════════════════════════════════════════════════════════
    NOTION AUTOCOMPLETE
