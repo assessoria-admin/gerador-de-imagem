@@ -191,16 +191,18 @@
     }
     .c-cargo-bloco { margin-bottom: 28px; }
     .c-cargo-label1 {
-      font-size: 33px; font-weight: 600;
-      color: rgba(3,216,210,0.7);
+      font-size: 33px; font-weight: 700;
+      color: #03d8d2;
       letter-spacing: 5.2px; text-transform: uppercase;
       margin-bottom: 2px; white-space: nowrap;
+      text-shadow: 0 0 28px rgba(3,216,210,0.55), 0 0 8px rgba(3,216,210,0.3);
     }
     .c-cargo-label {
       font-size: 42px; font-weight: 800;
-      color: rgba(3,216,210,0.7);
+      color: #03d8d2;
       letter-spacing: 5.2px; text-transform: uppercase;
       margin-bottom: 12px; white-space: nowrap;
+      text-shadow: 0 0 28px rgba(3,216,210,0.55), 0 0 8px rgba(3,216,210,0.3);
     }
     .c-cargo-nome {
       font-size: 70px; font-weight: 800;
@@ -526,19 +528,17 @@ const PROMPT = `Edit this photo by changing only the background and adding a ver
 
 BACKGROUND: Replace the existing background with seamless deep teal-black (#001E23). Clean, smooth, no patterns, no texture. The person must remain naturally integrated — no cutout or pasted appearance.
 
-LIGHTING — subtle and directional, right side only:
-- Add a very faint, soft blue light (#03d8d2) touching only the RIGHT side of the person's face (from the viewer's perspective) — cheekbone, temple, and jaw on the right side only
-- The light must be extremely subtle — barely visible, like a distant colored ambient source, NOT a spotlight
-- Opacity of the light effect: very low — think 15% to 20% intensity, just a whisper of blue on the skin
-- The left side of the face receives NO teal light — keep it with its natural lighting from the original photo
-- Do NOT add rim light on the shoulders or body — face right side only
+LIGHTING — natural, preserve original:
+- Keep the person's natural lighting exactly as it appears in the original photo — do NOT add any colored light to the face, skin, or body
+- No blue, teal, or cyan light on the face whatsoever — skin tones must remain 100% natural
+- If the background light subtly catches the very edge of the hair or shoulder, it must be imperceptible — hair and clothing only, never the skin
 
 COLOR GRADE — minimal:
 - Slightly lift the deep blacks toward teal (#001E23) in the background areas only
-- Keep the person's skin tones exactly as in the original photo
-- No crushing of highlights, no aggressive color cast on the subject
+- Keep the person's skin tones, facial features, and hair color exactly as in the original photo
+- No color cast of any kind on the subject
 
-RESULT: The person looks identical to the original photo, now placed against a dark teal Rede Líderes background, with only a very gentle cold blue touch on the right cheek and temple — like ambient light from the background catching the edge of the face.
+RESULT: The person looks completely natural, as if photographed in a studio, now composited against a dark teal Rede Líderes background. Zero colored light on the face — the face must look identical to the original.
 
 CRITICAL: Do NOT alter face, body, expression, clothing, or pose. NO text overlays, NO watermarks, NO logos. Clean photograph only. The teal light on the face must be barely perceptible — subtle is the goal.`;
 
