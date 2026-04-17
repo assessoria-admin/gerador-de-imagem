@@ -819,12 +819,12 @@
 
           <div class="c-field">
             <label>Cargo</label>
-            <input type="text" id="c-inp-cargo" value="" placeholder="Preenchido pelo Notion" oninput="cAtualizar()">
+            <input type="text" id="c-inp-cargo" value="" placeholder="Líder de" oninput="cAtualizar()">
           </div>
 
           <div class="c-field">
             <label>Empresa</label>
-            <input type="text" id="c-inp-empresa" value="" placeholder="Preenchido pelo Notion" oninput="cAtualizar()">
+            <input type="text" id="c-inp-empresa" value="" placeholder="XXX" oninput="cAtualizar()">
           </div>
 
           <div class="c-divider"></div>
@@ -930,14 +930,11 @@ function acRender(results) {
 }
 
 function acSelect(person) {
-  // Fill name field
   nameInput.value = person.name || '';
 
-  // Auto-fill cargo and empresas
   if (person.cargo)    document.getElementById('jobTitle').value  = person.cargo;
   if (person.empresas) document.getElementById('companies').value = person.empresas;
 
-  // Show or hide LinkedIn card
   const card = document.getElementById('linkedinCard');
   const link = document.getElementById('linkedinLink');
   if (person.linkedin) {
@@ -950,7 +947,32 @@ function acSelect(person) {
     card.style.display = 'none';
   }
 
+  if (person.photoUrl) loadNotionPhoto(person.photoUrl);
+
   acClose();
+}
+
+async function loadNotionPhoto(url) {
+  try {
+    setStatus('Carregando foto do Notion…');
+    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res     = await fetch(proxied);
+    const blob    = await res.blob();
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+    document.getElementById('photoThumb').src        = dataUrl;
+    document.getElementById('photoFname').textContent = 'Foto do Notion';
+    document.getElementById('uploadIdle').style.display    = 'none';
+    document.getElementById('uploadPreview').style.display = 'flex';
+    // Guarda como File simulado para o submit do form usar
+    window._notionPhotoDataUrl = dataUrl;
+    setStatus('Foto carregada do Notion ✓');
+  } catch {
+    setStatus('Não foi possível carregar a foto do Notion.', true);
+  }
 }
 
 function acClose() {
@@ -976,6 +998,7 @@ document.getElementById('photoFile').addEventListener('change', function () {
     document.getElementById('photoFname').textContent = file.name;
     document.getElementById('uploadIdle').style.display = 'none';
     document.getElementById('uploadPreview').style.display = 'flex';
+    window._notionPhotoDataUrl = null;
   };
   reader.readAsDataURL(file);
 });
@@ -994,7 +1017,7 @@ document.getElementById('form').addEventListener('submit', async e => {
   if (!fullName || !jobTitle || !rawComp) {
     setStatus('Preencha todos os campos.', true); return;
   }
-  if (!photoFile) {
+  if (!photoFile && !window._notionPhotoDataUrl) {
     setStatus('Selecione uma foto de referência.', true); return;
   }
 
@@ -1010,9 +1033,13 @@ document.getElementById('form').addEventListener('submit', async e => {
 
   try {
     setStatus('Preparando foto de referência…');
-    // Reduz para máx. 1024px e converte para JPEG (~80% qualidade)
-    // Mantém o payload < 1MB para não exceder o limite do Vercel (4.5MB)
-    const dataUrl   = await resizeImage(photoFile, 1024, 0.82);
+    let dataUrl;
+    if (photoFile) {
+      dataUrl = await resizeImage(photoFile, 1024, 0.82);
+    } else {
+      // Foto veio do Notion — já está em dataUrl, só redimensiona via canvas
+      dataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
+    }
     const base64Img = dataUrl.split(',')[1];
 
     setStatus('Enviando para Freepik API…');
@@ -1247,6 +1274,22 @@ function resizeImage(file, maxSide = 1024, quality = 0.82) {
   });
 }
 
+function resizeDataUrl(dataUrl, maxSide = 1024, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+      const w = Math.round(img.width  * ratio);
+      const h = Math.round(img.height * ratio);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 function readAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -1366,6 +1409,7 @@ function cAcSelect(person) {
   }
   document.getElementById('cAcDropdown').classList.remove('open');
   cAtualizar();
+  if (person.photoUrl) cCarregarFotoUrl(person.photoUrl);
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1422,13 +1466,29 @@ function cCarregarFoto(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.getElementById('c-bg-photo');
-    img.src = e.target.result;
-    img.style.display = 'block';
-    document.getElementById('c-placeholder').style.display = 'none';
-  };
+  reader.onload = e => cDefinirFotoCard(e.target.result);
   reader.readAsDataURL(file);
+}
+
+async function cCarregarFotoUrl(url) {
+  try {
+    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res     = await fetch(proxied);
+    const blob    = await res.blob();
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+    cDefinirFotoCard(dataUrl);
+  } catch { /* sem foto — mantém placeholder */ }
+}
+
+function cDefinirFotoCard(dataUrl) {
+  const img = document.getElementById('c-bg-photo');
+  img.src = dataUrl;
+  img.style.display = 'block';
+  document.getElementById('c-placeholder').style.display = 'none';
 }
 
 async function cExportar() {
@@ -1438,7 +1498,10 @@ async function cExportar() {
   await document.fonts.ready;
 
   const card = document.getElementById('c-card');
-  const dataUrl = await domtoimage.toPng(card, { scale: 1080 / 420 });
+  const dataUrl = await domtoimage.toPng(card, {
+    scale: 1080 / 420,
+    bgcolor: '#0d0d0d',
+  });
 
   const slug = (nome + '-' + sobrenome).toLowerCase()
     .replace(/\s+/g, '-')

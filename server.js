@@ -169,6 +169,13 @@ function extractProp(prop) {
   }
 }
 
+function extractPhotoUrl(prop) {
+  if (!prop || prop.type !== 'files') return '';
+  const file = (prop.files || [])[0];
+  if (!file) return '';
+  return file.type === 'external' ? (file.external?.url || '') : (file.file?.url || '');
+}
+
 function mapNotionResults(pages) {
   return pages.map(page => {
     const props = page.properties || {};
@@ -184,7 +191,8 @@ function mapNotionResults(pages) {
       name:     extractProp(props.user),
       cargo:    extractProp(props.cargo_rede),
       empresas: extractProp(props.ultimas_empresa),
-      linkedin
+      linkedin,
+      photoUrl: extractPhotoUrl(props.foto)
     };
   }).filter(r => r.name);
 }
