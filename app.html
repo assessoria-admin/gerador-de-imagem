@@ -398,20 +398,7 @@
       position: absolute; bottom: 0; left: 0; right: 0;
       padding: 0 26px 28px; z-index: 5;
     }
-    #tab-cargo .c-tag-conquista {
-      display: inline-flex; align-items: center;
-      gap: 7px; margin-bottom: 12px;
-    }
-    #tab-cargo .c-tag-conquista .line {
-      width: 20px; height: 2px;
-      background: #03d8d2; border-radius: 1px;
-    }
-    #tab-cargo .c-tag-conquista span {
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 2.5px; color: #03d8d2;
-      text-transform: uppercase; white-space: nowrap;
-    }
-    #tab-cargo .c-cargo-bloco { margin-bottom: 12px; }
+#tab-cargo .c-cargo-bloco { margin-bottom: 12px; }
     #tab-cargo .c-cargo-label1 {
       font-size: 14px; font-weight: 600;
       color: rgba(3,216,210,0.7);
@@ -747,11 +734,6 @@
           <div class="c-overlay-gradient"></div>
 
           <div class="c-content">
-            <div class="c-tag-conquista">
-              <div class="line"></div>
-              <span>Nova Conquista</span>
-            </div>
-
             <div class="c-nome-bloco">
               <div class="separador-v"></div>
               <div class="c-nome">
@@ -834,7 +816,10 @@
               📷 Selecionar foto
               <input type="file" accept="image/*" id="c-file-foto" onchange="cCarregarFoto(this)">
             </button>
-            <button class="c-btn" onclick="cExportar()">⬇ Exportar PNG</button>
+            <button class="c-btn" onclick="cGerarFotoFreepik(window._cFotoDataUrl)" id="c-btn-freepik" style="opacity:.4; cursor:not-allowed;" disabled>✨ Enviar para IA</button>
+          </div>
+          <div class="c-actions" style="margin-top:0;">
+            <button class="c-btn" onclick="cExportar()" style="flex:1;">⬇ Exportar PNG</button>
           </div>
 
           <!-- Status da geração de foto IA -->
@@ -1478,7 +1463,7 @@ function cCopiarTexto() {
   });
 }
 
-/* ── cCarregarFotoUrl: carrega foto do Notion e dispara Freepik ──────────── */
+/* ── cCarregarFotoUrl: carrega foto do Notion como fundo (sem Freepik automático) ── */
 async function cCarregarFotoUrl(url) {
   try {
     cSetStatus('Carregando foto do Notion…', true);
@@ -1490,32 +1475,37 @@ async function cCarregarFotoUrl(url) {
       r.onload = () => resolve(r.result);
       r.readAsDataURL(blob);
     });
-    cDefinirFotoCard(dataUrl); // mostra foto bruta enquanto Freepik processa
-    await cGerarFotoFreepik(dataUrl);
+    cDefinirFotoCard(dataUrl);
+    cSetStatus('Foto carregada ✓', false);
+    setTimeout(() => cSetStatus('', false), 2000);
   } catch (err) {
     cSetStatus('Erro ao carregar foto: ' + err.message, false);
   }
 }
 
 function cDefinirFotoCard(dataUrl) {
+  window._cFotoDataUrl = dataUrl;
   const img = document.getElementById('c-bg-photo');
   img.src = dataUrl;
   img.style.display = 'block';
   document.getElementById('c-placeholder').style.display = 'none';
+  // Habilita botão Freepik
+  const btn = document.getElementById('c-btn-freepik');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor  = 'pointer';
 }
 
 async function cCarregarFoto(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = async e => {
-    cDefinirFotoCard(e.target.result);
-    await cGerarFotoFreepik(e.target.result);
-  };
+  reader.onload = e => cDefinirFotoCard(e.target.result);
   reader.readAsDataURL(file);
 }
 
 async function cGerarFotoFreepik(dataUrl) {
+  if (!dataUrl) { cSetStatus('Nenhuma foto carregada.', false); return; }
   try {
     cSetStatus('Enviando para Freepik…', true);
     const resized = await resizeDataUrl(dataUrl, 1024, 0.82);
@@ -1579,8 +1569,11 @@ async function cExportar() {
 
   const card = document.getElementById('c-card');
   const dataUrl = await domtoimage.toPng(card, {
-    scale: 1080 / 420,
+    width:   420,
+    height:  525,
+    scale:   1080 / 420,
     bgcolor: '#0d0d0d',
+    style:   { borderRadius: '0', overflow: 'hidden' },
   });
 
   const slug = (nome + '-' + sobrenome).toLowerCase()
