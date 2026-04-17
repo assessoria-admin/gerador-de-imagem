@@ -8,11 +8,14 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const FREEPIK_KEY = process.env.FREEPIK_KEY;
+const FREEPIK_KEY  = process.env.FREEPIK_KEY;
 const FREEPIK_EDIT = process.env.FREEPIK_EDIT;
 
 const NOTION_KEY = process.env.NOTION_KEY;
-const NOTION_DB = process.env.NOTION_DB;
+const NOTION_DB  = process.env.NOTION_DB;
+
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '30mb' }));
@@ -211,6 +214,54 @@ function mapNotionResults(pages) {
     };
   }).filter(r => r.name);
 }
+
+// ── POST /api/summarize — resume artigo com Gemini ────────────────────────────
+app.post('/api/summarize', async (req, res) => {
+  const { article, title } = req.body || {};
+  if (!article) return res.status(400).json({ message: 'Campo article obrigatório.' });
+  if (!GEMINI_KEY) return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no .env' });
+
+  const prompt = `Você é um editor de conteúdo para Instagram da Rede Líderes, uma rede de executivos do Brasil.
+
+Recebeu o seguinte artigo${title ? ` com o tema "${title}"` : ''}:
+
+---
+${article}
+---
+
+Sua tarefa é criar EXATAMENTE 3 blocos de texto para slides de carrossel do Instagram. Cada bloco deve:
+- Ter entre 3 e 5 frases curtas e diretas
+- Capturar uma ideia central diferente do artigo
+- Ser escrito em linguagem executiva, clara e impactante
+- Preservar as ideias mais relevantes do original
+- NÃO usar bullet points, numeração ou títulos — apenas parágrafos corridos
+
+Responda APENAS com os 3 blocos separados por uma linha em branco, sem introdução, sem explicação, sem numeração.`;
+
+  try {
+    const response = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.4 }
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error?.message || response.statusText);
+
+    const text  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).slice(0, 3);
+    if (parts.length < 3) throw new Error('Gemini não retornou 3 blocos. Tente novamente.');
+
+    console.log('[summarize] ok —', parts.length, 'blocos gerados');
+    res.json({ parts });
+  } catch (err) {
+    console.error('[summarize] erro:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

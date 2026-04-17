@@ -688,8 +688,8 @@ document.getElementById('form').addEventListener('submit', async e => {
 async function startGeneration(base64Image) {
   const body = {
     prompt:           PROMPT,
-    reference_images: [base64Image],
-    aspect_ratio:     'traditional_3_4',
+    reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }],
+    aspect_ratio:     '4:5',
     guidance_scale:   7
   };
   const res  = await fetch(`${API_BASE}/api/generate`, {

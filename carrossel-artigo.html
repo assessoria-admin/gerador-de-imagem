@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rede Líderes — Carrossel de Artigo</title>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <script>
     if (!sessionStorage.getItem('unlocked')) {
@@ -13,6 +14,16 @@
   </script>
 
   <style>
+    @font-face {
+      font-family: 'Gobold';
+      src: url('/fonts/Gobold Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Gobold';
+      src: url('/fonts/Gobold Thin.otf') format('opentype');
+      font-weight: 100; font-style: normal; font-display: swap;
+    }
     @font-face {
       font-family: 'Neue Machina';
       src: url('/fonts/NeueMachina-Light.otf') format('opentype');
@@ -200,6 +211,18 @@
     }
 
     /* ─── Buttons ───────────────────────────────────────────────── */
+    .btn-summarize {
+      width: 100%; margin-top: 10px;
+      background: transparent;
+      border: 1px solid rgba(65,193,194,.35);
+      color: var(--teal); border-radius: 8px; padding: 12px;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-summarize:hover:not(:disabled) { background: rgba(65,193,194,.08); }
+    .btn-summarize:disabled { opacity: .3; cursor: not-allowed; }
+
     .btn-generate {
       width: 100%; margin-top: 28px;
       background: var(--teal); color: #000; border: none;
@@ -232,6 +255,26 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
     .status-msg.err { color: #ff6b6b; }
+
+    /* ─── Modal preview ────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.88); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-img {
+      max-width: 90vw; max-height: 90vh;
+      border-radius: 10px; box-shadow: 0 0 60px rgba(65,193,194,0.2);
+      object-fit: contain;
+    }
+    .modal-close {
+      position: absolute; top: 20px; right: 28px;
+      font-size: 32px; color: rgba(255,255,255,0.6); cursor: pointer;
+      line-height: 1; background: none; border: none;
+      transition: color .2s;
+    }
+    .modal-close:hover { color: var(--teal); }
 
     /* ─── Tool Nav ──────────────────────────────────────────────── */
     .tool-nav {
@@ -269,6 +312,12 @@
     <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
     <a class="active" href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
   </nav>
+
+  <!-- Modal de preview ampliado -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <img class="modal-img" id="modalImg" alt="Preview ampliado" />
+  </div>
 
   <div class="wrap">
     <a class="back-link" href="/app.html">← Voltar ao hub</a>
@@ -340,15 +389,23 @@
           </div>
 
           <div class="field">
+            <label>Título do Artigo</label>
+            <input type="text" id="articleTitle"
+              placeholder="Ex: IMPLANTAÇÃO OU ADOÇÃO — O QUE É CERTO COM A IA?"
+              autocomplete="off" />
+            <div class="hint">Aparece na capa e nos slides de artigo em vez de "COMO DECIDEM AS LIDERANÇAS"</div>
+          </div>
+
+          <div class="field">
             <label>Texto do Artigo</label>
             <textarea id="articleText" rows="9"
-              placeholder="Cole aqui o texto do artigo. Será dividido automaticamente em 3 slides…">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque.
-
-Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet consectetur.</textarea>
-            <div class="hint">O artigo será dividido automaticamente em 3 partes por parágrafo</div>
+              placeholder="Cole aqui o texto completo do artigo e clique em Resumir com IA…"></textarea>
+            <div class="hint">Cole o artigo completo — a IA vai condensar em 3 blocos otimizados para slide</div>
           </div>
+
+          <button class="btn-summarize" id="btnResumir" onclick="resumirArtigo()">
+            ✦ &nbsp; Resumir com IA
+          </button>
 
           <div class="status-bar">
             <div class="spinner" id="spinner"></div>
@@ -403,11 +460,17 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
   const SW = 1080, SH = 1350;
   const TEAL      = '#41c1c2';
   const TEAL_DARK = '#001E23';
-  const SLIDE_TITLE = 'COMO DECIDEM AS LIDERANÇAS';
 
-  const PROMPT_M = `Professional executive power portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is male. Wearing a fitted solid black dress shirt, collar open — no tie, no blazer. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Dead-center frontal bust. Chin slightly forward, jaw relaxed, eyes locked intensely into lens. No smile. Quiet authority. Background: seamless deep teal-black (#001E23), clean, smooth, no patterns, no text. Single large umbrella overhead — butterfly pattern, shadow directly beneath nose. Teal rim light (#03d8d2) barely tracing both shoulder edges. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO publication names, NO equipment branding, NO logos visible anywhere. Do NOT render written words. Clean photograph only. No visible lighting equipment, no light stands, no overhead gear, no ceiling in frame. Camera stays at or below eye level. Subject must look naturally present — NOT pasted or composited.`;
+  const COVER_TITLE = 'COMO DECIDEM AS LIDERANÇAS';
 
-  const PROMPT_F = `Professional executive power portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is female. Wearing a fitted solid black women's blouse, collar open — no tie, no blazer. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Dead-center frontal bust. Chin slightly forward, jaw relaxed, eyes locked intensely into lens. No smile. Quiet authority. Background: seamless deep teal-black (#001E23), clean, smooth, no patterns, no text. Single large umbrella overhead — butterfly pattern, shadow directly beneath nose. Teal rim light (#03d8d2) barely tracing both shoulder edges. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO publication names, NO equipment branding, NO logos visible anywhere. Do NOT render written words. Clean photograph only. No visible lighting equipment, no light stands, no overhead gear, no ceiling in frame. Camera stays at or below eye level. Subject must look naturally present — NOT pasted or composited.`;
+  function getArticleTitle() {
+    const val = (document.getElementById('articleTitle')?.value || '').trim().toUpperCase();
+    return val || COVER_TITLE;
+  }
+
+  const PROMPT_M = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is male. Wearing a fitted solid black dress shirt, collar open, no tie, no blazer — clean and sharp. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Head-and-shoulders editorial frame — upper chest to crown with natural breathing room. Face slightly angled, expression composed and effortlessly confident. Lighting effect: soft directional light from the left illuminating the face, gentle shadow on the right side, teal-toned rim glow tracing the collar and shoulder edge — all lighting effects applied directly to the subject only. Background: completely empty, seamless deep teal-black (#001E23), pure and flat — no gradients, no light spills, no reflections, no objects, no shapes, no bokeh, nothing except the plain dark background colour. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. 4:5 vertical. CRITICAL: The background must be 100% empty — no equipment, no props, no furniture, no lighting apparatus, no softboxes, no panels, no reflectors, no stands, no ceiling, no walls, no floor, no text, no watermarks, no logos. Only the person against a clean solid dark background. Subject must look naturally present — NOT pasted or composited.`;
+
+  const PROMPT_F = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is female. Wearing a fitted solid black women's dress shirt or blouse, collar open, no blazer — clean and confident. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Head-and-shoulders editorial frame — upper chest to crown with natural breathing room. Face slightly angled, expression composed and effortlessly confident. Lighting effect: soft directional light from the left illuminating the face, gentle shadow on the right side, teal-toned rim glow tracing the collar and shoulder edge — all lighting effects applied directly to the subject only. Background: completely empty, seamless deep teal-black (#001E23), pure and flat — no gradients, no light spills, no reflections, no objects, no shapes, no bokeh, nothing except the plain dark background colour. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. 4:5 vertical. CRITICAL: The background must be 100% empty — no equipment, no props, no furniture, no lighting apparatus, no softboxes, no panels, no reflectors, no stands, no ceiling, no walls, no floor, no text, no watermarks, no logos. Only the person against a clean solid dark background. Subject must look naturally present — NOT pasted or composited.`;
 
   let gender = 'M';
   let slidesReady = false;
@@ -516,6 +579,38 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
   });
 
   /* ═══════════════════════════════════════════════════════════════
+     RESUMIR COM IA
+  ═══════════════════════════════════════════════════════════════ */
+  async function resumirArtigo() {
+    const article = document.getElementById('articleText').value.trim();
+    const title   = document.getElementById('articleTitle').value.trim();
+    if (!article) { setStatus('Cole o texto do artigo antes de resumir.', true); return; }
+
+    const btn = document.getElementById('btnResumir');
+    btn.disabled = true;
+    setStatus('Resumindo com IA…');
+    document.getElementById('spinner').style.display = 'block';
+
+    try {
+      const res  = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article, title })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message || res.statusText);
+
+      document.getElementById('articleText').value = json.parts.join('\n\n');
+      setStatus('Artigo resumido ✓ — revise e clique em Gerar Carrossel.');
+    } catch (err) {
+      setStatus('Erro ao resumir: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      document.getElementById('spinner').style.display = 'none';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
      GERAR CARROSSEL
   ═══════════════════════════════════════════════════════════════ */
   async function gerarCarrossel() {
@@ -610,99 +705,143 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
     try {
       await document.fonts.load('800 80px "Neue Machina"');
       await document.fonts.load('400 40px "Neue Machina"');
+      await document.fonts.load('400 160px "Gobold"');
+      await document.fonts.load('100 50px "Gobold"');
       await document.fonts.load('400 72px "Great Vibes"');
     } catch (_) {}
 
     const photo = await loadImage(photoSrc);
+    const bgImg = await loadImage('/bg-spheres.png').catch(() => null);
 
     await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies);
-    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02');
-    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03');
-    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04');
-    await renderSlide5(document.getElementById('canvas5'), firstName, lastName);
+    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02', bgImg);
+    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03', bgImg);
+    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04', bgImg);
+    await renderSlide5(document.getElementById('canvas5'), firstName, lastName, bgImg);
   }
 
   /* ─── Slide 1: Capa ─────────────────────────────────────────── */
   async function renderSlide1(canvas, photo, firstName, lastName, companies) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
-    const PAD = 60;
+    const PAD  = 60;
 
-    // Photo fill (cover crop)
-    const imgAR = photo.naturalWidth / photo.naturalHeight;
-    const canAR = SW / SH;
+    // Bottom block anchors — consistent 20px gap between items
+    const GAP       = 20;
+    const COMP_Y    = SH - 100;             // companies (40px font)
+    const MINIBIO_Y = COMP_Y - 40 - GAP * 2; // mini bio (25px font) — centered between name and companies
+    const NAME_Y    = MINIBIO_Y - 25 - GAP; // name (45px font)
+    const LINE_Y    = NAME_Y - GAP;         // teal separator
+    const TITLE_Y   = LINE_Y - 275;         // headline (115px × 2 lines + gap)
+
+    // ── PHOTO — cover-crop full canvas ───────────────────────────
+    const photoAR  = photo.naturalWidth / photo.naturalHeight;
+    const canvasAR = SW / SH;
     let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
-    if (imgAR > canAR) {
-      sw = photo.naturalHeight * canAR;
+    if (photoAR > canvasAR) {
+      sw = photo.naturalHeight * canvasAR;
       sx = (photo.naturalWidth - sw) / 2;
     } else {
-      sh = photo.naturalWidth / canAR;
-      sy = (photo.naturalHeight - sh) / 4; // bias toward top (face)
+      sh = photo.naturalWidth / canvasAR;
+      sy = 0;
     }
     ctx.drawImage(photo, sx, sy, sw, sh, 0, 0, SW, SH);
 
-    // Top vignette (for name readability)
-    const topGrad = ctx.createLinearGradient(0, 0, 0, SH * 0.30);
-    topGrad.addColorStop(0, 'rgba(0,0,0,0.60)');
-    topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    // ── TOP GRADIENT — subtle, so article title is readable ──────
+    const topGrad = ctx.createLinearGradient(0, 0, 0, 160);
+    topGrad.addColorStop(0, 'rgba(4,10,12,0.72)');
+    topGrad.addColorStop(1, 'rgba(4,10,12,0)');
     ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, SW, SH * 0.30);
+    ctx.fillRect(0, 0, SW, 160);
 
-    // Bottom gradient
-    const botGrad = ctx.createLinearGradient(0, SH * 0.38, 0, SH);
-    botGrad.addColorStop(0,    'rgba(0,0,0,0)');
-    botGrad.addColorStop(0.22, 'rgba(0,0,0,0.55)');
-    botGrad.addColorStop(1,    'rgba(0,0,0,0.96)');
+    // ── BOTTOM GRADIENT OVERLAY ───────────────────────────────────
+    const botGrad = ctx.createLinearGradient(0, TITLE_Y - 100, 0, SH);
+    botGrad.addColorStop(0, 'rgba(8,8,8,0)');
+    botGrad.addColorStop(0.18, 'rgba(8,8,8,0.82)');
+    botGrad.addColorStop(1, 'rgba(8,8,8,0.97)');
     ctx.fillStyle = botGrad;
-    ctx.fillRect(0, SH * 0.38, SW, SH * 0.62);
+    ctx.fillRect(0, TITLE_Y - 100, SW, SH - (TITLE_Y - 100));
 
-    // Name in cursive — top right
-    ctx.font         = '400 72px "Great Vibes", cursive';
-    ctx.fillStyle    = '#ffffff';
-    ctx.textAlign    = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText(firstName + ' ' + lastName, SW - PAD, 76);
+    // ── ARTICLE TITLE — Gobold Regular 32px, tracking -0.06em ────
+    const articleTopic = getArticleTitle();
+    if (articleTopic && articleTopic !== COVER_TITLE) {
+      ctx.font          = `400 32px "Gobold", sans-serif`;
+      ctx.letterSpacing = `${-0.06 * 32}px`;
+      ctx.fillStyle     = 'rgba(255,255,255,0.70)';
+      ctx.textAlign     = 'center';
+      ctx.textBaseline  = 'top';
+      ctx.fillText(articleTopic, SW / 2, 52);
+      ctx.letterSpacing = '0px';
+    }
 
-    // Teal horizontal separator
-    const lineY = Math.round(SH * 0.535);
+    // ── HEADLINE — Gobold Regular 115px, last word on own line ───
+    // Fixed split: everything before last word / last word alone
+    const titleParts  = COVER_TITLE.trim().split(' ');
+    const titleL1     = titleParts.slice(0, -1).join(' ');
+    const titleL2     = titleParts[titleParts.length - 1];
+    ctx.font          = `400 115px "Gobold", sans-serif`;
+    ctx.letterSpacing = `${-0.06 * 115}px`;
+    ctx.fillStyle     = '#ffffff';
+    ctx.textAlign     = 'center';
+    ctx.textBaseline  = 'top';
+    ctx.fillText(titleL1, SW / 2, TITLE_Y);
+    ctx.fillText(titleL2, SW / 2, TITLE_Y + 135);
+    ctx.letterSpacing = '0px';
+
+    // ── TEAL SEPARATOR LINE — 1/3 width, centered ────────────────
+    const lineW = (SW - PAD * 2) / 3;
     ctx.strokeStyle = TEAL;
-    ctx.lineWidth   = 2.5;
+    ctx.lineWidth   = 1.5;
     ctx.beginPath();
-    ctx.moveTo(PAD, lineY);
-    ctx.lineTo(SW - PAD, lineY);
+    ctx.moveTo(SW / 2 - lineW / 2, LINE_Y);
+    ctx.lineTo(SW / 2 + lineW / 2, LINE_Y);
     ctx.stroke();
 
-    // Title — below separator
+    // ── LEADER NAME — Gobold Regular 45px ────────────────────────
+    ctx.font         = `400 45px "Gobold", sans-serif`;
     ctx.fillStyle    = '#ffffff';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    const titleBottom = renderFitTitle(ctx, SLIDE_TITLE, SW / 2, lineY + 48, SW - PAD * 2);
+    ctx.fillText((firstName + ' ' + lastName).toUpperCase(), SW / 2, NAME_Y);
 
-    // MINI BIO label
-    const miniBioY = Math.max(titleBottom + 36, SH - 200);
-    ctx.font         = `800 22px "Neue Machina", sans-serif`;
+    // ── MINI BIO — Gobold Thin 25px ──────────────────────────────
+    ctx.font         = `100 25px "Gobold", sans-serif`;
     ctx.fillStyle    = TEAL;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('MINI BIO', SW / 2, miniBioY);
+    ctx.fillText('MINI BIO', SW / 2, MINIBIO_Y);
 
-    // Companies
+    // ── COMPANIES — Gobold Thin 41px, tracking -0.06em, uppercase ─
     if (companies) {
-      ctx.font      = `400 28px "Neue Machina", sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillText(companies, SW / 2, miniBioY + 42);
+      ctx.font          = `100 40px "Gobold", sans-serif`;
+      ctx.letterSpacing = `${-0.06 * 40}px`;
+      ctx.fillStyle     = 'rgba(255,255,255,0.85)';
+      ctx.textAlign     = 'center';
+      ctx.textBaseline  = 'top';
+      ctx.fillText(companies.toUpperCase(), SW / 2, COMP_Y);
+      ctx.letterSpacing = '0px';
     }
   }
 
   /* ─── Slides 2–4: Artigo ────────────────────────────────────── */
-  async function renderArticleSlide(canvas, text, firstName, lastName, num) {
+  async function renderArticleSlide(canvas, text, firstName, lastName, num, bgImg) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
     const PAD = 80;
 
-    // Background
-    ctx.fillStyle = '#080808';
-    ctx.fillRect(0, 0, SW, SH);
+    // Background: blurred spheres image or flat fallback
+    if (bgImg) {
+      const BLEED = 60;
+      ctx.filter = 'blur(38px)';
+      ctx.drawImage(bgImg, -BLEED, -BLEED, SW + BLEED * 2, SH + BLEED * 2);
+      ctx.filter = 'none';
+      // Dark veil so text stays readable
+      ctx.fillStyle = 'rgba(6,6,6,0.82)';
+      ctx.fillRect(0, 0, SW, SH);
+    } else {
+      ctx.fillStyle = '#080808';
+      ctx.fillRect(0, 0, SW, SH);
+    }
 
     // Subtle top teal bar
     ctx.fillStyle = TEAL;
@@ -729,7 +868,7 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
     ctx.fillStyle    = 'rgba(255,255,255,0.35)';
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(SLIDE_TITLE, PAD + 20, 140);
+    ctx.fillText(getArticleTitle(), PAD + 20, 140);
 
     // Article text — large, auto-sized to fit
     ctx.fillStyle    = '#ffffff';
@@ -770,67 +909,134 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
   }
 
   /* ─── Slide 5: CTA ──────────────────────────────────────────── */
-  async function renderSlide5(canvas, firstName, lastName) {
+  async function renderSlide5(canvas, firstName, lastName, bgImg) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
     const PAD = 80;
 
-    // Background
-    const bg = ctx.createLinearGradient(0, 0, 0, SH);
-    bg.addColorStop(0, '#001E23');
-    bg.addColorStop(0.6, '#061014');
-    bg.addColorStop(1, '#080808');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, SW, SH);
+    // ── Background ───────────────────────────────────────────────
+    if (bgImg) {
+      const BLEED = 60;
+      ctx.filter = 'blur(18px)';
+      ctx.drawImage(bgImg, -BLEED, -BLEED, SW + BLEED * 2, SH + BLEED * 2);
+      ctx.filter = 'none';
+      // Lighter veil so spheres glow comes through
+      const overlay = ctx.createLinearGradient(0, 0, 0, SH);
+      overlay.addColorStop(0,   'rgba(4,10,12,0.78)');
+      overlay.addColorStop(0.5, 'rgba(4,12,15,0.72)');
+      overlay.addColorStop(1,   'rgba(6,6,6,0.88)');
+      ctx.fillStyle = overlay;
+      ctx.fillRect(0, 0, SW, SH);
+    } else {
+      const bg = ctx.createLinearGradient(0, 0, 0, SH);
+      bg.addColorStop(0, '#001E23');
+      bg.addColorStop(1, '#080808');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, SW, SH);
+    }
 
-    // Top teal bar
+    // ── Top accent bar ───────────────────────────────────────────
     ctx.fillStyle = TEAL;
-    ctx.fillRect(0, 0, SW, 6);
+    ctx.fillRect(0, 0, SW, 5);
 
-    // "REDE LÍDERES" — centered, large
-    ctx.font         = `800 52px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = TEAL;
+    // ── Brand label — small, top-center ─────────────────────────
+    ctx.font         = `800 18px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(65,193,194,0.55)';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('REDE LÍDERES', SW / 2, 260);
+    ctx.fillText('REDE LÍDERES', SW / 2, 64);
 
-    // Thin divider
-    ctx.strokeStyle = 'rgba(65,193,194,0.20)';
+    // ── Thin top rule ────────────────────────────────────────────
+    ctx.strokeStyle = 'rgba(65,193,194,0.15)';
     ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(PAD, 356); ctx.lineTo(SW - PAD, 356);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PAD + 60, 108); ctx.lineTo(SW - PAD - 60, 108); ctx.stroke();
 
-    // CTA copy — centered, large
-    const ctaLines = [
-      'A maior rede de líderes',
-      'executivos do Brasil.',
-      '',
-      'Conteúdo, conexão e',
-      'desenvolvimento para',
-      'quem transforma organizações.'
-    ];
-    ctx.font         = `400 48px "Neue Machina", sans-serif`;
+    // ── Main headline — large, white ─────────────────────────────
+    ctx.font         = `800 108px "Neue Machina", sans-serif`;
     ctx.fillStyle    = '#ffffff';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    let ctaY = 416;
-    for (const line of ctaLines) {
-      if (line === '') { ctaY += 32; continue; }
-      ctx.fillText(line, SW / 2, ctaY);
-      ctaY += 68;
+    ctx.fillText('CONHEÇA', SW / 2, 160);
+    ctx.fillText('A REDE.', SW / 2, 278);
+
+    // ── Subline — teal ───────────────────────────────────────────
+    ctx.font      = `400 34px "Neue Machina", sans-serif`;
+    ctx.fillStyle = TEAL;
+    ctx.fillText('Para líderes que transformam', SW / 2, 432);
+    ctx.fillText('organizações.', SW / 2, 484);
+
+    // ── Mid rule ─────────────────────────────────────────────────
+    ctx.strokeStyle = 'rgba(65,193,194,0.18)';
+    ctx.lineWidth   = 1;
+    ctx.beginPath(); ctx.moveTo(PAD, 572); ctx.lineTo(SW - PAD, 572); ctx.stroke();
+
+    // ── Body copy — muted white ──────────────────────────────────
+    const bodyLines = [
+      'Conteúdo exclusivo, conexões',
+      'estratégicas e desenvolvimento',
+      'para quem transforma organizações.'
+    ];
+    ctx.font      = `300 36px "Neue Machina", sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    let bodyY = 612;
+    for (const line of bodyLines) {
+      ctx.fillText(line, SW / 2, bodyY);
+      bodyY += 58;
     }
 
-    // Bottom teal bar
-    ctx.fillStyle = TEAL;
-    ctx.fillRect(0, SH - 6, SW, 6);
+    // ── CTA pill ─────────────────────────────────────────────────
+    const pillW = 560, pillH = 100, pillR = 50;
+    const pillX = (SW - pillW) / 2, pillY2 = 860;
 
-    // URL
-    ctx.font         = `800 24px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(65,193,194,0.65)';
-    ctx.textAlign    = 'center';
+    // Pill glow
+    ctx.shadowColor = TEAL; ctx.shadowBlur = 28;
+    ctx.beginPath();
+    roundRect(ctx, pillX, pillY2, pillW, pillH, pillR);
+    ctx.fillStyle = 'rgba(65,193,194,0.14)';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Pill border
+    ctx.strokeStyle = TEAL;
+    ctx.lineWidth   = 1.8;
+    ctx.beginPath();
+    roundRect(ctx, pillX, pillY2, pillW, pillH, pillR);
+    ctx.stroke();
+
+    // Pill text
+    ctx.font         = `800 22px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textBaseline = 'middle';
+    ctx.fillText('QUERO CONHECER A REDE LÍDERES', SW / 2, pillY2 + pillH / 2);
+
+    // ── URL — below pill ─────────────────────────────────────────
+    ctx.font         = `400 26px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(65,193,194,0.50)';
+    ctx.textBaseline = 'top';
+    ctx.fillText('redelideres.com.br', SW / 2, pillY2 + pillH + 28);
+
+    // ── Person attribution — bottom ──────────────────────────────
+    ctx.font         = `300 20px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.22)';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('rede-lideres.com.br', SW / 2, SH - 28);
+    ctx.fillText(firstName + ' ' + lastName, SW / 2, SH - 28);
+
+    // ── Bottom accent bar ────────────────────────────────────────
+    ctx.fillStyle = TEAL;
+    ctx.fillRect(0, SH - 5, SW, 5);
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -896,8 +1102,10 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
   ═══════════════════════════════════════════════════════════════ */
   async function startGeneration(base64Image, prompt) {
     const body = {
-      prompt, reference_images: [base64Image],
-      aspect_ratio: 'traditional_3_4', guidance_scale: 7
+      prompt,
+      reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }],
+      aspect_ratio:     '4:5',
+      guidance_scale:   7
     };
     const res  = await fetch('/api/generate', {
       method: 'POST',
@@ -905,7 +1113,11 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
       body:   JSON.stringify(body)
     });
     const json = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}`);
+    if (!res.ok) {
+      const detail = json?.errors ? '\n' + JSON.stringify(json.errors, null, 2) : '';
+      console.error('[freepik] resposta completa:', JSON.stringify(json));
+      throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}${detail}`);
+    }
     const taskId    = json?.data?.task_id;
     if (taskId) return { type: 'async', taskId };
     const generated = json?.data?.generated;
@@ -937,17 +1149,27 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
     if (!slidesReady) return;
     const fullName = nameInput.value.trim() || 'carrossel';
     const slug = fullName.toLowerCase()
-      .replace(/\s+/g, '-')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const ids = ['canvas1', 'canvas2', 'canvas3', 'canvas4', 'canvas5'];
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-');
+
+    setStatus('Compactando slides…');
+    const zip  = new JSZip();
+    const ids  = ['canvas1', 'canvas2', 'canvas3', 'canvas4', 'canvas5'];
     for (let i = 0; i < ids.length; i++) {
       const canvas = document.getElementById(ids[i]);
-      const a = document.createElement('a');
-      a.download = `${slug}-slide${String(i + 1).padStart(2, '0')}.png`;
-      a.href     = canvas.toDataURL('image/png');
-      a.click();
-      await sleep(300);
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64  = dataUrl.split(',')[1];
+      zip.file(`${slug}-slide${String(i + 1).padStart(2, '0')}.png`, base64, { base64: true });
     }
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a    = document.createElement('a');
+    a.download = `${slug}-carrossel.zip`;
+    a.href     = URL.createObjectURL(blob);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setStatus('Download concluído ✓');
+    setTimeout(() => setStatus(''), 3000);
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -997,6 +1219,31 @@ Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed 
       img.src = final;
     });
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MODAL PREVIEW
+  ═══════════════════════════════════════════════════════════════ */
+  function openModal(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || canvas.width === 0) return;
+    document.getElementById('modalImg').src = canvas.toDataURL('image/png');
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (e && e.currentTarget !== e.target) return;
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('modalOverlay').classList.remove('open');
+  });
+
+  // Attach click listeners to all slide thumbs
+  ['canvas1','canvas2','canvas3','canvas4','canvas5'].forEach(id => {
+    const canvas = document.getElementById(id);
+    if (canvas) canvas.parentElement.addEventListener('click', () => openModal(id));
+  });
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 

@@ -11,6 +11,7 @@
     { "src": "/api/notion/search",    "dest": "/api/notion/search.js" },
     { "src": "/api/proxy-image",      "dest": "/api/proxy-image.js" },
     { "src": "/api/generate",         "dest": "/api/generate.js" },
+    { "src": "/api/summarize",        "dest": "/api/summarize.js" },
     { "src": "/app",                  "dest": "/app.html" },
     { "src": "/fonts/(.*)",           "dest": "/fonts/$1" },
     { "src": "/logo-rl.png",          "dest": "/logo-rl.png" },
