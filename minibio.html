@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Mini Bio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    /* ─── Fontes locais ─────────────────────────────────────────── */
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    /* ─── Reset & Variables ─────────────────────────────────────── */
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 48px 20px 80px;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────── */
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    /* ─── Header ────────────────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 44px; }
+    .header-rule {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .header-rule span {
+      flex: 1; height: 1px; max-width: 60px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .header-rule span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    h1 {
+      font-size: 20px; font-weight: 800;
+      letter-spacing: 5px; text-transform: uppercase;
+    }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+    .back-link {
+      display: inline-block; margin-bottom: 28px;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+      text-decoration: none; transition: color .2s;
+    }
+    .back-link:hover { color: var(--teal); }
+
+    /* ─── Card ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    /* ─── Form fields ───────────────────────────────────────────── */
+    .field { margin-bottom: 22px; }
+
+    label {
+      display: block;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 9px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 15px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    input[type="text"]:focus {
+      border-color: rgba(65,193,194,.45);
+      background: rgba(65,193,194,.03);
+    }
+    input[type="text"]::placeholder { color: #2a2a2a; }
+
+    .hint { font-size: 11px; color: #333; margin-top: 6px; }
+
+    /* ─── Autocomplete ──────────────────────────────────────────── */
+    .ac-wrap { position: relative; }
+    .ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      z-index: 200; background: #141414;
+      border: 1px solid rgba(65,193,194,.25);
+      border-radius: 8px; overflow: hidden;
+      display: none; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+      padding: 11px 15px; cursor: pointer;
+      border-bottom: 1px solid var(--border); transition: background .15s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover { background: rgba(65,193,194,.08); }
+    .ac-item-name { font-size: 14px; color: #fff; }
+    .ac-item-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ac-empty {
+      padding: 13px 15px; font-size: 12px;
+      color: var(--muted); text-align: center; letter-spacing: .5px;
+    }
+    .ac-loading {
+      padding: 13px 15px; font-size: 12px; color: var(--teal);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ac-spin {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(65,193,194,.2);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+
+    /* ─── LinkedIn card ─────────────────────────────────────────── */
+    .linkedin-card {
+      display: none; align-items: center; gap: 10px; margin-top: 10px;
+      background: rgba(65,193,194,.04);
+      border: 1px solid rgba(65,193,194,.18);
+      border-radius: 8px; padding: 10px 14px;
+    }
+    .li-badge {
+      width: 28px; height: 28px; background: #0a66c2;
+      border-radius: 5px; display: flex; align-items: center;
+      justify-content: center; font-size: 13px; font-weight: 800;
+      color: #fff; flex-shrink: 0; letter-spacing: 0;
+    }
+    .linkedin-card a {
+      color: var(--teal); font-size: 12px; text-decoration: none;
+      letter-spacing: .3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .linkedin-card a:hover { text-decoration: underline; }
+
+    /* ─── Upload zone ───────────────────────────────────────────── */
+    .upload-zone {
+      position: relative; border: 1px dashed var(--border);
+      border-radius: 8px; padding: 22px 16px; text-align: center;
+      cursor: pointer; transition: border-color .2s, background .2s; overflow: hidden;
+    }
+    .upload-zone:hover { border-color: rgba(65,193,194,.4); background: rgba(65,193,194,.03); }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-idle { pointer-events: none; }
+    .upload-idle .arrow { font-size: 28px; line-height: 1; color: var(--teal); margin-bottom: 8px; }
+    .upload-idle p { font-size: 13px; color: var(--muted); }
+    .upload-idle strong { color: var(--teal); }
+    .upload-preview { display: none; align-items: center; gap: 14px; pointer-events: none; }
+    #photoThumb {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--teal); flex-shrink: 0;
+    }
+    .upload-preview-info .label-ok { font-size: 11px; color: var(--teal); letter-spacing: 1px; }
+    .upload-preview-info .fname {
+      font-size: 12px; color: #aaa; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+    }
+
+    /* ─── Generate button ───────────────────────────────────────── */
+    .btn-generate {
+      width: 100%; margin-top: 28px;
+      background: var(--teal); color: #000; border: none;
+      border-radius: 8px; padding: 15px; font-family: var(--font);
+      font-size: 11px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase;
+      cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    .btn-generate:hover:not(:disabled) { opacity: .88; }
+    .btn-generate:active:not(:disabled) { transform: scale(.99); }
+    .btn-generate:disabled { opacity: .28; cursor: not-allowed; }
+
+    /* ─── Status bar ────────────────────────────────────────────── */
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; margin-top: 18px; }
+    .spinner {
+      display: none; flex-shrink: 0; width: 15px; height: 15px;
+      border: 2px solid rgba(65,193,194,.2); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
+    .status-msg.err { color: #ff6b6b; }
+
+    /* ─── Result section ────────────────────────────────────────── */
+    .result { display: none; margin-top: 32px; }
+    .divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+    .result-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+    }
+    #canvas { display: block; width: 100%; border-radius: 12px; border: 1px solid var(--border); }
+    .btn-download {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; margin-top: 14px; background: transparent;
+      border: 1px solid var(--teal); color: var(--teal); border-radius: 8px; padding: 13px;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .btn-download:hover { background: var(--teal); color: #000; }
+    .btn-download.secondary { border-color: var(--border); color: #aaa; }
+    .btn-download.secondary:hover { background: transparent; border-color: var(--teal); color: var(--teal); }
+
+    /* ─── Layout lado a lado ────────────────────────────────────── */
+    .foto-wrap { display: flex; gap: 36px; align-items: flex-start; }
+    .foto-col-form { flex: 1; min-width: 0; }
+    .foto-col-preview { flex-shrink: 0; width: 300px; position: sticky; top: 24px; }
+    .foto-prev-card {
+      width: 300px; height: 400px; position: relative;
+      overflow: hidden; border-radius: 14px;
+      border: 1px solid var(--border); background: #071118;
+    }
+    .foto-prev-bg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center top; display: none; z-index: 0;
+    }
+    .foto-prev-placeholder {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #0d1a1a 0%, #071118 100%);
+      display: flex; align-items: center; justify-content: center; z-index: 0;
+    }
+    .foto-prev-placeholder svg { opacity: 0.12; }
+    .foto-prev-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.50) 60%, rgba(0,0,0,0.85) 100%);
+      z-index: 1;
+    }
+    .foto-prev-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 14px 18px 18px; z-index: 2;
+    }
+    .foto-prev-name { font-size: 24px; font-weight: 800; line-height: 1.1; margin-bottom: 6px; }
+    .foto-prev-name .fn { color: #fff; }
+    .foto-prev-name .ln { color: var(--teal); }
+    .foto-prev-job { font-size: 11px; color: #fff; opacity: .85; margin-bottom: 6px; }
+    .foto-prev-minibio { font-size: 8px; font-weight: 800; color: var(--teal); letter-spacing: 2.5px; margin-bottom: 4px; }
+    .foto-prev-companies { font-size: 10px; color: rgba(255,255,255,.75); }
+    .btn-enviar-ia {
+      width: 100%; margin-top: 12px;
+      background: rgba(65,193,194,.12); border: 1px solid rgba(65,193,194,.35);
+      color: var(--teal); border-radius: 8px; padding: 13px;
+      font-family: var(--font); font-size: 11px; font-weight: 800;
+      letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .btn-enviar-ia:hover { background: rgba(65,193,194,.22); border-color: var(--teal); }
+    .btn-enviar-ia:disabled { opacity: .3; cursor: not-allowed; }
+
+    @media (max-width: 900px) {
+      .foto-wrap { flex-direction: column; }
+      .foto-col-preview { width: 100%; position: static; }
+      .foto-prev-card { width: 100%; height: auto; aspect-ratio: 3/4; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back-link" href="/app.html">← Voltar ao hub</a>
+
+  <header>
+    <div class="header-rule">
+      <span></span>
+      <h1>Mini&nbsp;Bio</h1>
+      <span></span>
+    </div>
+    <p>Gerador de foto IA para a comunidade Rede Líderes</p>
+  </header>
+
+  <div class="foto-wrap">
+
+    <!-- COLUNA ESQUERDA: form -->
+    <div class="foto-col-form">
+    <div class="card">
+      <form id="form" novalidate>
+
+        <div class="field">
+          <label>Buscar na Rede Líderes</label>
+          <div class="ac-wrap" id="acWrap">
+            <input type="text" id="fullName"
+              placeholder="Digite o nome para buscar…"
+              autocomplete="off" required />
+            <div class="ac-dropdown" id="acDropdown"></div>
+          </div>
+          <div class="linkedin-card" id="linkedinCard">
+            <div class="li-badge">in</div>
+            <a id="linkedinLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Cargo</label>
+          <input type="text" id="jobTitle"
+            placeholder="Preenchido automaticamente pelo Notion"
+            autocomplete="off" required />
+        </div>
+
+        <div class="field">
+          <label>3 Últimas Empresas</label>
+          <input type="text" id="companies"
+            placeholder="Preenchido automaticamente pelo Notion"
+            autocomplete="off" required />
+          <div class="hint">Separadas por vírgula — serão exibidas como&nbsp;Neon&nbsp;|&nbsp;Shoppe&nbsp;|&nbsp;Revolut</div>
+        </div>
+
+        <div class="field">
+          <label>Foto de Referência</label>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="photoFile" accept="image/*" required />
+            <div class="upload-idle" id="uploadIdle">
+              <div class="arrow">↑</div>
+              <p><strong>Escolher foto</strong>&nbsp;ou arrastar aqui</p>
+            </div>
+            <div class="upload-preview" id="uploadPreview">
+              <img id="photoThumb" alt="" />
+              <div class="upload-preview-info">
+                <div class="label-ok">Foto selecionada</div>
+                <div class="fname" id="photoFname"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </form>
+
+      <div class="status-bar">
+        <div class="spinner" id="spinner"></div>
+        <span class="status-msg" id="statusMsg"></span>
+      </div>
+    </div>
+
+    <div class="result" id="result">
+      <div class="divider"></div>
+      <div class="result-label">Resultado</div>
+      <canvas id="canvas"></canvas>
+      <button class="btn-download" id="btnDownload">↓ &nbsp; Download com Texto</button>
+      <button class="btn-download secondary" id="btnDownloadRaw">↓ &nbsp; Download Foto Original (sem texto)</button>
+    </div>
+    </div><!-- /.foto-col-form -->
+
+    <!-- COLUNA DIREITA: preview -->
+    <div class="foto-col-preview">
+      <div class="foto-prev-card" id="foto-prev-card">
+        <div class="foto-prev-placeholder" id="foto-prev-placeholder">
+          <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="42" r="26" stroke="white" stroke-width="2"/>
+            <path d="M12 108 C12 80 108 80 108 108" stroke="white" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <img class="foto-prev-bg" id="foto-prev-bg" src="" alt="" />
+        <div class="foto-prev-gradient"></div>
+        <div class="foto-prev-content">
+          <div class="foto-prev-name">
+            <span class="fn" id="foto-prev-fn">Nome</span>
+            <span class="ln" id="foto-prev-ln"></span>
+          </div>
+          <div class="foto-prev-job" id="foto-prev-job">Cargo</div>
+          <div class="foto-prev-minibio">MINI BIO</div>
+          <div class="foto-prev-companies" id="foto-prev-companies">Empresa | Empresa</div>
+        </div>
+      </div>
+      <button class="btn-enviar-ia" id="btnEnviarIA"
+        onclick="document.getElementById('form').requestSubmit()">
+        ✨ &nbsp; Enviar para IA
+      </button>
+      <button class="btn-download" id="btnDownloadPreview" style="margin-top:8px;"
+        onclick="fotoExportar()">
+        ↓ &nbsp; Exportar PNG
+      </button>
+    </div><!-- /.foto-col-preview -->
+
+  </div><!-- /.foto-wrap -->
+
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════════════════════════════ */
+const API_BASE = '';
+let lastGeneratedSrc = null;
+
+const PROMPT = `Edit this photo by changing only the background and adding a very subtle Rede Líderes lighting effect. Preserve absolutely everything about the person — face, expression, pose, clothing, hair, body shape, weight — with zero alteration.
+
+BACKGROUND: Replace the existing background with seamless deep teal-black (#001E23). Clean, smooth, no patterns, no texture. The person must remain naturally integrated — no cutout or pasted appearance.
+
+LIGHTING — subtle and directional, right side only:
+- Add a very faint, soft blue light (#03d8d2) touching only the RIGHT side of the person's face (from the viewer's perspective) — cheekbone, temple, and jaw on the right side only
+- The light must be extremely subtle — barely visible, like a distant colored ambient source, NOT a spotlight
+- Opacity of the light effect: very low — think 15% to 20% intensity, just a whisper of blue on the skin
+- The left side of the face receives NO teal light — keep it with its natural lighting from the original photo
+- Do NOT add rim light on the shoulders or body — face right side only
+
+COLOR GRADE — minimal:
+- Slightly lift the deep blacks toward teal (#001E23) in the background areas only
+- Keep the person's skin tones exactly as in the original photo
+- No crushing of highlights, no aggressive color cast on the subject
+
+RESULT: The person looks identical to the original photo, now placed against a dark teal Rede Líderes background, with only a very gentle cold blue touch on the right cheek and temple — like ambient light from the background catching the edge of the face.
+
+CRITICAL: Do NOT alter face, body, expression, clothing, or pose. NO text overlays, NO watermarks, NO logos. Clean photograph only. The teal light on the face must be barely perceptible — subtle is the goal.`;
+
+/* ════════════════════════════════════════════════════════════════
+   NOTION AUTOCOMPLETE
+════════════════════════════════════════════════════════════════ */
+let acTimer = null;
+
+const nameInput  = document.getElementById('fullName');
+const acDropdown = document.getElementById('acDropdown');
+const acWrap     = document.getElementById('acWrap');
+
+nameInput.addEventListener('input', () => {
+  const q = nameInput.value.trim();
+  clearTimeout(acTimer);
+  if (q.length < 2) { acClose(); return; }
+  acDropdown.innerHTML = '<div class="ac-loading"><div class="ac-spin"></div>Buscando…</div>';
+  acDropdown.classList.add('open');
+  acTimer = setTimeout(() => notionSearch(q), 350);
+});
+
+document.addEventListener('click', e => {
+  if (!acWrap.contains(e.target)) acClose();
+});
+
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') acClose();
+});
+
+async function notionSearch(q) {
+  try {
+    const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    acRender(data.results || []);
+  } catch (err) {
+    acDropdown.innerHTML = '<div class="ac-empty">Erro ao buscar no Notion</div>';
+  }
+}
+
+function acRender(results) {
+  if (results.length === 0) {
+    acDropdown.innerHTML = '<div class="ac-empty">Nenhum resultado encontrado</div>';
+    acDropdown.classList.add('open');
+    return;
+  }
+  acDropdown.innerHTML = '';
+  results.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'ac-item';
+    el.innerHTML = `
+      <div class="ac-item-name">${esc(person.name)}</div>
+      ${person.cargo ? `<div class="ac-item-role">${esc(person.cargo)}</div>` : ''}
+    `;
+    el.addEventListener('mousedown', e => { e.preventDefault(); acSelect(person); });
+    acDropdown.appendChild(el);
+  });
+  acDropdown.classList.add('open');
+}
+
+function acSelect(person) {
+  nameInput.value = person.name || '';
+  if (person.cargo)    document.getElementById('jobTitle').value  = person.cargo;
+  if (person.empresas) document.getElementById('companies').value = person.empresas;
+
+  const card = document.getElementById('linkedinCard');
+  const link = document.getElementById('linkedinLink');
+  if (person.linkedin) {
+    link.href        = person.linkedin;
+    link.textContent = person.linkedin
+      .replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '')
+      .replace(/\/$/, '');
+    card.style.display = 'flex';
+  } else {
+    card.style.display = 'none';
+  }
+
+  fotoPreviewAtualizar();
+  if (person.photoUrl) loadNotionPhoto(person.photoUrl);
+  acClose();
+}
+
+async function loadNotionPhoto(url) {
+  try {
+    setStatus('Carregando foto do Notion…');
+    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res     = await fetch(proxied);
+    const blob    = await res.blob();
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+    document.getElementById('photoThumb').src        = dataUrl;
+    document.getElementById('photoFname').textContent = 'Foto do Notion';
+    document.getElementById('uploadIdle').style.display    = 'none';
+    document.getElementById('uploadPreview').style.display = 'flex';
+    window._notionPhotoDataUrl = dataUrl;
+    fotoPreviewSetFoto(dataUrl);
+    setStatus('Foto carregada do Notion ✓');
+    setTimeout(() => setStatus(''), 2500);
+  } catch {
+    setStatus('Não foi possível carregar a foto do Notion.', true);
+  }
+}
+
+function acClose() { acDropdown.classList.remove('open'); }
+
+function esc(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PREVIEW AO VIVO
+════════════════════════════════════════════════════════════════ */
+function fotoPreviewAtualizar() {
+  const fullName = document.getElementById('fullName').value.trim();
+  const parts    = fullName.split(/\s+/);
+  const fn       = parts[0] || 'Nome';
+  const ln       = parts.slice(1).join(' ') || '';
+  const job      = document.getElementById('jobTitle').value.trim() || 'Cargo';
+  const rawComp  = document.getElementById('companies').value.trim();
+  const comp     = rawComp
+    ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
+    : 'Empresa | Empresa';
+  document.getElementById('foto-prev-fn').textContent        = fn;
+  document.getElementById('foto-prev-ln').textContent        = ln ? ' ' + ln : '';
+  document.getElementById('foto-prev-job').textContent       = job;
+  document.getElementById('foto-prev-companies').textContent = comp;
+}
+
+function fotoPreviewSetFoto(dataUrl) {
+  const bg = document.getElementById('foto-prev-bg');
+  bg.src = dataUrl;
+  bg.style.display = 'block';
+  document.getElementById('foto-prev-placeholder').style.display = 'none';
+}
+
+document.getElementById('fullName').addEventListener('input', fotoPreviewAtualizar);
+document.getElementById('jobTitle').addEventListener('input', fotoPreviewAtualizar);
+document.getElementById('companies').addEventListener('input', fotoPreviewAtualizar);
+
+document.getElementById('photoFile').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('photoThumb').src = e.target.result;
+    document.getElementById('photoFname').textContent = file.name;
+    document.getElementById('uploadIdle').style.display    = 'none';
+    document.getElementById('uploadPreview').style.display = 'flex';
+    window._notionPhotoDataUrl = null;
+    fotoPreviewSetFoto(e.target.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ════════════════════════════════════════════════════════════════
+   FORM SUBMIT
+════════════════════════════════════════════════════════════════ */
+document.getElementById('form').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const fullName  = nameInput.value.trim();
+  const jobTitle  = document.getElementById('jobTitle').value.trim();
+  const rawComp   = document.getElementById('companies').value.trim();
+  const photoFile = document.getElementById('photoFile').files[0];
+
+  if (!fullName || !jobTitle || !rawComp) { setStatus('Preencha todos os campos.', true); return; }
+  if (!photoFile && !window._notionPhotoDataUrl) { setStatus('Selecione uma foto de referência.', true); return; }
+
+  const parts     = fullName.split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName  = parts.slice(1).join(' ') || '';
+  const companies = rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ');
+
+  setLoading(true);
+  document.getElementById('result').style.display = 'none';
+
+  try {
+    setStatus('Preparando foto de referência…');
+    let dataUrl;
+    if (photoFile) {
+      dataUrl = await resizeImage(photoFile, 1024, 0.82);
+    } else {
+      dataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
+    }
+    const base64Img = dataUrl.split(',')[1];
+
+    setStatus('Enviando para Freepik API…');
+    const genResult = await startGeneration(base64Img);
+
+    let imageSrc;
+    if (genResult.type === 'immediate') {
+      imageSrc = genResult.data;
+    } else {
+      setStatus('Gerando imagem com IA… (pode levar ~30s)');
+      imageSrc = await pollGeneration(genResult.taskId);
+    }
+
+    setStatus('Compondo imagem final…');
+    lastGeneratedSrc = imageSrc;
+    await renderCanvas(imageSrc, firstName, lastName, jobTitle, companies);
+
+    const finalSrc = imageSrc.startsWith('http')
+      ? `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`
+      : imageSrc;
+    fotoPreviewSetFoto(finalSrc);
+
+    setStatus('');
+    setLoading(false);
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    console.error(err);
+    setStatus('Erro: ' + err.message, true);
+    setLoading(false);
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════
+   FREEPIK API
+════════════════════════════════════════════════════════════════ */
+async function startGeneration(base64Image) {
+  const body = {
+    prompt:           PROMPT,
+    reference_images: [base64Image],
+    aspect_ratio:     'traditional_3_4',
+    guidance_scale:   7
+  };
+  const res  = await fetch(`${API_BASE}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:   JSON.stringify(body)
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail = json?.errors ? '\n' + JSON.stringify(json.errors, null, 2) : '';
+    throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}${detail}`);
+  }
+  const taskId = json?.data?.task_id;
+  if (taskId) return { type: 'async', taskId };
+  const generated = json?.data?.generated;
+  if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
+  throw new Error('Resposta inesperada da API Freepik — veja o console.');
+}
+
+async function pollGeneration(taskId) {
+  for (let i = 0; i < 80; i++) {
+    await sleep(3000);
+    const res = await fetch(`${API_BASE}/api/generate/${taskId}`);
+    if (!res.ok) continue;
+    const json   = await res.json().catch(() => null);
+    const status = (json?.data?.status || json?.status || '').toUpperCase();
+    if (status === 'COMPLETED') {
+      const generated = json?.data?.generated;
+      if (Array.isArray(generated) && generated.length > 0) return generated[0];
+    }
+    if (status === 'FAILED' || status === 'ERROR') throw new Error('A geração da imagem falhou na Freepik API.');
+    setStatus(`Gerando imagem… ${(i + 1) * 3}s`);
+  }
+  throw new Error('Timeout: a geração demorou mais do que o esperado.');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CANVAS RENDERING
+════════════════════════════════════════════════════════════════ */
+async function renderCanvas(src, firstName, lastName, jobTitle, companies, offsetPct = 0.10) {
+  await document.fonts.ready;
+  try {
+    await document.fonts.load('800 44px "Neue Machina"');
+    await document.fonts.load('400 15px "Neue Machina"');
+    await document.fonts.load('400 19px "Neue Machina"');
+  } catch (_) {}
+
+  const img    = await loadImage(src);
+  const canvas = document.getElementById('canvas');
+  const ctx    = canvas.getContext('2d');
+  const W = img.naturalWidth  || img.width  || 640;
+  const H = img.naturalHeight || img.height || 480;
+
+  canvas.width  = W;
+  canvas.height = H;
+  ctx.drawImage(img, 0, 0, W, H);
+
+  const gradH = H * 0.55;
+  const grad  = ctx.createLinearGradient(0, H - gradH, 0, H);
+  grad.addColorStop(0,    'rgba(0,0,0,0)');
+  grad.addColorStop(0.35, 'rgba(0,0,0,0.45)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.80)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H - gradH, W, gradH);
+
+  const scale      = W / 640;
+  const pxName     = Math.round(40 * scale);
+  const pxJob      = Math.round(14 * scale);
+  const pxMini     = Math.round(11 * scale);
+  const pxComp     = Math.round(17 * scale);
+  const gapNameJob = Math.round(12 * scale);
+  const gapJobBio  = Math.round(12 * scale);
+  const gapBioComp = Math.round(7  * scale);
+  const blockGap   = pxName + gapNameJob + pxJob + gapJobBio + pxMini + gapBioComp + pxComp;
+  const marginBottom = Math.round(30 * scale);
+  const startY = H - marginBottom - (blockGap - pxName);
+
+  ctx.textBaseline = 'alphabetic';
+  const cx = W / 2;
+  let y = startY;
+
+  ctx.font = `800 ${pxName}px "Neue Machina", "Helvetica Neue", Arial, sans-serif`;
+  const firstUpper = firstName.toUpperCase();
+  const lastUpper  = lastName.toUpperCase();
+  const spaceW     = ctx.measureText(' ').width;
+  const firstW     = ctx.measureText(firstUpper).width;
+  const lastW      = ctx.measureText(lastUpper).width;
+  const totalW     = firstW + spaceW + lastW;
+  const nameLeft   = cx - totalW / 2;
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(firstUpper, nameLeft, y);
+  ctx.fillStyle = '#41c1c2';
+  ctx.fillText(lastUpper,  nameLeft + firstW + spaceW, y);
+
+  ctx.textAlign = 'center';
+  y += gapNameJob + pxJob;
+
+  ctx.font      = `400 ${pxJob}px "Neue Machina", "Helvetica Neue", Arial, sans-serif`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(jobTitle, cx, y);
+
+  y += gapJobBio + pxMini;
+
+  ctx.font      = `800 ${pxMini}px "Neue Machina", "Helvetica Neue", Arial, sans-serif`;
+  ctx.fillStyle = '#41c1c2';
+  ctx.fillText('MINI BIO', cx, y);
+
+  y += gapBioComp + pxComp;
+
+  ctx.font      = `400 ${pxComp}px "Neue Machina", "Helvetica Neue", Arial, sans-serif`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(companies, cx, y);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DOWNLOAD
+════════════════════════════════════════════════════════════════ */
+document.getElementById('btnDownload').addEventListener('click', () => {
+  const canvas = document.getElementById('canvas');
+  try {
+    const a = document.createElement('a');
+    a.download = 'profile.png';
+    a.href     = canvas.toDataURL('image/png');
+    a.click();
+  } catch {
+    setStatus('Download bloqueado por CORS. Clique com botão direito → Salvar imagem.', true);
+  }
+});
+
+document.getElementById('btnDownloadRaw').addEventListener('click', async () => {
+  if (!lastGeneratedSrc) { setStatus('Nenhuma imagem gerada ainda.', true); return; }
+  try {
+    const img = await loadImage(lastGeneratedSrc);
+    const c   = document.createElement('canvas');
+    c.width   = img.naturalWidth  || img.width;
+    c.height  = img.naturalHeight || img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    const a    = document.createElement('a');
+    a.download = 'profile-raw.png';
+    a.href     = c.toDataURL('image/png');
+    a.click();
+  } catch (err) {
+    setStatus('Erro ao baixar foto original: ' + err.message, true);
+  }
+});
+
+async function fotoExportar() {
+  const fullName = document.getElementById('fullName').value.trim() || 'minibio';
+  await document.fonts.ready;
+
+  const card    = document.getElementById('foto-prev-card');
+  const dataUrl = await domtoimage.toPng(card, {
+    width:   300,
+    height:  400,
+    scale:   1080 / 300,
+    bgcolor: '#071118',
+    style:   { borderRadius: '0', overflow: 'hidden' },
+  });
+
+  const slug = fullName.toLowerCase()
+    .replace(/\s+/g, '-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const link = document.createElement('a');
+  link.download = 'minibio-' + slug + '.png';
+  link.href = dataUrl;
+  link.click();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════════════ */
+function resizeImage(file, maxSide = 1024, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+      const w = Math.round(img.width  * ratio);
+      const h = Math.round(img.height * ratio);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(URL.createObjectURL(file)); };
+    img.src = url;
+  });
+}
+
+function resizeDataUrl(dataUrl, maxSide = 1024, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+      const w = Math.round(img.width  * ratio);
+      const h = Math.round(img.height * ratio);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img   = new Image();
+    const final = src.startsWith('http')
+      ? `/api/proxy-image?url=${encodeURIComponent(src)}`
+      : src;
+    img.onload  = () => resolve(img);
+    img.onerror = () => reject(new Error('Não foi possível carregar a imagem gerada.'));
+    img.src     = final;
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className   = 'status-msg' + (isError ? ' err' : '');
+}
+
+function setLoading(on) {
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  const btn = document.getElementById('btnEnviarIA');
+  if (btn) { btn.disabled = on; btn.style.opacity = on ? '.4' : '1'; }
+}
+
+document.addEventListener('DOMContentLoaded', fotoPreviewAtualizar);
+</script>
+</body>
+</html>

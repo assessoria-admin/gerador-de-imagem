@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Mudança de Cargo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    /* ─── Fontes locais ─────────────────────────────────────────── */
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    /* ─── Reset & Variables ─────────────────────────────────────── */
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'Space Grotesk', 'Neue Machina', sans-serif;
+      min-height: 100vh;
+      padding: 48px 20px 80px;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────── */
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    /* ─── Header ────────────────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 44px; }
+    .header-rule {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .header-rule span {
+      flex: 1; height: 1px; max-width: 60px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .header-rule span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    h1 {
+      font-size: 20px; font-weight: 800;
+      letter-spacing: 5px; text-transform: uppercase;
+      font-family: var(--font);
+    }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+    .back-link {
+      display: inline-block; margin-bottom: 28px;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+      text-decoration: none; transition: color .2s; font-family: var(--font);
+    }
+    .back-link:hover { color: var(--teal); }
+
+    /* ─── Status bar ────────────────────────────────────────────── */
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; }
+    .spinner {
+      display: none; flex-shrink: 0; width: 15px; height: 15px;
+      border: 2px solid rgba(65,193,194,.2); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
+    .status-msg.err { color: #ff6b6b; }
+    .ac-spin {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(65,193,194,.2);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+
+    /* ─── Layout lado a lado ────────────────────────────────────── */
+    .cargo-wrap {
+      display: flex; gap: 36px; align-items: flex-start; width: 100%;
+    }
+    .cargo-col-left { flex-shrink: 0; width: 420px; }
+    .cargo-col-right { flex: 1; min-width: 280px; }
+
+    @media (max-width: 900px) {
+      .cargo-wrap { flex-direction: column; align-items: center; }
+      .cargo-col-right { width: 420px; min-width: unset; }
+    }
+    @media (max-width: 460px) {
+      .cargo-col-left {
+        width: calc(100vw - 32px);
+        transform: scale(calc((100vw - 32px) / 420));
+        transform-origin: top center;
+      }
+    }
+
+    /* ─── Card de preview ───────────────────────────────────────── */
+    .c-card {
+      width: 420px; height: 525px;
+      position: relative; overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 32px 96px rgba(0,0,0,0.85);
+      isolation: isolate;
+      transform: translateZ(0);
+    }
+    .c-bg-photo {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center top; z-index: 0;
+    }
+    .c-bg-placeholder {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #1a2a2a 0%, #0d1a1a 40%, #07111a 100%);
+      display: flex; align-items: center; justify-content: center; z-index: 0;
+    }
+    .c-bg-placeholder svg { opacity: 0.15; }
+    .c-overlay-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.05) 25%,
+        rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.90) 80%, rgba(0,0,0,0.97) 100%);
+      z-index: 1;
+    }
+    .c-top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #03d8d2, #007887);
+      z-index: 10;
+    }
+    .c-logo-rl {
+      position: absolute; top: 16px; left: 20px;
+      z-index: 10; display: flex; align-items: center;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+    }
+    .c-badge {
+      position: absolute; top: 20px; right: 18px;
+      z-index: 10; display: flex; align-items: center;
+      gap: 5px; padding: 5px 10px;
+      background: rgba(3,216,210,0.12);
+      border: 1px solid rgba(3,216,210,0.40);
+      border-radius: 20px; backdrop-filter: blur(4px);
+    }
+    .c-badge .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%; background: #03d8d2; flex-shrink: 0;
+    }
+    .c-badge span {
+      font-size: 8.5px; font-weight: 700;
+      letter-spacing: 1.5px; color: #03d8d2;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .c-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0 26px 28px; z-index: 5;
+    }
+    .c-cargo-bloco { margin-bottom: 12px; }
+    .c-cargo-label1 {
+      font-size: 14px; font-weight: 600;
+      color: rgba(3,216,210,0.7);
+      letter-spacing: 2.2px; text-transform: uppercase;
+      margin-bottom: 1px; white-space: nowrap;
+    }
+    .c-cargo-label {
+      font-size: 18px; font-weight: 800;
+      color: rgba(3,216,210,0.7);
+      letter-spacing: 2.2px; text-transform: uppercase;
+      margin-bottom: 5px; white-space: nowrap;
+    }
+    .c-cargo-nome {
+      font-size: 30px; font-weight: 800;
+      color: #ffffff; line-height: 1.05; letter-spacing: -0.4px;
+    }
+    .c-nome-bloco {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    }
+    .c-nome-bloco .separador-v {
+      width: 2px; height: 14px;
+      background: rgba(3,216,210,0.5); border-radius: 1px; flex-shrink: 0;
+    }
+    .c-nome {
+      font-size: 15px; font-weight: 600;
+      color: rgba(255,255,255,0.65); line-height: 1.2; white-space: nowrap;
+    }
+    .c-nome .sobrenome { color: rgba(255,255,255,0.85); font-weight: 700; }
+    .c-empresa-destaque {
+      margin-bottom: 14px; display: flex; flex-direction: column; gap: 2px;
+      border-left: 3px solid #03d8d2; padding-left: 12px;
+    }
+    .c-empresa-label {
+      font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .c-empresa-nome {
+      font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;
+    }
+
+    /* ─── Copy LinkedIn ─────────────────────────────────────────── */
+    .c-copy-section {
+      margin-top: 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .c-copy-header { display: flex; align-items: center; justify-content: space-between; }
+    .c-copy-header span {
+      font-size: 9.5px; font-weight: 700; letter-spacing: 1.8px;
+      text-transform: uppercase; color: rgba(255,255,255,0.35);
+    }
+    .c-copy-header button {
+      padding: 4px 12px; border-radius: 6px; font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;
+      cursor: pointer; border: 1px solid rgba(3,216,210,0.3);
+      background: rgba(3,216,210,0.08); color: #03d8d2; transition: all 0.2s;
+    }
+    .c-copy-header button:hover { background: rgba(3,216,210,0.2); }
+    .c-copy-header button.copied { background: rgba(3,216,210,0.25); color: #fff; border-color: #03d8d2; }
+    .c-copy-text {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 14px 16px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 400;
+      color: rgba(255,255,255,0.65); line-height: 1.65;
+      white-space: pre-wrap; word-break: break-word;
+      resize: none; width: 100%; outline: none;
+      border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+    }
+    .c-copy-text:focus { border-color: rgba(3,216,210,0.25); color: rgba(255,255,255,0.85); }
+    .c-copy-footer {
+      padding: 8px 16px; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08); border-top: none;
+      border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+      font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 0.3px;
+    }
+
+    /* ─── Painel de inputs ──────────────────────────────────────── */
+    .c-painel { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .c-painel-row { display: flex; gap: 10px; }
+    .c-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .c-field label {
+      font-size: 9.5px; font-weight: 700; letter-spacing: 1.8px;
+      text-transform: uppercase; color: rgba(255,255,255,0.35);
+    }
+    .c-field input[type=text] {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(3,216,210,0.25);
+      border-radius: 8px; padding: 9px 12px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500;
+      color: #ffffff; outline: none; transition: border-color 0.2s, background 0.2s; width: 100%;
+    }
+    .c-field input[type=text]::placeholder { color: rgba(255,255,255,0.2); }
+    .c-field input[type=text]:focus {
+      border-color: rgba(3,216,210,0.65); background: rgba(3,216,210,0.06);
+    }
+    .c-divider { width: 100%; height: 1px; background: rgba(255,255,255,0.07); margin: 4px 0; }
+    .c-actions { display: flex; gap: 10px; }
+    .c-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 20px; border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+      border: 1px solid rgba(3,216,210,0.3); background: rgba(3,216,210,0.10); color: #03d8d2;
+    }
+    .c-btn:hover { background: rgba(3,216,210,0.22); border-color: rgba(3,216,210,0.6); }
+    .c-btn-foto { position: relative; overflow: hidden; }
+    .c-btn-foto input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0;
+    }
+
+    /* ─── Autocomplete ──────────────────────────────────────────── */
+    .c-ac-wrap { position: relative; }
+    .c-ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      z-index: 200; background: #141414;
+      border: 1px solid rgba(65,193,194,.25); border-radius: 8px; overflow: hidden;
+      display: none; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    .c-ac-dropdown.open { display: block; }
+    .c-ac-item {
+      padding: 11px 15px; cursor: pointer;
+      border-bottom: 1px solid var(--border); transition: background .15s;
+    }
+    .c-ac-item:last-child { border-bottom: none; }
+    .c-ac-item:hover { background: rgba(65,193,194,.08); }
+    .c-ac-item-name { font-size: 14px; color: #fff; }
+    .c-ac-item-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .c-ac-empty {
+      padding: 13px 15px; font-size: 12px; color: var(--muted);
+      text-align: center; letter-spacing: .5px;
+    }
+    .c-ac-loading {
+      padding: 13px 15px; font-size: 12px; color: var(--teal);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ─── Gender toggle ─────────────────────────────────────────── */
+    .c-gender-toggle {
+      display: flex; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(3,216,210,0.2); border-radius: 8px; overflow: hidden;
+    }
+    .c-gender-toggle button {
+      flex: 1; padding: 9px 0; border: none; background: transparent;
+      font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); cursor: pointer; transition: all .15s;
+    }
+    .c-gender-toggle button.active { background: rgba(3,216,210,0.15); color: #03d8d2; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back-link" href="/app.html">← Voltar ao hub</a>
+
+  <header>
+    <div class="header-rule">
+      <span></span>
+      <h1>Mudança&nbsp;de&nbsp;Cargo</h1>
+      <span></span>
+    </div>
+    <p>Card + copy para LinkedIn de nova posição</p>
+  </header>
+
+  <div class="cargo-wrap">
+
+    <!-- COLUNA ESQUERDA: preview + copy -->
+    <div class="cargo-col-left">
+
+      <div class="c-card" id="c-card">
+        <div class="c-top-bar"></div>
+
+        <div class="c-logo-rl">
+          <img style="height:28px; width:auto;" src="/logo-rl.png" alt="Rede Líderes" />
+        </div>
+
+        <div class="c-badge">
+          <div class="dot"></div>
+          <span>Nova Conquista</span>
+        </div>
+
+        <div class="c-bg-placeholder" id="c-placeholder">
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="42" r="26" stroke="white" stroke-width="2"/>
+            <path d="M12 108 C12 80 108 80 108 108" stroke="white" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <img class="c-bg-photo" id="c-bg-photo" src="" alt="" style="display:none;">
+
+        <div class="c-overlay-gradient"></div>
+
+        <div class="c-content">
+          <div class="c-nome-bloco">
+            <div class="separador-v"></div>
+            <div class="c-nome">
+              <span id="c-txt-nome">Nome</span> <span class="sobrenome" id="c-txt-sobrenome">Sobrenome</span>
+            </div>
+          </div>
+
+          <div class="c-cargo-bloco">
+            <div class="c-cargo-label1">Conselheiro assume</div>
+            <div class="c-cargo-label">nova posição de</div>
+            <div class="c-cargo-nome" id="c-txt-cargo">Cargo</div>
+          </div>
+
+          <div class="c-empresa-destaque">
+            <div class="c-empresa-label">Na empresa</div>
+            <div class="c-empresa-nome" id="c-txt-empresa">Empresa</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="c-copy-section">
+        <div class="c-copy-header">
+          <span>Copy para LinkedIn</span>
+          <button id="c-btn-copiar" onclick="cCopiarTexto()">Copiar</button>
+        </div>
+        <textarea class="c-copy-text" id="c-copy-text" rows="9" readonly></textarea>
+        <div class="c-copy-footer">Rede Lideres · www.redelideres.com</div>
+      </div>
+
+    </div><!-- /.cargo-col-left -->
+
+    <!-- COLUNA DIREITA: inputs -->
+    <div class="cargo-col-right">
+      <div class="c-painel">
+
+        <div class="c-field">
+          <label>Gênero</label>
+          <div class="c-gender-toggle">
+            <button id="c-gen-m" class="active" onclick="cSetGenero('m')">Masculino</button>
+            <button id="c-gen-f" onclick="cSetGenero('f')">Feminino</button>
+          </div>
+        </div>
+
+        <div class="c-field">
+          <label>Buscar na Rede Líderes</label>
+          <div class="c-ac-wrap" id="cAcWrap">
+            <input type="text" id="c-search" placeholder="Digite o nome para buscar…"
+              autocomplete="off" oninput="cAcInput(this.value)" />
+            <div class="c-ac-dropdown" id="cAcDropdown"></div>
+          </div>
+        </div>
+
+        <div class="c-field">
+          <label>Nome completo</label>
+          <input type="text" id="c-inp-nome-full" placeholder="Preenchido pelo Notion"
+            readonly style="opacity:.6; cursor:default;" />
+        </div>
+
+        <input type="hidden" id="c-inp-nome" />
+        <input type="hidden" id="c-inp-sobrenome" />
+
+        <div class="c-field">
+          <label>Cargo</label>
+          <input type="text" id="c-inp-cargo" value="" placeholder="Líder de" oninput="cAtualizar()">
+        </div>
+
+        <div class="c-field">
+          <label>Empresa</label>
+          <input type="text" id="c-inp-empresa" value="" placeholder="XXX" oninput="cAtualizar()">
+        </div>
+
+        <div class="c-divider"></div>
+
+        <div class="c-actions">
+          <button class="c-btn c-btn-foto" id="c-btn-foto-wrap">
+            📷 Selecionar foto
+            <input type="file" accept="image/*" id="c-file-foto" onchange="cCarregarFoto(this)">
+          </button>
+          <button class="c-btn" onclick="cGerarFotoFreepik(window._cFotoDataUrl)"
+            id="c-btn-freepik" style="opacity:.4; cursor:not-allowed;" disabled>
+            ✨ Enviar para IA
+          </button>
+        </div>
+        <div class="c-actions" style="margin-top:0;">
+          <button class="c-btn" onclick="cExportar()" style="flex:1;">⬇ Exportar PNG</button>
+        </div>
+
+        <div class="status-bar" id="c-status-bar" style="margin-top:12px; display:none;">
+          <div class="spinner" id="c-spinner" style="display:none;"></div>
+          <span class="status-msg" id="c-status-msg"></span>
+        </div>
+
+      </div>
+    </div><!-- /.cargo-col-right -->
+
+  </div><!-- /.cargo-wrap -->
+
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════════════════════════════ */
+const API_BASE = '';
+
+const PROMPT = `Edit this photo by changing only the background and adding a very subtle Rede Líderes lighting effect. Preserve absolutely everything about the person — face, expression, pose, clothing, hair, body shape, weight — with zero alteration.
+
+BACKGROUND: Replace the existing background with seamless deep teal-black (#001E23). Clean, smooth, no patterns, no texture. The person must remain naturally integrated — no cutout or pasted appearance.
+
+LIGHTING — subtle and directional, right side only:
+- Add a very faint, soft blue light (#03d8d2) touching only the RIGHT side of the person's face (from the viewer's perspective) — cheekbone, temple, and jaw on the right side only
+- The light must be extremely subtle — barely visible, like a distant colored ambient source, NOT a spotlight
+- Opacity of the light effect: very low — think 15% to 20% intensity, just a whisper of blue on the skin
+- The left side of the face receives NO teal light — keep it with its natural lighting from the original photo
+- Do NOT add rim light on the shoulders or body — face right side only
+
+COLOR GRADE — minimal:
+- Slightly lift the deep blacks toward teal (#001E23) in the background areas only
+- Keep the person's skin tones exactly as in the original photo
+- No crushing of highlights, no aggressive color cast on the subject
+
+RESULT: The person looks identical to the original photo, now placed against a dark teal Rede Líderes background, with only a very gentle cold blue touch on the right cheek and temple — like ambient light from the background catching the edge of the face.
+
+CRITICAL: Do NOT alter face, body, expression, clothing, or pose. NO text overlays, NO watermarks, NO logos. Clean photograph only. The teal light on the face must be barely perceptible — subtle is the goal.`;
+
+/* ════════════════════════════════════════════════════════════════
+   AUTOCOMPLETE NOTION
+════════════════════════════════════════════════════════════════ */
+let cAcTimer = null;
+
+function cAcInput(q) {
+  clearTimeout(cAcTimer);
+  const dd = document.getElementById('cAcDropdown');
+  if (q.length < 2) { dd.classList.remove('open'); return; }
+  dd.innerHTML = '<div class="c-ac-loading"><div class="ac-spin"></div>Buscando…</div>';
+  dd.classList.add('open');
+  cAcTimer = setTimeout(() => cNotionSearch(q), 350);
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('cAcWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('cAcDropdown').classList.remove('open');
+  }
+});
+
+async function cNotionSearch(q) {
+  const dd = document.getElementById('cAcDropdown');
+  try {
+    const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    cAcRender(data.results || []);
+  } catch {
+    dd.innerHTML = '<div class="c-ac-empty">Erro ao buscar no Notion</div>';
+  }
+}
+
+function cAcRender(results) {
+  const dd = document.getElementById('cAcDropdown');
+  if (results.length === 0) {
+    dd.innerHTML = '<div class="c-ac-empty">Nenhum resultado encontrado</div>';
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = '';
+  results.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'c-ac-item';
+    el.innerHTML = `
+      <div class="c-ac-item-name">${esc(person.name)}</div>
+      ${person.cargo ? `<div class="c-ac-item-role">${esc(person.cargo)}</div>` : ''}
+    `;
+    el.addEventListener('mousedown', e => { e.preventDefault(); cAcSelect(person); });
+    dd.appendChild(el);
+  });
+  dd.classList.add('open');
+}
+
+function cAcSelect(person) {
+  const name  = person.name || '';
+  const parts = name.split(/\s+/);
+  document.getElementById('c-search').value        = name;
+  document.getElementById('c-inp-nome-full').value = name;
+  document.getElementById('c-inp-nome').value      = parts[0] || '';
+  document.getElementById('c-inp-sobrenome').value = parts.slice(1).join(' ') || '';
+  if (person.cargo)    document.getElementById('c-inp-cargo').value   = person.cargo;
+  if (person.empresas) {
+    const firstEmpresa = (person.empresas || '').split(',')[0].trim();
+    document.getElementById('c-inp-empresa').value = firstEmpresa;
+  }
+  document.getElementById('cAcDropdown').classList.remove('open');
+  cAtualizar();
+  if (person.photoUrl) {
+    cCarregarFotoUrl(person.photoUrl);
+  } else {
+    cSetStatus('Foto não encontrada no Notion para este líder.', false);
+    setTimeout(() => cSetStatus('', false), 4000);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CARD & COPY
+════════════════════════════════════════════════════════════════ */
+let cGenero = 'm';
+
+function cSetGenero(g) {
+  cGenero = g;
+  document.getElementById('c-gen-m').classList.toggle('active', g === 'm');
+  document.getElementById('c-gen-f').classList.toggle('active', g === 'f');
+  cAtualizar();
+}
+
+function cAtualizar() {
+  const nome      = document.getElementById('c-inp-nome').value     || 'Nome';
+  const sobrenome = document.getElementById('c-inp-sobrenome').value || 'Sobrenome';
+  const cargo     = document.getElementById('c-inp-cargo').value     || 'Cargo';
+  const empresa   = document.getElementById('c-inp-empresa').value   || 'Empresa';
+  const titulo    = cGenero === 'f' ? 'Conselheira' : 'Conselheiro';
+
+  document.getElementById('c-txt-nome').textContent      = nome;
+  document.getElementById('c-txt-sobrenome').textContent = sobrenome;
+  document.getElementById('c-txt-cargo').textContent     = cargo;
+  document.getElementById('c-txt-empresa').textContent   = empresa;
+  document.querySelector('#c-card .c-cargo-label1').textContent = titulo + ' assume';
+
+  document.getElementById('c-copy-text').value = cGerarCopy(nome, sobrenome, cargo, empresa);
+}
+
+function cGerarCopy(nome, sobrenome, cargo, empresa) {
+  return `Parabenizamos ${nome} ${sobrenome} pela sua nova posição como ${cargo} na ${empresa}!
+
+Trajetórias como a de ${nome} mostram o que a liderança comprometida é capaz de construir com consistência, visão de futuro e orientação genuína às pessoas.
+
+Na Rede Líderes, celebramos cada conquista que inspira outros líderes a também evoluírem.
+
+${nome}, continue transformando. O melhor ainda está por vir.
+
+🔗 www.redelideres.com`;
+}
+
+function cCopiarTexto() {
+  const ta  = document.getElementById('c-copy-text');
+  const btn = document.getElementById('c-btn-copiar');
+  navigator.clipboard.writeText(ta.value).then(() => {
+    btn.textContent = 'Copiado ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FOTO
+════════════════════════════════════════════════════════════════ */
+async function cCarregarFotoUrl(url) {
+  try {
+    cSetStatus('Carregando foto do Notion…', true);
+    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res     = await fetch(proxied);
+    const blob    = await res.blob();
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+    cDefinirFotoCard(dataUrl);
+    cSetStatus('Foto carregada ✓', false);
+    setTimeout(() => cSetStatus('', false), 2000);
+  } catch (err) {
+    cSetStatus('Erro ao carregar foto: ' + err.message, false);
+  }
+}
+
+function cDefinirFotoCard(dataUrl) {
+  window._cFotoDataUrl = dataUrl;
+  const img = document.getElementById('c-bg-photo');
+  img.src = dataUrl;
+  img.style.display = 'block';
+  document.getElementById('c-placeholder').style.display = 'none';
+  const btn = document.getElementById('c-btn-freepik');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor  = 'pointer';
+}
+
+async function cCarregarFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => cDefinirFotoCard(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FREEPIK IA
+════════════════════════════════════════════════════════════════ */
+async function cGerarFotoFreepik(dataUrl) {
+  if (!dataUrl) { cSetStatus('Nenhuma foto carregada.', false); return; }
+  try {
+    cSetStatus('Enviando para Freepik…', true);
+    const resized = await resizeDataUrl(dataUrl, 1024, 0.82);
+    const base64  = resized.split(',')[1];
+    const genResult = await startGeneration(base64);
+
+    let imageSrc;
+    if (genResult.type === 'immediate') {
+      imageSrc = genResult.data;
+    } else {
+      cSetStatus('Gerando com IA… (aguarde ~30s)', true);
+      imageSrc = await cPollGeneration(genResult.taskId);
+    }
+
+    const final = imageSrc.startsWith('http')
+      ? `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`
+      : imageSrc;
+    const imgEl = document.getElementById('c-bg-photo');
+    imgEl.src = final;
+    imgEl.style.display = 'block';
+    document.getElementById('c-placeholder').style.display = 'none';
+    cSetStatus('Foto IA pronta ✓', false);
+    setTimeout(() => cSetStatus('', false), 3000);
+  } catch (err) {
+    cSetStatus('Erro Freepik: ' + err.message, false);
+  }
+}
+
+async function startGeneration(base64Image) {
+  const body = {
+    prompt:           PROMPT,
+    reference_images: [base64Image],
+    aspect_ratio:     'traditional_3_4',
+    guidance_scale:   7
+  };
+  const res  = await fetch(`${API_BASE}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:   JSON.stringify(body)
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail = json?.errors ? '\n' + JSON.stringify(json.errors, null, 2) : '';
+    throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}${detail}`);
+  }
+  const taskId = json?.data?.task_id;
+  if (taskId) return { type: 'async', taskId };
+  const generated = json?.data?.generated;
+  if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
+  throw new Error('Resposta inesperada da API Freepik — veja o console.');
+}
+
+async function cPollGeneration(taskId) {
+  for (let i = 0; i < 80; i++) {
+    await sleep(3000);
+    const res = await fetch(`${API_BASE}/api/generate/${taskId}`);
+    if (!res.ok) continue;
+    const json   = await res.json().catch(() => null);
+    const status = (json?.data?.status || json?.status || '').toUpperCase();
+    if (status === 'COMPLETED') {
+      const generated = json?.data?.generated;
+      if (Array.isArray(generated) && generated.length > 0) return generated[0];
+    }
+    if (status === 'FAILED' || status === 'ERROR') throw new Error('A geração falhou na Freepik.');
+    cSetStatus(`Gerando com IA… ${(i + 1) * 3}s`, true);
+  }
+  throw new Error('Timeout na geração Freepik.');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   EXPORTAR PNG
+════════════════════════════════════════════════════════════════ */
+async function cExportar() {
+  const nome      = document.getElementById('c-inp-nome').value     || 'lider';
+  const sobrenome = document.getElementById('c-inp-sobrenome').value || '';
+
+  await document.fonts.ready;
+
+  const card    = document.getElementById('c-card');
+  const dataUrl = await domtoimage.toPng(card, {
+    width:   420,
+    height:  525,
+    scale:   1080 / 420,
+    bgcolor: '#0d0d0d',
+    style:   { borderRadius: '0', overflow: 'hidden' },
+  });
+
+  const slug = (nome + '-' + sobrenome).toLowerCase()
+    .replace(/\s+/g, '-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const link = document.createElement('a');
+  link.download = 'parabenizacao-' + slug + '.png';
+  link.href = dataUrl;
+  link.click();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════════════ */
+function esc(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function resizeDataUrl(dataUrl, maxSide = 1024, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+      const w = Math.round(img.width  * ratio);
+      const h = Math.round(img.height * ratio);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function cSetStatus(msg, loading) {
+  const bar     = document.getElementById('c-status-bar');
+  const spinner = document.getElementById('c-spinner');
+  const msgEl   = document.getElementById('c-status-msg');
+  bar.style.display     = msg ? 'flex' : 'none';
+  spinner.style.display = loading ? 'block' : 'none';
+  msgEl.textContent     = msg;
+}
+
+document.addEventListener('DOMContentLoaded', cAtualizar);
+</script>
+</body>
+</html>
