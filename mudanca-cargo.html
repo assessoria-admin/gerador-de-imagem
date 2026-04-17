@@ -99,30 +99,40 @@
     .cargo-wrap {
       display: flex; gap: 36px; align-items: flex-start; width: 100%;
     }
-    .cargo-col-left { flex-shrink: 0; width: 420px; }
-    .cargo-col-right { flex: 1; min-width: 280px; }
+    /* Inputs: esquerda | Preview+Copy: direita */
+    .cargo-col-inputs  { flex: 1; min-width: 280px; order: 1; }
+    .cargo-col-preview { flex-shrink: 0; order: 2; }
 
     @media (max-width: 900px) {
       .cargo-wrap { flex-direction: column; align-items: center; }
-      .cargo-col-right { width: 420px; min-width: unset; }
-    }
-    @media (max-width: 460px) {
-      .cargo-col-left {
-        width: calc(100vw - 32px);
-        transform: scale(calc((100vw - 32px) / 420));
-        transform-origin: top center;
-      }
+      .cargo-col-inputs { width: 460px; min-width: unset; order: 2; }
+      .cargo-col-preview { order: 1; }
     }
 
-    /* ─── Card de preview ───────────────────────────────────────── */
-    .c-card {
-      width: 420px; height: 525px;
-      position: relative; overflow: hidden;
+    /* ─── Card wrapper (preview escalado) ──────────────────────── */
+    /* O card é nativo 1080×1350px; o wrapper escala para preview  */
+    .c-card-wrap {
+      width: 460px;
+      height: 575px;
+      overflow: hidden;
       border-radius: 16px;
       box-shadow: 0 32px 96px rgba(0,0,0,0.85);
-      isolation: isolate;
-      transform: translateZ(0);
+      flex-shrink: 0;
     }
+
+    /* ─── Card (dimensões nativas do export: 1080×1350) ─────────── */
+    .c-card {
+      width: 1080px;
+      height: 1350px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      /* Escala para preview: 460/1080 = 0.42593 */
+      transform: scale(0.42593);
+      transform-origin: top left;
+    }
+    /* Foto e overlay ficam atrás de tudo via z-index negativo */
     .c-bg-photo {
       position: absolute; inset: 0; width: 100%; height: 100%;
       object-fit: cover; object-position: center top; z-index: 0;
@@ -142,75 +152,82 @@
     }
     .c-top-bar {
       position: absolute; top: 0; left: 0; right: 0;
-      height: 3px;
+      height: 7px;
       background: linear-gradient(90deg, #03d8d2, #007887);
       z-index: 10;
     }
+    .c-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 47px 47px 0;
+      position: relative;
+      z-index: 10;
+    }
     .c-logo-rl {
-      position: absolute; top: 16px; left: 20px;
-      z-index: 10; display: flex; align-items: center;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+      display: flex; align-items: center;
+      filter: drop-shadow(0 5px 19px rgba(0,0,0,0.6));
     }
     .c-badge {
-      position: absolute; top: 20px; right: 18px;
-      z-index: 10; display: flex; align-items: center;
-      gap: 5px; padding: 5px 10px;
-      background: rgba(3,216,210,0.12);
-      border: 1px solid rgba(3,216,210,0.40);
-      border-radius: 20px; backdrop-filter: blur(4px);
+      display: flex; align-items: center;
+      gap: 12px; padding: 12px 23px;
+      background: rgba(3,216,210,0.18);
+      border: 2px solid rgba(3,216,210,0.40);
+      border-radius: 47px;
     }
     .c-badge .dot {
-      width: 5px; height: 5px;
+      width: 12px; height: 12px;
       border-radius: 50%; background: #03d8d2; flex-shrink: 0;
     }
     .c-badge span {
-      font-size: 8.5px; font-weight: 700;
-      letter-spacing: 1.5px; color: #03d8d2;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: 3.5px; color: #03d8d2;
       text-transform: uppercase; white-space: nowrap;
     }
+    .c-spacer { flex: 1; min-height: 517px; }
     .c-content {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 0 26px 28px; z-index: 5;
+      position: relative;
+      padding: 0 61px 66px; z-index: 5;
     }
-    .c-cargo-bloco { margin-bottom: 12px; }
+    .c-cargo-bloco { margin-bottom: 28px; }
     .c-cargo-label1 {
-      font-size: 14px; font-weight: 600;
+      font-size: 33px; font-weight: 600;
       color: rgba(3,216,210,0.7);
-      letter-spacing: 2.2px; text-transform: uppercase;
-      margin-bottom: 1px; white-space: nowrap;
+      letter-spacing: 5.2px; text-transform: uppercase;
+      margin-bottom: 2px; white-space: nowrap;
     }
     .c-cargo-label {
-      font-size: 18px; font-weight: 800;
+      font-size: 42px; font-weight: 800;
       color: rgba(3,216,210,0.7);
-      letter-spacing: 2.2px; text-transform: uppercase;
-      margin-bottom: 5px; white-space: nowrap;
+      letter-spacing: 5.2px; text-transform: uppercase;
+      margin-bottom: 12px; white-space: nowrap;
     }
     .c-cargo-nome {
-      font-size: 30px; font-weight: 800;
-      color: #ffffff; line-height: 1.05; letter-spacing: -0.4px;
+      font-size: 70px; font-weight: 800;
+      color: #ffffff; line-height: 1.05; letter-spacing: -0.9px;
     }
     .c-nome-bloco {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 19px; margin-bottom: 33px;
     }
     .c-nome-bloco .separador-v {
-      width: 2px; height: 14px;
-      background: rgba(3,216,210,0.5); border-radius: 1px; flex-shrink: 0;
+      width: 5px; height: 33px;
+      background: rgba(3,216,210,0.5); border-radius: 2px; flex-shrink: 0;
     }
     .c-nome {
-      font-size: 15px; font-weight: 600;
+      font-size: 35px; font-weight: 600;
       color: rgba(255,255,255,0.65); line-height: 1.2; white-space: nowrap;
     }
     .c-nome .sobrenome { color: rgba(255,255,255,0.85); font-weight: 700; }
     .c-empresa-destaque {
-      margin-bottom: 14px; display: flex; flex-direction: column; gap: 2px;
-      border-left: 3px solid #03d8d2; padding-left: 12px;
+      margin-bottom: 33px; display: flex; flex-direction: column; gap: 5px;
+      border-left: 7px solid #03d8d2; padding-left: 28px;
     }
     .c-empresa-label {
-      font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6);
-      text-transform: uppercase; letter-spacing: 1px;
+      font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.6);
+      text-transform: uppercase; letter-spacing: 2.3px;
     }
     .c-empresa-nome {
-      font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;
+      font-size: 52px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;
     }
 
     /* ─── Copy LinkedIn ─────────────────────────────────────────── */
@@ -337,20 +354,27 @@
   <div class="cargo-wrap">
 
     <!-- COLUNA ESQUERDA: preview + copy -->
-    <div class="cargo-col-left">
+    <div class="cargo-col-preview">
 
+      <div class="c-card-wrap">
       <div class="c-card" id="c-card">
         <div class="c-top-bar"></div>
 
-        <div class="c-logo-rl">
-          <img style="height:28px; width:auto;" src="/logo-rl.png" alt="Rede Líderes" />
+        <!-- Header em fluxo normal: logo + badge lado a lado -->
+        <div class="c-header">
+          <div class="c-logo-rl">
+            <img style="height:66px; width:auto;" src="/logo-rl.png" alt="Rede Líderes" />
+          </div>
+          <div class="c-badge">
+            <div class="dot"></div>
+            <span>Nova Conquista</span>
+          </div>
         </div>
 
-        <div class="c-badge">
-          <div class="dot"></div>
-          <span>Nova Conquista</span>
-        </div>
+        <!-- Espaçador: empurra o conteúdo para baixo -->
+        <div class="c-spacer"></div>
 
+        <!-- Background (absoluto, fica atrás via z-index) -->
         <div class="c-bg-placeholder" id="c-placeholder">
           <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
             <circle cx="60" cy="42" r="26" stroke="white" stroke-width="2"/>
@@ -358,9 +382,9 @@
           </svg>
         </div>
         <img class="c-bg-photo" id="c-bg-photo" src="" alt="" style="display:none;">
-
         <div class="c-overlay-gradient"></div>
 
+        <!-- Conteúdo em fluxo normal -->
         <div class="c-content">
           <div class="c-nome-bloco">
             <div class="separador-v"></div>
@@ -381,6 +405,7 @@
           </div>
         </div>
       </div>
+      </div><!-- /.c-card-wrap -->
 
       <div class="c-copy-section">
         <div class="c-copy-header">
@@ -391,10 +416,10 @@
         <div class="c-copy-footer">Rede Lideres · www.redelideres.com</div>
       </div>
 
-    </div><!-- /.cargo-col-left -->
+    </div><!-- /.cargo-col-preview -->
 
-    <!-- COLUNA DIREITA: inputs -->
-    <div class="cargo-col-right">
+    <!-- COLUNA ESQUERDA: inputs -->
+    <div class="cargo-col-inputs">
       <div class="c-painel">
 
         <div class="c-field">
@@ -455,13 +480,13 @@
         </div>
 
       </div>
-    </div><!-- /.cargo-col-right -->
+    </div><!-- /.cargo-col-inputs -->
 
   </div><!-- /.cargo-wrap -->
 
 </div><!-- /.wrap -->
 
-<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.4.0/dist/dom-to-image-more.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <script>
 /* ════════════════════════════════════════════════════════════════
@@ -737,25 +762,94 @@ async function cExportar() {
   const nome      = document.getElementById('c-inp-nome').value     || 'lider';
   const sobrenome = document.getElementById('c-inp-sobrenome').value || '';
 
+  cSetStatus('Exportando…', true);
   await document.fonts.ready;
 
-  const card    = document.getElementById('c-card');
-  const dataUrl = await domtoimage.toPng(card, {
-    width:   420,
-    height:  525,
-    scale:   1080 / 420,
-    bgcolor: '#0d0d0d',
-    style:   { borderRadius: '0', overflow: 'hidden' },
-  });
+  const card = document.getElementById('c-card');
+  const outW = 1080;
+  const outH = 1350;
 
+  const canvas = document.createElement('canvas');
+  canvas.width  = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+
+  /* ── 1. Fundo: foto com object-fit:cover + object-position:center top ── */
+  const bgImg = document.getElementById('c-bg-photo');
+  if (bgImg.style.display !== 'none' && bgImg.src) {
+    await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const imgAspect    = img.naturalWidth / img.naturalHeight;
+        const canvasAspect = outW / outH;
+        let drawW, drawH, drawX, drawY;
+        if (imgAspect > canvasAspect) {
+          drawH = outH; drawW = outH * imgAspect;
+          drawX = (outW - drawW) / 2; drawY = 0;
+        } else {
+          drawW = outW; drawH = outW / imgAspect;
+          drawX = 0; drawY = 0;
+        }
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        resolve();
+      };
+      img.onerror = resolve;
+      img.src = bgImg.src;
+    });
+  } else {
+    const grad = ctx.createLinearGradient(0, 0, outW * 0.6, outH);
+    grad.addColorStop(0, '#1a2a2a');
+    grad.addColorStop(0.4, '#0d1a1a');
+    grad.addColorStop(1, '#07111a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, outW, outH);
+  }
+
+  /* ── 2. Overlay via html2canvas (clone offscreen — sem flash, fonte local ok) ── */
+  const bgImgSrc = bgImg.src;
+  const clone = card.cloneNode(true);
+  clone.style.cssText = [
+    'position:fixed',
+    'top:-9999px',
+    'left:-9999px',
+    'transform:none',
+    'border-radius:0',
+    'width:1080px',
+    'height:1350px',
+    'overflow:hidden',
+  ].join(';');
+  /* Propaga a foto para o clone */
+  const cloneBg = clone.querySelector('#c-bg-photo');
+  cloneBg.style.display = 'none'; /* foto já está no canvas; overlay deve ser transparente */
+  const clonePh = clone.querySelector('#c-placeholder');
+  clonePh.style.display = 'none';
+  document.body.appendChild(clone);
+  try {
+    const overlayCanvas = await html2canvas(clone, {
+      scale: 1,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: null,
+      width: outW,
+      height: outH,
+      logging: false,
+      x: 0, y: 0, scrollX: 0, scrollY: 0,
+    });
+    ctx.drawImage(overlayCanvas, 0, 0, outW, outH);
+  } finally {
+    document.body.removeChild(clone);
+  }
+
+  /* ── 3. Download ── */
   const slug = (nome + '-' + sobrenome).toLowerCase()
     .replace(/\s+/g, '-')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const link = document.createElement('a');
   link.download = 'parabenizacao-' + slug + '.png';
-  link.href = dataUrl;
+  link.href = canvas.toDataURL('image/png');
   link.click();
+  cSetStatus('', false);
 }
 
 /* ════════════════════════════════════════════════════════════════
