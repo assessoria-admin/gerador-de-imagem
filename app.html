@@ -830,12 +830,19 @@
           <div class="c-divider"></div>
 
           <div class="c-actions">
-            <button class="c-btn c-btn-foto">
+            <button class="c-btn c-btn-foto" id="c-btn-foto-wrap">
               📷 Selecionar foto
-              <input type="file" accept="image/*" onchange="cCarregarFoto(this)">
+              <input type="file" accept="image/*" id="c-file-foto" onchange="cCarregarFoto(this)">
             </button>
             <button class="c-btn" onclick="cExportar()">⬇ Exportar PNG</button>
           </div>
+
+          <!-- Status da geração de foto IA -->
+          <div class="status-bar" id="c-status-bar" style="margin-top:12px; display:none;">
+            <div class="spinner" id="c-spinner" style="display:none;"></div>
+            <span class="status-msg" id="c-status-msg"></span>
+          </div>
+
         </div>
       </div><!-- /.cargo-col-right -->
 
@@ -1418,17 +1425,88 @@ function cCopiarTexto() {
   });
 }
 
-function cCarregarFoto(input) {
+async function cCarregarFoto(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.getElementById('c-bg-photo');
-    img.src = e.target.result;
-    img.style.display = 'block';
-    document.getElementById('c-placeholder').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
+
+  // Desabilita botão de foto durante geração
+  const btnFoto = document.getElementById('c-btn-foto-wrap');
+  btnFoto.style.pointerEvents = 'none';
+  btnFoto.style.opacity = '0.4';
+
+  cSetStatus('Preparando foto de referência…', false, true);
+
+  try {
+    const dataUrl   = await resizeImage(file, 1024, 0.82);
+    const base64Img = dataUrl.split(',')[1];
+
+    cSetStatus('Enviando para Freepik API…', false, true);
+    const genResult = await startGeneration(base64Img);
+
+    let imageSrc;
+    if (genResult.type === 'immediate') {
+      imageSrc = genResult.data;
+    } else {
+      cSetStatus('Gerando imagem com IA… (pode levar ~30s)', false, true);
+      imageSrc = await cPollGeneration(genResult.taskId);
+    }
+
+    // Carrega a imagem gerada como fundo do card
+    const finalSrc = imageSrc.startsWith('http')
+      ? `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`
+      : imageSrc;
+
+    const bgImg = document.getElementById('c-bg-photo');
+    bgImg.onload = () => {
+      bgImg.style.display = 'block';
+      document.getElementById('c-placeholder').style.display = 'none';
+      cSetStatus('Imagem gerada com identidade visual RL ✓', false, false);
+      setTimeout(() => cSetStatus('', false, false), 3000);
+    };
+    bgImg.onerror = () => cSetStatus('Erro ao carregar imagem gerada.', true, false);
+    bgImg.src = finalSrc;
+
+  } catch (err) {
+    console.error(err);
+    cSetStatus('Erro: ' + err.message, true, false);
+  } finally {
+    btnFoto.style.pointerEvents = '';
+    btnFoto.style.opacity = '';
+    // Reset input para permitir selecionar o mesmo arquivo novamente
+    document.getElementById('c-file-foto').value = '';
+  }
+}
+
+async function cPollGeneration(taskId) {
+  for (let i = 0; i < 80; i++) {
+    await sleep(3000);
+    const res = await fetch(`${API_BASE}/api/generate/${taskId}`);
+    if (!res.ok) continue;
+
+    const json   = await res.json().catch(() => null);
+    const status = (json?.data?.status || json?.status || '').toUpperCase();
+
+    if (status === 'COMPLETED') {
+      const generated = json?.data?.generated;
+      if (Array.isArray(generated) && generated.length > 0) return generated[0];
+    }
+    if (status === 'FAILED' || status === 'ERROR') {
+      throw new Error('A geração da imagem falhou na Freepik API.');
+    }
+    cSetStatus(`Gerando imagem… ${(i + 1) * 3}s`, false, true);
+  }
+  throw new Error('Timeout: a geração demorou mais do que o esperado.');
+}
+
+function cSetStatus(msg, isError, loading) {
+  const bar     = document.getElementById('c-status-bar');
+  const spinner = document.getElementById('c-spinner');
+  const msgEl   = document.getElementById('c-status-msg');
+
+  bar.style.display     = msg ? 'flex' : 'none';
+  spinner.style.display = loading ? 'block' : 'none';
+  msgEl.textContent     = msg;
+  msgEl.className       = 'status-msg' + (isError ? ' err' : '');
 }
 
 async function cExportar() {
