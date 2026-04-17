@@ -46,7 +46,7 @@
       color: #fff;
       font-family: var(--font);
       min-height: 100vh;
-      padding: 48px 20px 80px;
+      padding: 96px 20px 80px;
     }
 
     /* ─── Layout ────────────────────────────────────────────────── */
@@ -284,9 +284,37 @@
       .foto-col-preview { width: 100%; position: static; }
       .foto-prev-card { width: 100%; height: auto; aspect-ratio: 3/4; }
     }
+
+    /* ─── Tool Nav ──────────────────────────────────────────────── */
+    .tool-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; justify-content: center; gap: 8px;
+      background: rgba(8,8,8,.88); backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1c1c1c;
+      padding: 10px 16px;
+    }
+    .tool-nav a {
+      font-family: 'Neue Machina', sans-serif;
+      font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; text-decoration: none;
+      color: #555; padding: 7px 18px; border-radius: 8px;
+      border: 1px solid transparent;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .tool-nav a:hover { color: #fff; }
+    .tool-nav a.active {
+      color: #41c1c2; border-color: rgba(65,193,194,.35);
+      background: rgba(65,193,194,.07);
+    }
   </style>
 </head>
 <body>
+
+  <nav class="tool-nav">
+    <a class="active" href="/minibio.html">✨ Mini Bio</a>
+    <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
+  </nav>
+
 <div class="wrap">
 
   <a class="back-link" href="/app.html">← Voltar ao hub</a>
