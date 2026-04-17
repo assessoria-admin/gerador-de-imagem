@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Carrossel de Artigo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet" />
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 96px 20px 80px;
+    }
+
+    .wrap { max-width: 1100px; margin: 0 auto; }
+
+    /* ─── Header ────────────────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 44px; }
+    .header-rule {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .header-rule span {
+      flex: 1; height: 1px; max-width: 60px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .header-rule span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    h1 { font-size: 20px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+    .back-link {
+      display: inline-block; margin-bottom: 28px;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+      text-decoration: none; transition: color .2s;
+    }
+    .back-link:hover { color: var(--teal); }
+
+    /* ─── Card ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    /* ─── Form fields ───────────────────────────────────────────── */
+    .field { margin-bottom: 22px; }
+    label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 9px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 15px;
+      color: #fff; font-family: var(--font);
+      font-size: 14px; outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: rgba(65,193,194,.45);
+      background: rgba(65,193,194,.03);
+    }
+    input[type="text"]::placeholder, textarea::placeholder { color: #2a2a2a; }
+    textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+    .hint { font-size: 11px; color: #333; margin-top: 6px; }
+
+    /* ─── Gender toggle ─────────────────────────────────────────── */
+    .gender-toggle { display: flex; gap: 8px; }
+    .gender-btn {
+      flex: 1; padding: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); font-family: var(--font);
+      font-size: 11px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .gender-btn.active {
+      border-color: rgba(65,193,194,.45);
+      background: rgba(65,193,194,.08);
+      color: var(--teal);
+    }
+
+    /* ─── Autocomplete ──────────────────────────────────────────── */
+    .ac-wrap { position: relative; }
+    .ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      z-index: 200; background: #141414;
+      border: 1px solid rgba(65,193,194,.25);
+      border-radius: 8px; overflow: hidden;
+      display: none; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+      padding: 11px 15px; cursor: pointer;
+      border-bottom: 1px solid var(--border); transition: background .15s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover { background: rgba(65,193,194,.08); }
+    .ac-item-name { font-size: 14px; color: #fff; }
+    .ac-item-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ac-empty { padding: 13px 15px; font-size: 12px; color: var(--muted); text-align: center; letter-spacing: .5px; }
+    .ac-loading { padding: 13px 15px; font-size: 12px; color: var(--teal); display: flex; align-items: center; gap: 8px; }
+    .ac-spin {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(65,193,194,.2);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+
+    /* ─── Upload zone ───────────────────────────────────────────── */
+    .upload-zone {
+      position: relative; border: 1px dashed var(--border);
+      border-radius: 8px; padding: 22px 16px; text-align: center;
+      cursor: pointer; transition: border-color .2s, background .2s; overflow: hidden;
+    }
+    .upload-zone:hover { border-color: rgba(65,193,194,.4); background: rgba(65,193,194,.03); }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-idle { pointer-events: none; }
+    .upload-idle .arrow { font-size: 28px; line-height: 1; color: var(--teal); margin-bottom: 8px; }
+    .upload-idle p { font-size: 13px; color: var(--muted); }
+    .upload-idle strong { color: var(--teal); }
+    .upload-preview { display: none; align-items: center; gap: 14px; pointer-events: none; }
+    #photoThumb {
+      width: 56px; height: 56px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--teal); flex-shrink: 0;
+    }
+    .upload-preview-info .label-ok { font-size: 11px; color: var(--teal); letter-spacing: 1px; }
+    .upload-preview-info .fname {
+      font-size: 12px; color: #aaa; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+    }
+
+    /* ─── Main layout ───────────────────────────────────────────── */
+    .main-wrap { display: flex; gap: 36px; align-items: flex-start; }
+    .form-col { flex: 1; min-width: 0; }
+    .preview-col { flex-shrink: 0; width: 220px; position: sticky; top: 24px; }
+
+    /* ─── Slide previews ────────────────────────────────────────── */
+    .slides-preview { display: flex; flex-direction: column; gap: 10px; }
+    .slide-thumb {
+      width: 100%; aspect-ratio: 4/5;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: #0a0a0a; overflow: hidden; position: relative;
+      cursor: pointer; transition: border-color .2s;
+    }
+    .slide-thumb:hover { border-color: rgba(65,193,194,.35); }
+    .slide-thumb canvas { width: 100%; height: 100%; display: block; }
+    .slide-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      font-size: 8px; font-weight: 800; letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.5); text-transform: uppercase;
+      background: rgba(0,0,0,.7); padding: 5px 8px;
+      text-align: center;
+    }
+    .slides-col-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 12px; text-align: center;
+    }
+
+    /* ─── Buttons ───────────────────────────────────────────────── */
+    .btn-generate {
+      width: 100%; margin-top: 28px;
+      background: var(--teal); color: #000; border: none;
+      border-radius: 8px; padding: 15px; font-family: var(--font);
+      font-size: 11px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase;
+      cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    .btn-generate:hover:not(:disabled) { opacity: .88; }
+    .btn-generate:active:not(:disabled) { transform: scale(.99); }
+    .btn-generate:disabled { opacity: .28; cursor: not-allowed; }
+
+    .btn-download {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; margin-top: 8px; background: transparent;
+      border: 1px solid var(--teal); color: var(--teal);
+      border-radius: 8px; padding: 13px; font-family: var(--font);
+      font-size: 11px; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .btn-download:hover:not(:disabled) { background: var(--teal); color: #000; }
+    .btn-download:disabled { opacity: .3; cursor: not-allowed; border-color: var(--border); color: var(--muted); }
+
+    /* ─── Status ────────────────────────────────────────────────── */
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; margin-top: 18px; }
+    .spinner {
+      display: none; flex-shrink: 0; width: 15px; height: 15px;
+      border: 2px solid rgba(65,193,194,.2); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
+    .status-msg.err { color: #ff6b6b; }
+
+    /* ─── Tool Nav ──────────────────────────────────────────────── */
+    .tool-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+      background: rgba(8,8,8,.88); backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1c1c1c; padding: 10px 16px;
+    }
+    .tool-nav a {
+      font-family: 'Neue Machina', sans-serif;
+      font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; text-decoration: none;
+      color: #555; padding: 7px 18px; border-radius: 8px;
+      border: 1px solid transparent;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .tool-nav a:hover { color: #fff; }
+    .tool-nav a.active {
+      color: #41c1c2; border-color: rgba(65,193,194,.35);
+      background: rgba(65,193,194,.07);
+    }
+
+    @media (max-width: 900px) {
+      .main-wrap { flex-direction: column; }
+      .preview-col { width: 100%; position: static; }
+      .slides-preview { flex-direction: row; overflow-x: auto; padding-bottom: 8px; }
+      .slide-thumb { flex-shrink: 0; width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="tool-nav">
+    <a href="/minibio.html">✨ Mini Bio</a>
+    <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
+    <a class="active" href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
+  </nav>
+
+  <div class="wrap">
+    <a class="back-link" href="/app.html">← Voltar ao hub</a>
+
+    <header>
+      <div class="header-rule">
+        <span></span>
+        <h1>Carrossel de Artigo</h1>
+        <span></span>
+      </div>
+      <p>Gera 5 slides prontos para o Instagram · capa + artigo + CTA</p>
+    </header>
+
+    <div class="main-wrap">
+
+      <!-- COLUNA ESQUERDA: form -->
+      <div class="form-col">
+        <div class="card">
+
+          <div class="field">
+            <label>Buscar na Rede Líderes</label>
+            <div class="ac-wrap" id="acWrap">
+              <input type="text" id="fullName"
+                placeholder="Digite o nome para buscar…"
+                autocomplete="off" />
+              <div class="ac-dropdown" id="acDropdown"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Gênero</label>
+            <div class="gender-toggle">
+              <button type="button" class="gender-btn active" id="btnMasc" onclick="setGender('M')">Masculino</button>
+              <button type="button" class="gender-btn" id="btnFem" onclick="setGender('F')">Feminino</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Cargo</label>
+            <input type="text" id="jobTitle"
+              placeholder="Preenchido automaticamente pelo Notion"
+              autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label>3 Últimas Empresas</label>
+            <input type="text" id="companies"
+              placeholder="Preenchido automaticamente pelo Notion"
+              autocomplete="off" />
+            <div class="hint">Separadas por vírgula — exibidas como Empresa | Empresa | Empresa</div>
+          </div>
+
+          <div class="field">
+            <label>Foto de Referência</label>
+            <div class="upload-zone" id="uploadZone">
+              <input type="file" id="photoFile" accept="image/*" />
+              <div class="upload-idle" id="uploadIdle">
+                <div class="arrow">↑</div>
+                <p><strong>Escolher foto</strong>&nbsp;ou arrastar aqui</p>
+              </div>
+              <div class="upload-preview" id="uploadPreview">
+                <img id="photoThumb" alt="" />
+                <div class="upload-preview-info">
+                  <div class="label-ok">Foto selecionada</div>
+                  <div class="fname" id="photoFname"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Texto do Artigo</label>
+            <textarea id="articleText" rows="9"
+              placeholder="Cole aqui o texto do artigo. Será dividido automaticamente em 3 slides…">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque.
+
+Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet consectetur.</textarea>
+            <div class="hint">O artigo será dividido automaticamente em 3 partes por parágrafo</div>
+          </div>
+
+          <div class="status-bar">
+            <div class="spinner" id="spinner"></div>
+            <span class="status-msg" id="statusMsg"></span>
+          </div>
+
+          <button class="btn-generate" id="btnGerar" onclick="gerarCarrossel()">
+            ✨ &nbsp; Gerar Carrossel
+          </button>
+
+          <button class="btn-download" id="btnDownload" disabled onclick="downloadAll()">
+            ↓ &nbsp; Baixar Todos os Slides (PNG)
+          </button>
+
+        </div>
+      </div><!-- /.form-col -->
+
+      <!-- COLUNA DIREITA: previews -->
+      <div class="preview-col">
+        <div class="slides-col-label">Preview</div>
+        <div class="slides-preview">
+          <div class="slide-thumb">
+            <canvas id="canvas1"></canvas>
+            <div class="slide-label">01 — Capa</div>
+          </div>
+          <div class="slide-thumb">
+            <canvas id="canvas2"></canvas>
+            <div class="slide-label">02 — Artigo</div>
+          </div>
+          <div class="slide-thumb">
+            <canvas id="canvas3"></canvas>
+            <div class="slide-label">03 — Artigo</div>
+          </div>
+          <div class="slide-thumb">
+            <canvas id="canvas4"></canvas>
+            <div class="slide-label">04 — Artigo</div>
+          </div>
+          <div class="slide-thumb">
+            <canvas id="canvas5"></canvas>
+            <div class="slide-label">05 — CTA</div>
+          </div>
+        </div>
+      </div><!-- /.preview-col -->
+
+    </div><!-- /.main-wrap -->
+  </div><!-- /.wrap -->
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════════
+     CONFIG
+  ═══════════════════════════════════════════════════════════════ */
+  const SW = 1080, SH = 1350;
+  const TEAL      = '#41c1c2';
+  const TEAL_DARK = '#001E23';
+  const SLIDE_TITLE = 'COMO DECIDEM AS LIDERANÇAS';
+
+  const PROMPT_M = `Professional executive power portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is male. Wearing a fitted solid black dress shirt, collar open — no tie, no blazer. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Dead-center frontal bust. Chin slightly forward, jaw relaxed, eyes locked intensely into lens. No smile. Quiet authority. Background: seamless deep teal-black (#001E23), clean, smooth, no patterns, no text. Single large umbrella overhead — butterfly pattern, shadow directly beneath nose. Teal rim light (#03d8d2) barely tracing both shoulder edges. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO publication names, NO equipment branding, NO logos visible anywhere. Do NOT render written words. Clean photograph only. No visible lighting equipment, no light stands, no overhead gear, no ceiling in frame. Camera stays at or below eye level. Subject must look naturally present — NOT pasted or composited.`;
+
+  const PROMPT_F = `Professional executive power portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is female. Wearing a fitted solid black women's blouse, collar open — no tie, no blazer. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Dead-center frontal bust. Chin slightly forward, jaw relaxed, eyes locked intensely into lens. No smile. Quiet authority. Background: seamless deep teal-black (#001E23), clean, smooth, no patterns, no text. Single large umbrella overhead — butterfly pattern, shadow directly beneath nose. Teal rim light (#03d8d2) barely tracing both shoulder edges. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO publication names, NO equipment branding, NO logos visible anywhere. Do NOT render written words. Clean photograph only. No visible lighting equipment, no light stands, no overhead gear, no ceiling in frame. Camera stays at or below eye level. Subject must look naturally present — NOT pasted or composited.`;
+
+  let gender = 'M';
+  let slidesReady = false;
+
+  function setGender(g) {
+    gender = g;
+    document.getElementById('btnMasc').classList.toggle('active', g === 'M');
+    document.getElementById('btnFem').classList.toggle('active', g === 'F');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     NOTION AUTOCOMPLETE
+  ═══════════════════════════════════════════════════════════════ */
+  let acTimer = null;
+  const nameInput  = document.getElementById('fullName');
+  const acDropdown = document.getElementById('acDropdown');
+  const acWrap     = document.getElementById('acWrap');
+
+  nameInput.addEventListener('input', () => {
+    const q = nameInput.value.trim();
+    clearTimeout(acTimer);
+    if (q.length < 2) { acClose(); return; }
+    acDropdown.innerHTML = '<div class="ac-loading"><div class="ac-spin"></div>Buscando…</div>';
+    acDropdown.classList.add('open');
+    acTimer = setTimeout(() => notionSearch(q), 350);
+  });
+
+  document.addEventListener('click', e => { if (!acWrap.contains(e.target)) acClose(); });
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Escape') acClose(); });
+
+  async function notionSearch(q) {
+    try {
+      const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      acRender(data.results || []);
+    } catch {
+      acDropdown.innerHTML = '<div class="ac-empty">Erro ao buscar no Notion</div>';
+    }
+  }
+
+  function acRender(results) {
+    if (!results.length) {
+      acDropdown.innerHTML = '<div class="ac-empty">Nenhum resultado encontrado</div>';
+      acDropdown.classList.add('open');
+      return;
+    }
+    acDropdown.innerHTML = '';
+    results.forEach(person => {
+      const el = document.createElement('div');
+      el.className = 'ac-item';
+      el.innerHTML = `
+        <div class="ac-item-name">${esc(person.name)}</div>
+        ${person.cargo ? `<div class="ac-item-role">${esc(person.cargo)}</div>` : ''}
+      `;
+      el.addEventListener('mousedown', e => { e.preventDefault(); acSelect(person); });
+      acDropdown.appendChild(el);
+    });
+    acDropdown.classList.add('open');
+  }
+
+  function acSelect(person) {
+    nameInput.value = person.name || '';
+    if (person.cargo)    document.getElementById('jobTitle').value  = person.cargo;
+    if (person.empresas) document.getElementById('companies').value = person.empresas;
+    if (person.photoUrl) loadNotionPhoto(person.photoUrl);
+    acClose();
+  }
+
+  async function loadNotionPhoto(url) {
+    try {
+      setStatus('Carregando foto do Notion…');
+      const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const res     = await fetch(proxied);
+      const blob    = await res.blob();
+      const dataUrl = await new Promise(resolve => {
+        const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob);
+      });
+      document.getElementById('photoThumb').src         = dataUrl;
+      document.getElementById('photoFname').textContent = 'Foto do Notion';
+      document.getElementById('uploadIdle').style.display    = 'none';
+      document.getElementById('uploadPreview').style.display = 'flex';
+      window._notionPhotoDataUrl = dataUrl;
+      setStatus('Foto carregada ✓'); setTimeout(() => setStatus(''), 2000);
+    } catch { setStatus('Não foi possível carregar a foto.', true); }
+  }
+
+  function acClose() { acDropdown.classList.remove('open'); }
+  function esc(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     FILE UPLOAD
+  ═══════════════════════════════════════════════════════════════ */
+  document.getElementById('photoFile').addEventListener('change', function () {
+    const file = this.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('photoThumb').src         = e.target.result;
+      document.getElementById('photoFname').textContent = file.name;
+      document.getElementById('uploadIdle').style.display    = 'none';
+      document.getElementById('uploadPreview').style.display = 'flex';
+      window._notionPhotoDataUrl = null;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     GERAR CARROSSEL
+  ═══════════════════════════════════════════════════════════════ */
+  async function gerarCarrossel() {
+    const fullName   = nameInput.value.trim();
+    const photoFile  = document.getElementById('photoFile').files[0];
+    const articleRaw = document.getElementById('articleText').value.trim();
+
+    if (!fullName)   { setStatus('Informe o nome da pessoa.', true); return; }
+    if (!photoFile && !window._notionPhotoDataUrl) {
+      setStatus('Selecione ou carregue uma foto de referência.', true); return;
+    }
+    if (!articleRaw) { setStatus('Cole o texto do artigo.', true); return; }
+
+    const nameParts  = fullName.split(/\s+/);
+    const firstName  = nameParts[0] || '';
+    const lastName   = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+    const rawComp    = document.getElementById('companies').value.trim();
+    const companies  = rawComp
+      ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
+      : '';
+    const articleParts = splitArticle(articleRaw);
+
+    setLoading(true);
+    slidesReady = false;
+    document.getElementById('btnDownload').disabled = true;
+
+    try {
+      setStatus('Preparando foto de referência…');
+      let dataUrl;
+      if (photoFile) {
+        dataUrl = await resizeImage(photoFile, 1024, 0.82);
+      } else {
+        dataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
+      }
+      const base64Img = dataUrl.split(',')[1];
+
+      setStatus('Enviando para Freepik API…');
+      const prompt    = gender === 'M' ? PROMPT_M : PROMPT_F;
+      const genResult = await startGeneration(base64Img, prompt);
+
+      let imageSrc;
+      if (genResult.type === 'immediate') {
+        imageSrc = genResult.data;
+      } else {
+        setStatus('Gerando imagem com IA… (pode levar ~30s)');
+        imageSrc = await pollGeneration(genResult.taskId);
+      }
+
+      setStatus('Compondo slides…');
+      await renderAllSlides(imageSrc, firstName, lastName, companies, articleParts);
+
+      setStatus('');
+      setLoading(false);
+      slidesReady = true;
+      document.getElementById('btnDownload').disabled = false;
+
+    } catch (err) {
+      console.error(err);
+      setStatus('Erro: ' + err.message, true);
+      setLoading(false);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ARTICLE SPLITTER
+  ═══════════════════════════════════════════════════════════════ */
+  function splitArticle(text) {
+    const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    if (paragraphs.length >= 3) {
+      const third = Math.ceil(paragraphs.length / 3);
+      return [
+        paragraphs.slice(0, third).join(' '),
+        paragraphs.slice(third, third * 2).join(' '),
+        paragraphs.slice(third * 2).join(' ')
+      ];
+    }
+    // Fallback: split by word count
+    const words = text.split(/\s+/);
+    const chunk = Math.ceil(words.length / 3);
+    return [
+      words.slice(0, chunk).join(' '),
+      words.slice(chunk, chunk * 2).join(' '),
+      words.slice(chunk * 2).join(' ')
+    ];
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SLIDE RENDERING
+  ═══════════════════════════════════════════════════════════════ */
+  async function renderAllSlides(photoSrc, firstName, lastName, companies, articleParts) {
+    await document.fonts.ready;
+    try {
+      await document.fonts.load('800 80px "Neue Machina"');
+      await document.fonts.load('400 40px "Neue Machina"');
+      await document.fonts.load('400 72px "Great Vibes"');
+    } catch (_) {}
+
+    const photo = await loadImage(photoSrc);
+
+    await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies);
+    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02');
+    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03');
+    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04');
+    await renderSlide5(document.getElementById('canvas5'), firstName, lastName);
+  }
+
+  /* ─── Slide 1: Capa ─────────────────────────────────────────── */
+  async function renderSlide1(canvas, photo, firstName, lastName, companies) {
+    canvas.width = SW; canvas.height = SH;
+    const ctx = canvas.getContext('2d');
+    const PAD = 60;
+
+    // Photo fill (cover crop)
+    const imgAR = photo.naturalWidth / photo.naturalHeight;
+    const canAR = SW / SH;
+    let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
+    if (imgAR > canAR) {
+      sw = photo.naturalHeight * canAR;
+      sx = (photo.naturalWidth - sw) / 2;
+    } else {
+      sh = photo.naturalWidth / canAR;
+      sy = (photo.naturalHeight - sh) / 4; // bias toward top (face)
+    }
+    ctx.drawImage(photo, sx, sy, sw, sh, 0, 0, SW, SH);
+
+    // Top vignette (for name readability)
+    const topGrad = ctx.createLinearGradient(0, 0, 0, SH * 0.30);
+    topGrad.addColorStop(0, 'rgba(0,0,0,0.60)');
+    topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, SW, SH * 0.30);
+
+    // Bottom gradient
+    const botGrad = ctx.createLinearGradient(0, SH * 0.38, 0, SH);
+    botGrad.addColorStop(0,    'rgba(0,0,0,0)');
+    botGrad.addColorStop(0.22, 'rgba(0,0,0,0.55)');
+    botGrad.addColorStop(1,    'rgba(0,0,0,0.96)');
+    ctx.fillStyle = botGrad;
+    ctx.fillRect(0, SH * 0.38, SW, SH * 0.62);
+
+    // Name in cursive — top right
+    ctx.font         = '400 72px "Great Vibes", cursive';
+    ctx.fillStyle    = '#ffffff';
+    ctx.textAlign    = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(firstName + ' ' + lastName, SW - PAD, 76);
+
+    // Teal horizontal separator
+    const lineY = Math.round(SH * 0.535);
+    ctx.strokeStyle = TEAL;
+    ctx.lineWidth   = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(PAD, lineY);
+    ctx.lineTo(SW - PAD, lineY);
+    ctx.stroke();
+
+    // Title — below separator
+    ctx.fillStyle    = '#ffffff';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    const titleBottom = renderFitTitle(ctx, SLIDE_TITLE, SW / 2, lineY + 48, SW - PAD * 2);
+
+    // MINI BIO label
+    const miniBioY = Math.max(titleBottom + 36, SH - 200);
+    ctx.font         = `800 22px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('MINI BIO', SW / 2, miniBioY);
+
+    // Companies
+    if (companies) {
+      ctx.font      = `400 28px "Neue Machina", sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(companies, SW / 2, miniBioY + 42);
+    }
+  }
+
+  /* ─── Slides 2–4: Artigo ────────────────────────────────────── */
+  async function renderArticleSlide(canvas, text, firstName, lastName, num) {
+    canvas.width = SW; canvas.height = SH;
+    const ctx = canvas.getContext('2d');
+    const PAD = 80;
+
+    // Background
+    ctx.fillStyle = '#080808';
+    ctx.fillRect(0, 0, SW, SH);
+
+    // Subtle top teal bar
+    ctx.fillStyle = TEAL;
+    ctx.fillRect(0, 0, SW, 4);
+
+    // Header: "REDE LÍDERES" left
+    ctx.font         = `800 20px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('REDE LÍDERES', PAD, 64);
+
+    // Header: slide counter right
+    ctx.fillStyle = 'rgba(65,193,194,0.40)';
+    ctx.textAlign = 'right';
+    ctx.fillText(num + ' / 05', SW - PAD, 64);
+
+    // Teal left accent bar
+    ctx.fillStyle = TEAL;
+    ctx.fillRect(PAD, 126, 4, 72);
+
+    // Article series label
+    ctx.font         = `800 17px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.35)';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(SLIDE_TITLE, PAD + 20, 140);
+
+    // Article text — large, auto-sized to fit
+    ctx.fillStyle    = '#ffffff';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    wrapText(ctx, text, PAD, 268, SW - PAD * 2, 50);
+
+    // Bottom separator
+    const lineY = SH - 140;
+    ctx.strokeStyle = 'rgba(65,193,194,0.30)';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, lineY);
+    ctx.lineTo(SW - PAD, lineY);
+    ctx.stroke();
+
+    // Person name
+    ctx.font         = `400 22px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.45)';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(firstName + ' ' + lastName, PAD, lineY + 26);
+
+    // Slide dot indicators
+    const dotY  = SH - 56;
+    const dotR  = 5;
+    const dotGap = 16;
+    const slides = ['02', '03', '04'];
+    const totalW = slides.length * dotR * 2 + (slides.length - 1) * (dotGap - dotR * 2);
+    let dotX = SW - PAD - totalW;
+    slides.forEach((s, i) => {
+      ctx.beginPath();
+      ctx.arc(dotX + dotR, dotY, dotR, 0, Math.PI * 2);
+      ctx.fillStyle = s === num ? TEAL : 'rgba(65,193,194,0.25)';
+      ctx.fill();
+      dotX += dotGap;
+    });
+  }
+
+  /* ─── Slide 5: CTA ──────────────────────────────────────────── */
+  async function renderSlide5(canvas, firstName, lastName) {
+    canvas.width = SW; canvas.height = SH;
+    const ctx = canvas.getContext('2d');
+    const PAD = 80;
+
+    // Background
+    const bg = ctx.createLinearGradient(0, 0, 0, SH);
+    bg.addColorStop(0, '#001E23');
+    bg.addColorStop(0.6, '#061014');
+    bg.addColorStop(1, '#080808');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, SW, SH);
+
+    // Top teal bar
+    ctx.fillStyle = TEAL;
+    ctx.fillRect(0, 0, SW, 6);
+
+    // "REDE LÍDERES" — centered, large
+    ctx.font         = `800 52px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('REDE LÍDERES', SW / 2, 260);
+
+    // Thin divider
+    ctx.strokeStyle = 'rgba(65,193,194,0.20)';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, 356); ctx.lineTo(SW - PAD, 356);
+    ctx.stroke();
+
+    // CTA copy — centered, large
+    const ctaLines = [
+      'A maior rede de líderes',
+      'executivos do Brasil.',
+      '',
+      'Conteúdo, conexão e',
+      'desenvolvimento para',
+      'quem transforma organizações.'
+    ];
+    ctx.font         = `400 48px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = '#ffffff';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    let ctaY = 416;
+    for (const line of ctaLines) {
+      if (line === '') { ctaY += 32; continue; }
+      ctx.fillText(line, SW / 2, ctaY);
+      ctaY += 68;
+    }
+
+    // Bottom teal bar
+    ctx.fillStyle = TEAL;
+    ctx.fillRect(0, SH - 6, SW, 6);
+
+    // URL
+    ctx.font         = `800 24px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(65,193,194,0.65)';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('rede-lideres.com.br', SW / 2, SH - 28);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     TEXT HELPERS
+  ═══════════════════════════════════════════════════════════════ */
+  function renderFitTitle(ctx, text, cx, y, maxW) {
+    let size = 88;
+    ctx.font = `800 ${size}px "Neue Machina", sans-serif`;
+    while (ctx.measureText(text).width > maxW && size > 30) {
+      size -= 2;
+      ctx.font = `800 ${size}px "Neue Machina", sans-serif`;
+    }
+    if (ctx.measureText(text).width <= maxW) {
+      ctx.fillText(text, cx, y);
+      return y + size * 1.2;
+    }
+    // Wrap into 2 lines
+    const words = text.split(' ');
+    const mid   = Math.ceil(words.length / 2);
+    const l1    = words.slice(0, mid).join(' ');
+    const l2    = words.slice(mid).join(' ');
+    ctx.fillText(l1, cx, y);
+    ctx.fillText(l2, cx, y + size * 1.22);
+    return y + size * 2.55;
+  }
+
+  function wrapText(ctx, text, x, y, maxW, startSize) {
+    let size = startSize;
+    const lineH = () => size * 1.55;
+
+    const computeLines = (sz) => {
+      ctx.font = `400 ${sz}px "Neue Machina", sans-serif`;
+      const words = text.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(test).width > maxW) { lines.push(cur); cur = w; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    };
+
+    const maxLines = Math.floor((SH - y - 180) / lineH());
+    let lines = computeLines(size);
+    while (lines.length > maxLines && size > 26) {
+      size -= 2;
+      lines = computeLines(size);
+    }
+
+    ctx.font      = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.fillStyle = '#ffffff';
+    let curY = y;
+    for (const line of lines) {
+      ctx.fillText(line, x, curY);
+      curY += lineH();
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     FREEPIK API
+  ═══════════════════════════════════════════════════════════════ */
+  async function startGeneration(base64Image, prompt) {
+    const body = {
+      prompt, reference_images: [base64Image],
+      aspect_ratio: 'traditional_3_4', guidance_scale: 7
+    };
+    const res  = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:   JSON.stringify(body)
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}`);
+    const taskId    = json?.data?.task_id;
+    if (taskId) return { type: 'async', taskId };
+    const generated = json?.data?.generated;
+    if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
+    throw new Error('Resposta inesperada da API Freepik.');
+  }
+
+  async function pollGeneration(taskId) {
+    for (let i = 0; i < 80; i++) {
+      await sleep(3000);
+      const res = await fetch(`/api/generate/${taskId}`);
+      if (!res.ok) continue;
+      const json   = await res.json().catch(() => null);
+      const status = (json?.data?.status || json?.status || '').toUpperCase();
+      if (status === 'COMPLETED') {
+        const generated = json?.data?.generated;
+        if (Array.isArray(generated) && generated.length > 0) return generated[0];
+      }
+      if (status === 'FAILED' || status === 'ERROR') throw new Error('A geração da imagem falhou na Freepik API.');
+      setStatus(`Gerando imagem… ${(i + 1) * 3}s`);
+    }
+    throw new Error('Timeout: a geração demorou mais do que o esperado.');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DOWNLOAD
+  ═══════════════════════════════════════════════════════════════ */
+  async function downloadAll() {
+    if (!slidesReady) return;
+    const fullName = nameInput.value.trim() || 'carrossel';
+    const slug = fullName.toLowerCase()
+      .replace(/\s+/g, '-')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const ids = ['canvas1', 'canvas2', 'canvas3', 'canvas4', 'canvas5'];
+    for (let i = 0; i < ids.length; i++) {
+      const canvas = document.getElementById(ids[i]);
+      const a = document.createElement('a');
+      a.download = `${slug}-slide${String(i + 1).padStart(2, '0')}.png`;
+      a.href     = canvas.toDataURL('image/png');
+      a.click();
+      await sleep(300);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     HELPERS
+  ═══════════════════════════════════════════════════════════════ */
+  function resizeImage(file, maxSide = 1024, quality = 0.82) {
+    return new Promise(resolve => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+        const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(URL.createObjectURL(file)); };
+      img.src = url;
+    });
+  }
+
+  function resizeDataUrl(dataUrl, maxSide = 1024, quality = 0.82) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+        const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.src = dataUrl;
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img   = new Image();
+      const final = src.startsWith('http')
+        ? `/api/proxy-image?url=${encodeURIComponent(src)}`
+        : src;
+      img.onload  = () => resolve(img);
+      img.onerror = () => reject(new Error('Não foi possível carregar a imagem.'));
+      img.src = final;
+    });
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function setStatus(msg, isError = false) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className   = 'status-msg' + (isError ? ' err' : '');
+  }
+
+  function setLoading(on) {
+    document.getElementById('spinner').style.display = on ? 'block' : 'none';
+    const btn = document.getElementById('btnGerar');
+    btn.disabled    = on;
+    btn.style.opacity = on ? '.4' : '1';
+  }
+  </script>
+</body>
+</html>
