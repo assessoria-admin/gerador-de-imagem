@@ -695,7 +695,7 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" id="tab-btn-foto" onclick="switchTab('foto')">Gerador de Foto IA</button>
+    <button class="tab-btn active" id="tab-btn-foto" onclick="switchTab('foto')">Mini Bio</button>
     <button class="tab-btn" id="tab-btn-cargo" onclick="switchTab('cargo')">Mudança de Cargo</button>
   </div>
 
@@ -763,9 +763,6 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-generate" id="btnGenerate">
-        Gerar Imagem
-      </button>
     </form>
 
     <div class="status-bar">
@@ -808,6 +805,10 @@
     <button class="btn-enviar-ia" id="btnEnviarIA"
       onclick="document.getElementById('form').requestSubmit()">
       ✨ &nbsp; Enviar para IA
+    </button>
+    <button class="btn-download" id="btnDownloadPreview" style="margin-top:8px;"
+      onclick="fotoExportar()">
+      ↓ &nbsp; Exportar PNG
     </button>
   </div><!-- /.foto-col-preview -->
 
@@ -1086,16 +1087,8 @@ async function loadNotionPhoto(url) {
     // Guarda como File simulado para o submit do form usar
     window._notionPhotoDataUrl = dataUrl;
     fotoPreviewSetFoto(dataUrl);
-    setStatus('Foto carregada — iniciando geração…');
-    // Auto-gera imagem se todos os campos estiverem preenchidos
-    const fullName  = document.getElementById('fullName').value.trim();
-    const jobTitle  = document.getElementById('jobTitle').value.trim();
-    const companies = document.getElementById('companies').value.trim();
-    if (fullName && jobTitle && companies) {
-      document.getElementById('form').requestSubmit();
-    } else {
-      setStatus('Foto carregada do Notion ✓');
-    }
+    setStatus('Foto carregada do Notion ✓');
+    setTimeout(() => setStatus(''), 2500);
   } catch {
     setStatus('Não foi possível carregar a foto do Notion.', true);
   }
@@ -1214,6 +1207,12 @@ document.getElementById('form').addEventListener('submit', async e => {
     setStatus('Compondo imagem final…');
     lastGeneratedSrc = imageSrc;
     await renderCanvas(imageSrc, firstName, lastName, jobTitle, companies);
+
+    // Atualiza preview com a imagem gerada pela IA
+    const finalSrc = imageSrc.startsWith('http')
+      ? `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`
+      : imageSrc;
+    fotoPreviewSetFoto(finalSrc);
 
     setStatus('');
     setLoading(false);
@@ -1479,7 +1478,8 @@ function setStatus(msg, isError = false) {
 
 function setLoading(on) {
   document.getElementById('spinner').style.display = on ? 'block' : 'none';
-  document.getElementById('btnGenerate').disabled  = on;
+  const btn = document.getElementById('btnEnviarIA');
+  if (btn) { btn.disabled = on; btn.style.opacity = on ? '.4' : '1'; }
 }
 </script>
 
@@ -1720,6 +1720,30 @@ function cSetStatus(msg, loading) {
   bar.style.display     = msg ? 'flex' : 'none';
   spinner.style.display = loading ? 'block' : 'none';
   msgEl.textContent     = msg;
+}
+
+async function fotoExportar() {
+  const fullName = document.getElementById('fullName').value.trim() || 'minibio';
+
+  await document.fonts.ready;
+
+  const card = document.getElementById('foto-prev-card');
+  const dataUrl = await domtoimage.toPng(card, {
+    width:   300,
+    height:  400,
+    scale:   1080 / 300,
+    bgcolor: '#071118',
+    style:   { borderRadius: '0', overflow: 'hidden' },
+  });
+
+  const slug = fullName.toLowerCase()
+    .replace(/\s+/g, '-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const link = document.createElement('a');
+  link.download = 'minibio-' + slug + '.png';
+  link.href = dataUrl;
+  link.click();
 }
 
 async function cExportar() {
