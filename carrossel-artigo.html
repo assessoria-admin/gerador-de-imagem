@@ -303,6 +303,63 @@
       .slides-preview { flex-direction: row; overflow-x: auto; padding-bottom: 8px; }
       .slide-thumb { flex-shrink: 0; width: 140px; }
     }
+
+    /* ── CopyWriter Panel ──────────────────────────────────────── */
+    .cw-panel {
+      display: block;
+      margin-top: 32px;
+      padding: 24px;
+      background: rgba(65,193,194,.08);
+      border: 1px solid rgba(65,193,194,.45);
+      border-radius: 12px;
+    }
+    .cw-panel-title {
+      font-size: 10px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--teal);
+      margin-bottom: 14px;
+    }
+    .cw-cards {
+      display: none;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .cw-cards.visible { display: flex; }
+    .cw-card {
+      flex: 1; min-width: 220px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .cw-card-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--teal); margin-bottom: 10px;
+    }
+    .cw-caption {
+      font-size: 13px; line-height: 1.7; color: rgba(255,255,255,.88);
+      white-space: pre-wrap; margin-bottom: 14px;
+    }
+    .cw-skeleton { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+    .cw-skel-line {
+      height: 3px; border-radius: 2px;
+      background: rgba(65,193,194,.2);
+      animation: cwPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes cwPulse { 0%,100% { opacity: .3; } 50% { opacity: .9; } }
+    .cw-actions { display: flex; gap: 16px; }
+    .cw-action {
+      background: none; border: none; padding: 0;
+      color: rgba(255,255,255,.4); font-family: var(--font);
+      font-size: 10px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .cw-action:hover { color: var(--teal); border-bottom-color: var(--teal); }
+    .cw-placeholder {
+      font-size: 12px; color: var(--muted); letter-spacing: .5px; padding: 4px 0 8px;
+    }
+    .cw-error {
+      font-size: 12px; color: #e05555; margin-top: 8px; display: none;
+    }
   </style>
 </head>
 <body>
@@ -348,10 +405,10 @@
           </div>
 
           <div class="field">
-            <label>Gênero</label>
+            <label>Roupa na Foto</label>
             <div class="gender-toggle">
-              <button type="button" class="gender-btn active" id="btnMasc" onclick="setGender('M')">Masculino</button>
-              <button type="button" class="gender-btn" id="btnFem" onclick="setGender('F')">Feminino</button>
+              <button type="button" class="gender-btn active" id="btnRoupaPreta" onclick="setOutfit('black')">Roupa Preta</button>
+              <button type="button" class="gender-btn" id="btnRoupaAtual" onclick="setOutfit('current')">Roupa Atual</button>
             </div>
           </div>
 
@@ -416,9 +473,54 @@
             ✨ &nbsp; Gerar Carrossel
           </button>
 
+          <button class="btn-generate" id="btnTeste" onclick="gerarSemIA()"
+            style="margin-top:10px; background:transparent; border:1px solid #333; color:#555;">
+            🧪 &nbsp; Testar sem IA
+          </button>
+
           <button class="btn-download" id="btnDownload" disabled onclick="downloadAll()">
             ↓ &nbsp; Baixar Todos os Slides (PNG)
           </button>
+
+          <!-- CopyWriter Panel -->
+          <div class="cw-panel" id="cwPanel">
+            <div class="cw-panel-title">Legenda para publicação</div>
+            <div class="cw-placeholder" id="cwPlaceholder">
+              <span>Selecione um líder para gerar a legenda automaticamente</span>
+            </div>
+            <div class="cw-cards" id="cwCards">
+              <div class="cw-card">
+                <div class="cw-card-label">Instagram</div>
+                <div class="cw-skeleton" id="cwSkeletonIG">
+                  <div class="cw-skel-line" style="width:100%"></div>
+                  <div class="cw-skel-line" style="width:85%"></div>
+                  <div class="cw-skel-line" style="width:70%"></div>
+                  <div class="cw-skel-line" style="width:90%"></div>
+                </div>
+                <div class="cw-caption" id="cwCaptionIG" style="display:none"></div>
+                <div class="cw-actions">
+                  <button class="cw-action" id="cwCopiarIG" onclick="cwCopiar('ig')">Copiar</button>
+                  <button class="cw-action" onclick="cwRegerar('ig')">Regenerar</button>
+                </div>
+              </div>
+              <div class="cw-card">
+                <div class="cw-card-label">LinkedIn</div>
+                <div class="cw-skeleton" id="cwSkeletonLI">
+                  <div class="cw-skel-line" style="width:100%"></div>
+                  <div class="cw-skel-line" style="width:75%"></div>
+                  <div class="cw-skel-line" style="width:90%"></div>
+                  <div class="cw-skel-line" style="width:65%"></div>
+                  <div class="cw-skel-line" style="width:80%"></div>
+                </div>
+                <div class="cw-caption" id="cwCaptionLI" style="display:none"></div>
+                <div class="cw-actions">
+                  <button class="cw-action" id="cwCopiarLI" onclick="cwCopiar('li')">Copiar</button>
+                  <button class="cw-action" onclick="cwRegerar('li')">Regenerar</button>
+                </div>
+              </div>
+            </div>
+            <div class="cw-error" id="cwError">Erro ao gerar legenda. Tente novamente.</div>
+          </div>
 
         </div>
       </div><!-- /.form-col -->
@@ -461,24 +563,24 @@
   const TEAL      = '#41c1c2';
   const TEAL_DARK = '#001E23';
 
-  const COVER_TITLE = 'COMO DECIDEM AS LIDERANÇAS';
+  const COVER_TITLE = 'COMO PENSAM AS LIDERANÇAS';
 
   function getArticleTitle() {
     const val = (document.getElementById('articleTitle')?.value || '').trim().toUpperCase();
     return val || COVER_TITLE;
   }
 
-  const PROMPT_M = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is male. Wearing a fitted solid black dress shirt, collar open, no tie, no blazer — clean and sharp. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Head-and-shoulders editorial frame — upper chest to crown with natural breathing room. Face slightly angled, expression composed and effortlessly confident. Lighting effect: soft directional light from the left illuminating the face, gentle shadow on the right side, teal-toned rim glow tracing the collar and shoulder edge — all lighting effects applied directly to the subject only. Background: completely empty, seamless deep teal-black (#001E23), pure and flat — no gradients, no light spills, no reflections, no objects, no shapes, no bokeh, nothing except the plain dark background colour. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. 4:5 vertical. CRITICAL: The background must be 100% empty — no equipment, no props, no furniture, no lighting apparatus, no softboxes, no panels, no reflectors, no stands, no ceiling, no walls, no floor, no text, no watermarks, no logos. Only the person against a clean solid dark background. Subject must look naturally present — NOT pasted or composited.`;
+  const PROMPT_BLACK = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact face, age, features, and posture. Wearing a fitted solid black dress shirt or blouse, collar open, no tie, no blazer — clean, sharp, and professional. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Medium editorial frame — from mid-torso to crown, showing the upper body with generous breathing room around the subject. Camera pulled back slightly so the person feels present but not too close. Face slightly angled, expression composed and effortlessly confident. Lighting effect: soft directional light from the left illuminating the face, gentle shadow on the right side, teal-toned rim glow tracing the collar and shoulder edge — all lighting effects applied directly to the subject only. Background: completely empty, seamless deep teal-black (#001E23), pure and flat — no gradients, no light spills, no reflections, no objects, no shapes, no bokeh, nothing except the plain dark background colour. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. 4:5 vertical. CRITICAL: The background must be 100% empty — no equipment, no props, no furniture, no lighting apparatus, no softboxes, no panels, no reflectors, no stands, no ceiling, no walls, no floor, no text, no watermarks, no logos. Only the person against a clean solid dark background. Subject must look naturally present — NOT pasted or composited.`;
 
-  const PROMPT_F = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact appearance and posture. The subject is female. Wearing a fitted solid black women's dress shirt or blouse, collar open, no blazer — clean and confident. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette from the uploaded reference photo with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. The garments must conform to the subject's actual body — no AI-applied reshaping. Head-and-shoulders editorial frame — upper chest to crown with natural breathing room. Face slightly angled, expression composed and effortlessly confident. Lighting effect: soft directional light from the left illuminating the face, gentle shadow on the right side, teal-toned rim glow tracing the collar and shoulder edge — all lighting effects applied directly to the subject only. Background: completely empty, seamless deep teal-black (#001E23), pure and flat — no gradients, no light spills, no reflections, no objects, no shapes, no bokeh, nothing except the plain dark background colour. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. 4:5 vertical. CRITICAL: The background must be 100% empty — no equipment, no props, no furniture, no lighting apparatus, no softboxes, no panels, no reflectors, no stands, no ceiling, no walls, no floor, no text, no watermarks, no logos. Only the person against a clean solid dark background. Subject must look naturally present — NOT pasted or composited.`;
+  const PROMPT_CURRENT = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person's exact face, age, features, and posture. OUTFIT: preserve the subject's current clothing exactly as worn in the reference photo — do NOT change, replace, recolour, or reinterpret any garment. ABSOLUTE PHYSICAL FIDELITY: Replicate the subject's exact body shape, weight, build, and silhouette with zero alteration. Do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. Medium editorial frame — from mid-torso to crown, showing the upper body with generous breathing room around the subject. Camera pulled back slightly so the person feels present but not too close. Face slightly angled, expression composed and effortlessly confident. LIGHTING — identical to studio standard: soft directional light from the left illuminating the face, gentle shadow on the right side, teal-toned rim glow tracing the shoulder edge — applied to the subject only, never to the background. BACKGROUND — identical to studio standard: completely empty, seamless deep teal-black (#001E23), pure and flat — no gradients, no light spills, no reflections, no objects, no shapes, no bokeh, nothing except the plain dark background colour. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Cinematic grade: lifted blacks to deep teal (#001E23), crushed highlights, teal-green shadow cast preserving skin warmth. 4:5 vertical. CRITICAL: The background must be 100% empty — no equipment, no props, no furniture, no lighting apparatus, no softboxes, no panels, no reflectors, no stands, no ceiling, no walls, no floor, no text, no watermarks, no logos. Only the person against a clean solid dark background. Subject must look naturally present — NOT pasted or composited.`;
 
-  let gender = 'M';
+  let outfit = 'black';
   let slidesReady = false;
 
-  function setGender(g) {
-    gender = g;
-    document.getElementById('btnMasc').classList.toggle('active', g === 'M');
-    document.getElementById('btnFem').classList.toggle('active', g === 'F');
+  function setOutfit(o) {
+    outfit = o;
+    document.getElementById('btnRoupaPreta').classList.toggle('active', o === 'black');
+    document.getElementById('btnRoupaAtual').classList.toggle('active', o === 'current');
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -537,6 +639,7 @@
     if (person.empresas) document.getElementById('companies').value = person.empresas;
     if (person.photoUrl) loadNotionPhoto(person.photoUrl);
     acClose();
+    cwAutoGerar();
   }
 
   async function loadNotionPhoto(url) {
@@ -613,6 +716,59 @@
   /* ═══════════════════════════════════════════════════════════════
      GERAR CARROSSEL
   ═══════════════════════════════════════════════════════════════ */
+  async function gerarSemIA() {
+    const fullName   = nameInput.value.trim();
+    const photoFile  = document.getElementById('photoFile').files[0];
+    const articleRaw = document.getElementById('articleText').value.trim();
+
+    if (!fullName)   { setStatus('Informe o nome da pessoa.', true); return; }
+    if (!photoFile && !window._notionPhotoDataUrl) {
+      setStatus('Selecione uma foto de referência.', true); return;
+    }
+
+    const nameParts    = fullName.split(/\s+/);
+    const firstName    = nameParts[0] || '';
+    const lastName     = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+    const rawComp      = document.getElementById('companies').value.trim();
+    const companies    = rawComp
+      ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
+      : '';
+    const articleParts = splitArticle(articleRaw || 'Texto de teste para visualização do layout.');
+
+    setLoading(true);
+    slidesReady = false;
+    document.getElementById('btnDownload').disabled = true;
+
+    try {
+      setStatus('Compondo slides com foto original…');
+      let photoDataUrl;
+      if (photoFile) {
+        photoDataUrl = await resizeImage(photoFile, 1024, 0.82);
+      } else {
+        photoDataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
+      }
+
+      const bgImg = await loadImage('/bg-spheres.png').catch(() => null);
+      await document.fonts.ready;
+
+      const photo = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload  = () => resolve(img);
+        img.onerror = reject;
+        img.src = photoDataUrl;
+      });
+
+      await renderAllSlides(photoDataUrl, firstName, lastName, companies, articleParts);
+      setStatus('Preview gerado (sem IA) ✓');
+      setLoading(false);
+      slidesReady = true;
+      document.getElementById('btnDownload').disabled = false;
+    } catch (err) {
+      setStatus('Erro: ' + err.message, true);
+      setLoading(false);
+    }
+  }
+
   async function gerarCarrossel() {
     const fullName   = nameInput.value.trim();
     const photoFile  = document.getElementById('photoFile').files[0];
@@ -648,7 +804,7 @@
       const base64Img = dataUrl.split(',')[1];
 
       setStatus('Enviando para Freepik API…');
-      const prompt    = gender === 'M' ? PROMPT_M : PROMPT_F;
+      const prompt    = outfit === 'black' ? PROMPT_BLACK : PROMPT_CURRENT;
       const genResult = await startGeneration(base64Img, prompt);
 
       let imageSrc;
@@ -666,6 +822,7 @@
       setLoading(false);
       slidesReady = true;
       document.getElementById('btnDownload').disabled = false;
+      cwAutoGerar();
 
     } catch (err) {
       console.error(err);
@@ -726,15 +883,25 @@
     const ctx = canvas.getContext('2d');
     const PAD  = 60;
 
-    // Bottom block anchors — consistent 20px gap between items
-    const GAP       = 20;
-    const COMP_Y    = SH - 100;             // companies (40px font)
-    const MINIBIO_Y = COMP_Y - 40 - GAP * 2; // mini bio (25px font) — centered between name and companies
-    const NAME_Y    = MINIBIO_Y - 25 - GAP; // name (45px font)
-    const LINE_Y    = NAME_Y - GAP;         // teal separator
-    const TITLE_Y   = LINE_Y - 275;         // headline (115px × 2 lines + gap)
+    // Companies: split into up to 3, displayed horizontally with space-between
+    const compList    = companies ? companies.split(' | ').filter(Boolean).slice(0, 3) : [];
+    const COMP_FONT   = 34;
+    const COMP_LINE_H = 44;                        // gap between wrapped lines within a block
+    const COMP_BLOCK_H = COMP_FONT + COMP_LINE_H; // always reserve 2-line height so layout is stable
+    const COL_W       = (SW - PAD * 2) / 3;
+    const COL_MAX_W   = COL_W - 24;               // max text width before wrapping
+    const COL_CX      = [PAD + COL_W / 2, SW / 2, SW - PAD - COL_W / 2]; // 2ª sempre em SW/2
 
-    // ── PHOTO — cover-crop full canvas ───────────────────────────
+    // Bottom block anchors — built upward from bottom margin
+    const BOTTOM_MARGIN = 20;
+    const COMP_MID_Y    = SH - BOTTOM_MARGIN - COMP_BLOCK_H / 2;
+    const COMP_START_Y  = COMP_MID_Y - COMP_BLOCK_H / 2;
+    const MINIBIO_Y     = COMP_START_Y - 28 - 31;
+    const NAME_Y        = MINIBIO_Y - 44 - 45;
+    const LINE_Y        = NAME_Y - 20;
+    const TITLE_Y       = LINE_Y - 230;                       // headline (95px × 2 linhas + gap)
+
+    // ── PHOTO — deslocada para baixo e levemente maior ───────────
     const photoAR  = photo.naturalWidth / photo.naturalHeight;
     const canvasAR = SW / SH;
     let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
@@ -745,14 +912,33 @@
       sh = photo.naturalWidth / canvasAR;
       sy = 0;
     }
-    ctx.drawImage(photo, sx, sy, sw, sh, 0, 0, SW, SH);
+    // Faixa escura no topo onde fica o título — foto começa abaixo dela
+    const TOP_BAR  = 140;
+    const destH    = SH - TOP_BAR;
+    const destAR   = SW / destH;
 
-    // ── TOP GRADIENT — subtle, so article title is readable ──────
-    const topGrad = ctx.createLinearGradient(0, 0, 0, 160);
-    topGrad.addColorStop(0, 'rgba(4,10,12,0.72)');
-    topGrad.addColorStop(1, 'rgba(4,10,12,0)');
+    // Recalcula o crop com a proporção da área de destino real
+    let sx2 = 0, sy2 = 0, sw2 = photo.naturalWidth, sh2 = photo.naturalHeight;
+    const srcAR = photo.naturalWidth / photo.naturalHeight;
+    if (srcAR > destAR) {
+      sw2 = photo.naturalHeight * destAR;
+      sx2 = (photo.naturalWidth - sw2) / 2;
+    } else {
+      sh2 = photo.naturalWidth / destAR;
+      sy2 = 0;
+    }
+    ctx.drawImage(photo, sx2, sy2, sw2, sh2, 0, TOP_BAR, SW, destH);
+
+    // ── TOP BAR — fundo sólido para o título não sobrepor a foto ──
+    ctx.fillStyle = '#080808';
+    ctx.fillRect(0, 0, SW, TOP_BAR);
+
+    // Gradiente suave de transição entre a barra e a foto
+    const topGrad = ctx.createLinearGradient(0, TOP_BAR, 0, TOP_BAR + 80);
+    topGrad.addColorStop(0, 'rgba(8,8,8,0.55)');
+    topGrad.addColorStop(1, 'rgba(8,8,8,0)');
     ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, SW, 160);
+    ctx.fillRect(0, TOP_BAR, SW, 80);
 
     // ── BOTTOM GRADIENT OVERLAY ───────────────────────────────────
     const botGrad = ctx.createLinearGradient(0, TITLE_Y - 100, 0, SH);
@@ -762,15 +948,34 @@
     ctx.fillStyle = botGrad;
     ctx.fillRect(0, TITLE_Y - 100, SW, SH - (TITLE_Y - 100));
 
-    // ── ARTICLE TITLE — Gobold Regular 32px, tracking -0.06em ────
+    // ── ARTICLE TITLE — 2 linhas equilibradas na top bar ────────
     const articleTopic = getArticleTitle();
     if (articleTopic && articleTopic !== COVER_TITLE) {
-      ctx.font          = `400 32px "Gobold", sans-serif`;
-      ctx.letterSpacing = `${-0.06 * 32}px`;
-      ctx.fillStyle     = 'rgba(255,255,255,0.70)';
+      const maxTitleW = SW - PAD * 2;
+      const titleSize = 56;
+      ctx.font          = `400 ${titleSize}px "Gobold", sans-serif`;
+      ctx.letterSpacing = `${-0.06 * titleSize}px`;
+      ctx.fillStyle     = '#ffffff';
       ctx.textAlign     = 'center';
-      ctx.textBaseline  = 'top';
-      ctx.fillText(articleTopic, SW / 2, 52);
+      ctx.textBaseline  = 'middle';
+
+      // Divide nas 2 linhas mais equilibradas possíveis
+      const words = articleTopic.split(' ');
+      let best = 1, bestDiff = Infinity;
+      for (let i = 1; i < words.length; i++) {
+        const w1 = ctx.measureText(words.slice(0, i).join(' ')).width;
+        const w2 = ctx.measureText(words.slice(i).join(' ')).width;
+        const diff = Math.abs(w1 - w2);
+        if (diff < bestDiff) { bestDiff = diff; best = i; }
+      }
+      const line1 = words.slice(0, best).join(' ');
+      const line2 = words.slice(best).join(' ');
+      const lineH = titleSize * 1.2;
+      const blockH = lineH * 2;
+      const startY = (TOP_BAR - blockH) / 2 + lineH * 0.5;
+
+      ctx.fillText(line1, SW / 2, startY);
+      ctx.fillText(line2, SW / 2, startY + lineH);
       ctx.letterSpacing = '0px';
     }
 
@@ -779,13 +984,13 @@
     const titleParts  = COVER_TITLE.trim().split(' ');
     const titleL1     = titleParts.slice(0, -1).join(' ');
     const titleL2     = titleParts[titleParts.length - 1];
-    ctx.font          = `400 115px "Gobold", sans-serif`;
+    ctx.font          = `400 95px "Gobold", sans-serif`;
     ctx.letterSpacing = `${-0.06 * 115}px`;
     ctx.fillStyle     = '#ffffff';
     ctx.textAlign     = 'center';
     ctx.textBaseline  = 'top';
     ctx.fillText(titleL1, SW / 2, TITLE_Y);
-    ctx.fillText(titleL2, SW / 2, TITLE_Y + 135);
+    ctx.fillText(titleL2, SW / 2, TITLE_Y + 112);
     ctx.letterSpacing = '0px';
 
     // ── TEAL SEPARATOR LINE — 1/3 width, centered ────────────────
@@ -804,21 +1009,55 @@
     ctx.textBaseline = 'top';
     ctx.fillText((firstName + ' ' + lastName).toUpperCase(), SW / 2, NAME_Y);
 
-    // ── MINI BIO — Gobold Thin 25px ──────────────────────────────
-    ctx.font         = `100 25px "Gobold", sans-serif`;
+    // ── MINI BIO — Gobold Thin 31px ──────────────────────────────
+    ctx.font         = `100 31px "Gobold", sans-serif`;
     ctx.fillStyle    = TEAL;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('MINI BIO', SW / 2, MINIBIO_Y);
 
-    // ── COMPANIES — Gobold Thin 41px, tracking -0.06em, uppercase ─
-    if (companies) {
-      ctx.font          = `100 40px "Gobold", sans-serif`;
-      ctx.letterSpacing = `${-0.06 * 40}px`;
+    // ── COMPANIES — horizontal, space-between, 2ª sempre centrada ─
+    if (compList.length) {
+      ctx.font          = `100 ${COMP_FONT}px "Gobold", sans-serif`;
+      ctx.letterSpacing = `${-0.06 * COMP_FONT}px`;
       ctx.fillStyle     = 'rgba(255,255,255,0.85)';
       ctx.textAlign     = 'center';
-      ctx.textBaseline  = 'top';
-      ctx.fillText(companies.toUpperCase(), SW / 2, COMP_Y);
+      ctx.textBaseline  = 'middle';
+
+      compList.forEach((c, i) => {
+        const text = c.toUpperCase();
+        const cx   = COL_CX[i] ?? SW / 2;
+
+        if (ctx.measureText(text).width <= COL_MAX_W) {
+          ctx.fillText(text, cx, COMP_MID_Y);
+        } else {
+          // Quebra em 2 linhas equilibradas dentro do próprio bloco
+          const words = text.split(' ');
+          let best = 1, bestDiff = Infinity;
+          for (let j = 1; j < words.length; j++) {
+            const diff = Math.abs(
+              ctx.measureText(words.slice(0, j).join(' ')).width -
+              ctx.measureText(words.slice(j).join(' ')).width
+            );
+            if (diff < bestDiff) { bestDiff = diff; best = j; }
+          }
+          const half = COMP_LINE_H / 2;
+          ctx.fillText(words.slice(0, best).join(' '), cx, COMP_MID_Y - half);
+          ctx.fillText(words.slice(best).join(' '),    cx, COMP_MID_Y + half);
+        }
+      });
+
+      // Pipes separadores entre colunas
+      if (compList.length > 1) {
+        ctx.font         = `100 ${Math.round(COMP_FONT * 1.6)}px "Gobold", sans-serif`;
+        ctx.fillStyle    = 'rgba(65,193,194,0.50)';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('|', PAD + COL_W,     COMP_MID_Y);
+        if (compList.length === 3)
+          ctx.fillText('|', PAD + COL_W * 2, COMP_MID_Y);
+      }
+
       ctx.letterSpacing = '0px';
     }
   }
@@ -984,36 +1223,35 @@
       bodyY += 58;
     }
 
-    // ── CTA pill ─────────────────────────────────────────────────
-    const pillW = 560, pillH = 100, pillR = 50;
-    const pillX = (SW - pillW) / 2, pillY2 = 860;
+    // ── CTA — link na bio ────────────────────────────────────────
+    const ctaY = 800;
 
-    // Pill glow
-    ctx.shadowColor = TEAL; ctx.shadowBlur = 28;
-    ctx.beginPath();
-    roundRect(ctx, pillX, pillY2, pillW, pillH, pillR);
-    ctx.fillStyle = 'rgba(65,193,194,0.14)';
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    // Seta ↑ em teal — aponta para a bio no topo do perfil
+    ctx.font         = `800 64px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('↑', SW / 2, ctaY);
 
-    // Pill border
+    // "LINK NA BIO" — headline da ação
+    ctx.font      = `800 86px "Neue Machina", sans-serif`;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('LINK NA BIO', SW / 2, ctaY + 76);
+
+    // Linha teal fina abaixo do headline
+    ctx.font = `800 86px "Neue Machina", sans-serif`; // mede a largura
+    const ctaLineW = ctx.measureText('LINK NA BIO').width * 0.6;
     ctx.strokeStyle = TEAL;
-    ctx.lineWidth   = 1.8;
+    ctx.lineWidth   = 2;
     ctx.beginPath();
-    roundRect(ctx, pillX, pillY2, pillW, pillH, pillR);
+    ctx.moveTo(SW / 2 - ctaLineW / 2, ctaY + 76 + 92);
+    ctx.lineTo(SW / 2 + ctaLineW / 2, ctaY + 76 + 92);
     ctx.stroke();
 
-    // Pill text
-    ctx.font         = `800 22px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = TEAL;
-    ctx.textBaseline = 'middle';
-    ctx.fillText('QUERO CONHECER A REDE LÍDERES', SW / 2, pillY2 + pillH / 2);
-
-    // ── URL — below pill ─────────────────────────────────────────
-    ctx.font         = `400 26px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(65,193,194,0.50)';
-    ctx.textBaseline = 'top';
-    ctx.fillText('redelideres.com.br', SW / 2, pillY2 + pillH + 28);
+    // URL — sutil, abaixo da linha
+    ctx.font      = `300 30px "Neue Machina", sans-serif`;
+    ctx.fillStyle = 'rgba(65,193,194,0.60)';
+    ctx.fillText('redelideres.com.br', SW / 2, ctaY + 76 + 92 + 24);
 
     // ── Person attribution — bottom ──────────────────────────────
     ctx.font         = `300 20px "Neue Machina", sans-serif`;
@@ -1026,18 +1264,6 @@
     ctx.fillRect(0, SH - 5, SW, 5);
   }
 
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
 
   /* ═══════════════════════════════════════════════════════════════
      TEXT HELPERS
@@ -1081,16 +1307,24 @@
       return lines;
     };
 
-    const maxLines = Math.floor((SH - y - 180) / lineH());
+    const areaTop    = y;
+    const areaBottom = SH - 180;
+    const areaH      = areaBottom - areaTop;
+    const maxLines   = Math.floor(areaH / lineH());
+
     let lines = computeLines(size);
     while (lines.length > maxLines && size > 26) {
       size -= 2;
       lines = computeLines(size);
     }
 
+    // Centralizar verticalmente na área disponível
+    const totalH  = lines.length * lineH();
+    const startY  = areaTop + (areaH - totalH) / 2;
+
     ctx.font      = `400 ${size}px "Neue Machina", sans-serif`;
     ctx.fillStyle = '#ffffff';
-    let curY = y;
+    let curY = startY;
     for (const line of lines) {
       ctx.fillText(line, x, curY);
       curY += lineH();
@@ -1258,6 +1492,111 @@
     const btn = document.getElementById('btnGerar');
     btn.disabled    = on;
     btn.style.opacity = on ? '.4' : '1';
+  }
+
+  /* ── CopyWriter ──────────────────────────────────────────── */
+  let _cwIG = '', _cwLI = '';
+
+  function cwAutoGerar() {
+    document.getElementById('cwPlaceholder').style.display = 'none';
+    document.getElementById('cwCards').classList.add('visible');
+    cwGerar();
+  }
+
+  function cwGerar(avoidIG, avoidLI) {
+    const lider = { name: nameInput.value.trim() };
+    const titulo = document.getElementById('articleTitle')?.value?.trim() || '';
+    const contexto = titulo ? `Carrossel do artigo: ${titulo}` : 'Carrossel de artigo da Rede Líderes';
+
+    _cwShowLoading();
+
+    fetch('/api/copywrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tipo: 'carrossel-artigo',
+        lider: lider.name ? lider : null,
+        contexto,
+        avoid: avoidIG || avoidLI || null
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.instagram && data.linkedin) {
+        _cwLI = ''; _cwIG = '';
+        _cwShowResult(data.instagram, data.linkedin);
+      } else {
+        _cwShowError();
+      }
+    })
+    .catch(() => _cwShowError());
+  }
+
+  function cwRegerar(net) {
+    const avoid = net === 'ig' ? _cwIG : _cwLI;
+    _cwShowLoadingOne(net);
+    const lider = { name: nameInput.value.trim() };
+    const titulo = document.getElementById('articleTitle')?.value?.trim() || '';
+    const contexto = titulo ? `Carrossel do artigo: ${titulo}` : 'Carrossel de artigo da Rede Líderes';
+
+    fetch('/api/copywrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'carrossel-artigo', lider: lider.name ? lider : null, contexto, avoid })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (net === 'ig' && data.instagram) { _cwIG = data.instagram; _cwSetCaption('ig', data.instagram); }
+      if (net === 'li' && data.linkedin)  { _cwLI = data.linkedin;  _cwSetCaption('li', data.linkedin); }
+      if (!data.instagram && !data.linkedin) _cwShowError();
+    })
+    .catch(() => _cwShowError());
+  }
+
+  function cwCopiar(net) {
+    const text = net === 'ig' ? _cwIG : _cwLI;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById(net === 'ig' ? 'cwCopiarIG' : 'cwCopiarLI');
+      const orig = btn.textContent;
+      btn.textContent = 'Copiado ✓';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+  }
+
+  function _cwShowLoading() {
+    document.getElementById('cwPlaceholder').style.display = 'none';
+    document.getElementById('cwCards').classList.add('visible');
+    document.getElementById('cwError').style.display = 'none';
+    ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'flex');
+    ['cwCaptionIG','cwCaptionLI'].forEach(id => { document.getElementById(id).style.display = 'none'; document.getElementById(id).textContent = ''; });
+  }
+
+  function _cwShowLoadingOne(net) {
+    const skelId = net === 'ig' ? 'cwSkeletonIG' : 'cwSkeletonLI';
+    const capId  = net === 'ig' ? 'cwCaptionIG'  : 'cwCaptionLI';
+    document.getElementById(skelId).style.display = 'flex';
+    document.getElementById(capId).style.display  = 'none';
+  }
+
+  function _cwShowResult(ig, li) {
+    _cwIG = ig; _cwLI = li;
+    _cwSetCaption('ig', ig);
+    _cwSetCaption('li', li);
+  }
+
+  function _cwSetCaption(net, text) {
+    const skelId = net === 'ig' ? 'cwSkeletonIG' : 'cwSkeletonLI';
+    const capId  = net === 'ig' ? 'cwCaptionIG'  : 'cwCaptionLI';
+    document.getElementById(skelId).style.display = 'none';
+    const el = document.getElementById(capId);
+    el.textContent = text;
+    el.style.display = 'block';
+  }
+
+  function _cwShowError() {
+    ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('cwError').style.display = 'block';
   }
   </script>
 </body>

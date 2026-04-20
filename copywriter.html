@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — CopyWriter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg); color: #fff;
+      font-family: var(--font); min-height: 100vh;
+      padding: 48px 20px 80px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    header { text-align: center; margin-bottom: 56px; }
+    .header-rule {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .header-rule span {
+      flex: 1; height: 1px; max-width: 60px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .header-rule span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    h1 { font-size: 20px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+
+    /* ── Form card ─────────────────────────────────────────────── */
+    .form-card {
+      width: 100%; max-width: 560px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px;
+      margin-bottom: 32px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      font-size: 9px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    select, input[type="text"], textarea {
+      background: #111; border: 1px solid var(--border);
+      color: #fff; font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; padding: 10px 12px;
+      border-radius: 8px; outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+    select:focus, input[type="text"]:focus, textarea:focus {
+      border-color: rgba(65,193,194,.5);
+    }
+    select { cursor: pointer; }
+    select option { background: #111; }
+    textarea { resize: vertical; line-height: 1.6; }
+
+    /* ── Líder typeahead ───────────────────────────────────────── */
+    .typeahead-wrap { position: relative; }
+    .typeahead-clear {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted);
+      font-size: 16px; cursor: pointer; line-height: 1;
+      display: none;
+    }
+    .typeahead-clear.visible { display: block; }
+
+    .dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #111; border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+      z-index: 100; display: none;
+    }
+    .dropdown.open { display: block; }
+    .dropdown-item {
+      padding: 10px 12px; cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: rgba(65,193,194,.07); }
+    .dropdown-item-name { color: #fff; }
+    .dropdown-item-meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    /* ── CTA ───────────────────────────────────────────────────── */
+    .cta-row { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+
+    .cta {
+      background: none; border: none; padding: 0;
+      color: var(--teal); font-family: var(--font);
+      font-size: 11px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: border-color .2s;
+    }
+    .cta:hover { border-bottom-color: var(--teal); }
+    .cta:disabled { opacity: .4; cursor: not-allowed; }
+    .cta:disabled:hover { border-bottom-color: transparent; }
+
+    .error-msg {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px; color: #c0504d; display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── Results ───────────────────────────────────────────────── */
+    .results {
+      width: 100%; max-width: 1140px;
+      display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;
+    }
+
+    .result-card {
+      flex: 1; min-width: 280px; max-width: 540px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .result-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--teal);
+    }
+
+    .result-body {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; line-height: 1.7; color: #ccc;
+      white-space: pre-wrap; min-height: 80px;
+      flex: 1;
+    }
+
+    .result-actions {
+      display: flex; gap: 20px; align-items: center;
+      border-top: 1px solid var(--border); padding-top: 14px;
+    }
+
+    /* ── Skeleton ──────────────────────────────────────────────── */
+    @keyframes pulse {
+      0%, 100% { opacity: .4; }
+      50%       { opacity: .9; }
+    }
+
+    .skeleton-line {
+      height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,.15);
+      animation: pulse 1.2s ease-in-out infinite;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 640px) {
+      .results { flex-direction: column; align-items: center; }
+      .result-card { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-rule">
+      <span></span>
+      <h1>Rede&nbsp;Líderes</h1>
+      <span></span>
+    </div>
+    <p>CopyWriter — legendas editoriais geradas por IA</p>
+  </header>
+
+  <div class="form-card">
+
+    <div class="field">
+      <label for="tipo">Tipo de post</label>
+      <select id="tipo">
+        <option value="imagem-perfil">Imagem de Perfil</option>
+        <option value="carrossel-artigo">Carrossel de Artigo</option>
+        <option value="parabenizacao">Parabenização</option>
+        <option value="mudanca-cargo">Mudança de Cargo</option>
+        <option value="livre">Livre</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="lider-input">Líder (opcional)</label>
+      <div class="typeahead-wrap">
+        <input type="text" id="lider-input" placeholder="Buscar por nome…" autocomplete="off" />
+        <button class="typeahead-clear" id="lider-clear" title="Remover líder">×</button>
+        <div class="dropdown" id="lider-dropdown"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="contexto">Contexto <span style="color:#c0504d">*</span></label>
+      <textarea id="contexto" rows="4" placeholder="Descreva o contexto do post — tema, evento, destaque ou novidade…"></textarea>
+    </div>
+
+    <div class="cta-row">
+      <button class="cta" id="btn-gerar">Gerar →</button>
+      <span class="error-msg" id="error-msg">Erro ao gerar. Tente novamente.</span>
+    </div>
+
+  </div>
+
+  <div class="results" id="results" style="display:none">
+
+    <div class="result-card" id="card-ig">
+      <div class="result-label">Instagram</div>
+      <div class="result-body" id="ig-body"></div>
+      <div class="result-actions">
+        <button class="cta" id="btn-copy-ig">Copiar</button>
+        <button class="cta" id="btn-regen-ig">Regenerar</button>
+      </div>
+    </div>
+
+    <div class="result-card" id="card-li">
+      <div class="result-label">LinkedIn</div>
+      <div class="result-body" id="li-body"></div>
+      <div class="result-actions">
+        <button class="cta" id="btn-copy-li">Copiar</button>
+        <button class="cta" id="btn-regen-li">Regenerar</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────────
+    let selectedLider = null;   // { name, cargo, empresas }
+    let igCaption     = '';
+    let liCaption     = '';
+
+    // ── Elements ───────────────────────────────────────────────────────────────
+    const tipoEl      = document.getElementById('tipo');
+    const liderInput  = document.getElementById('lider-input');
+    const liderClear  = document.getElementById('lider-clear');
+    const liderDD     = document.getElementById('lider-dropdown');
+    const contextoEl  = document.getElementById('contexto');
+    const btnGerar    = document.getElementById('btn-gerar');
+    const errorMsg    = document.getElementById('error-msg');
+    const resultsEl   = document.getElementById('results');
+    const igBody      = document.getElementById('ig-body');
+    const liBody      = document.getElementById('li-body');
+    const btnCopyIg   = document.getElementById('btn-copy-ig');
+    const btnCopyLi   = document.getElementById('btn-copy-li');
+    const btnRegenIg  = document.getElementById('btn-regen-ig');
+    const btnRegenLi  = document.getElementById('btn-regen-li');
+
+    // ── Typeahead ──────────────────────────────────────────────────────────────
+    let debounceTimer = null;
+
+    liderInput.addEventListener('input', () => {
+      // If user edits after a selection, clear the selection
+      if (selectedLider) clearLider(false);
+
+      clearTimeout(debounceTimer);
+      const q = liderInput.value.trim();
+      if (q.length < 2) { closeDropdown(); return; }
+
+      debounceTimer = setTimeout(() => fetchSuggestions(q), 300);
+    });
+
+    liderInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDropdown();
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.typeahead-wrap')) closeDropdown();
+    });
+
+    liderClear.addEventListener('click', () => clearLider(true));
+
+    function clearLider(resetInput) {
+      selectedLider = null;
+      liderClear.classList.remove('visible');
+      if (resetInput) liderInput.value = '';
+      closeDropdown();
+    }
+
+    function closeDropdown() {
+      liderDD.classList.remove('open');
+      liderDD.innerHTML = '';
+    }
+
+    async function fetchSuggestions(q) {
+      try {
+        const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        renderDropdown(data.results || []);
+      } catch (_) { closeDropdown(); }
+    }
+
+    function renderDropdown(results) {
+      if (!results.length) { closeDropdown(); return; }
+      liderDD.innerHTML = results.map((r, i) => `
+        <div class="dropdown-item" data-idx="${i}">
+          <div class="dropdown-item-name">${escHtml(r.name)}</div>
+          <div class="dropdown-item-meta">${[r.cargo, r.empresas].filter(Boolean).join(' · ')}</div>
+        </div>
+      `).join('');
+      liderDD.classList.add('open');
+
+      liderDD.querySelectorAll('.dropdown-item').forEach((el, i) => {
+        el.addEventListener('click', () => selectLider(results[i]));
+      });
+    }
+
+    function selectLider(r) {
+      selectedLider = { name: r.name, cargo: r.cargo, empresas: r.empresas };
+      liderInput.value = r.name;
+      liderClear.classList.add('visible');
+      closeDropdown();
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Skeleton ───────────────────────────────────────────────────────────────
+    function showSkeleton(el) {
+      el.innerHTML = [100, 85, 70, 55].map(w =>
+        `<div class="skeleton-line" style="width:${w}%"></div>`
+      ).join('');
+    }
+
+    // ── Generate ───────────────────────────────────────────────────────────────
+    async function generate(avoidIg, avoidLi) {
+      const contexto = contextoEl.value.trim();
+      if (!contexto) {
+        showError('Preencha o campo Contexto antes de gerar.');
+        return;
+      }
+
+      hideError();
+      setLoading(true);
+
+      // Decide avoid string: if regenerating one side, pass that caption; if both, null
+      const avoid = (avoidIg && avoidLi) ? null
+                  : avoidIg              ? avoidIg
+                  : avoidLi              ? avoidLi
+                  : null;
+
+      const body = {
+        tipo:     tipoEl.value,
+        lider:    selectedLider || null,
+        contexto,
+        avoid:    avoid || null
+      };
+
+      try {
+        resultsEl.style.display = 'flex';
+        if (!avoidIg) showSkeleton(igBody);
+        if (!avoidLi) showSkeleton(liBody);
+
+        const res  = await fetch('/api/copywrite', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || 'Erro desconhecido');
+
+        igCaption = data.instagram;
+        liCaption = data.linkedin;
+
+        if (!avoidIg) igBody.textContent = igCaption;
+        if (!avoidLi) liBody.textContent = liCaption;
+
+      } catch (err) {
+        showError(err.message || 'Erro ao gerar. Tente novamente.');
+        if (!avoidIg) igBody.textContent = '';
+        if (!avoidLi) liBody.textContent = '';
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Regenerate only Instagram: pass current IG caption as avoid, keep LinkedIn
+    async function regenIg() {
+      const contexto = contextoEl.value.trim();
+      if (!contexto) { showError('Preencha o campo Contexto antes de regenerar.'); return; }
+
+      hideError();
+      btnRegenIg.disabled = true;
+      showSkeleton(igBody);
+
+      const body = {
+        tipo:     tipoEl.value,
+        lider:    selectedLider || null,
+        contexto,
+        avoid:    igCaption || null
+      };
+
+      try {
+        const res  = await fetch('/api/copywrite', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro desconhecido');
+        igCaption = data.instagram;
+        igBody.textContent = igCaption;
+      } catch (err) {
+        showError(err.message || 'Erro ao regenerar. Tente novamente.');
+        igBody.textContent = '';
+      } finally {
+        btnRegenIg.disabled = false;
+      }
+    }
+
+    // Regenerate only LinkedIn
+    async function regenLi() {
+      const contexto = contextoEl.value.trim();
+      if (!contexto) { showError('Preencha o campo Contexto antes de regenerar.'); return; }
+
+      hideError();
+      btnRegenLi.disabled = true;
+      showSkeleton(liBody);
+
+      const body = {
+        tipo:     tipoEl.value,
+        lider:    selectedLider || null,
+        contexto,
+        avoid:    liCaption || null
+      };
+
+      try {
+        const res  = await fetch('/api/copywrite', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro desconhecido');
+        liCaption = data.linkedin;
+        liBody.textContent = liCaption;
+      } catch (err) {
+        showError(err.message || 'Erro ao regenerar. Tente novamente.');
+        liBody.textContent = '';
+      } finally {
+        btnRegenLi.disabled = false;
+      }
+    }
+
+    // ── Copy to clipboard ──────────────────────────────────────────────────────
+    function copyText(btn, text) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copiado';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      });
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function setLoading(on) {
+      btnGerar.disabled    = on;
+      btnRegenIg.disabled  = on;
+      btnRegenLi.disabled  = on;
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+    }
+
+    function hideError() {
+      errorMsg.classList.remove('visible');
+    }
+
+    // ── Event bindings ─────────────────────────────────────────────────────────
+    btnGerar.addEventListener('click',   () => generate(null, null));
+    btnRegenIg.addEventListener('click', () => regenIg());
+    btnRegenLi.addEventListener('click', () => regenLi());
+    btnCopyIg.addEventListener('click',  () => copyText(btnCopyIg, igCaption));
+    btnCopyLi.addEventListener('click',  () => copyText(btnCopyLi, liCaption));
+  </script>
+
+</body>
+</html>

@@ -20,11 +20,12 @@ ${article}
 ---
 
 Sua tarefa é criar EXATAMENTE 3 blocos de texto para slides de carrossel do Instagram. Cada bloco deve:
-- Ter entre 3 e 5 frases curtas e diretas
+- Ter NO MÁXIMO 2 frases curtas e diretas
+- Ter NO MÁXIMO 220 caracteres no total
 - Capturar uma ideia central diferente do artigo
-- Ser escrito em linguagem executiva, clara e impactante
+- Ser escrito em linguagem executiva, clara e impactante — direto ao ponto
 - Preservar as ideias mais relevantes do original
-- NÃO usar bullet points, numeração ou títulos — apenas parágrafos corridos
+- NÃO usar bullet points, numeração ou títulos — apenas texto corrido
 
 Responda APENAS com os 3 blocos separados por uma linha em branco, sem introdução, sem explicação, sem numeração. Formato exato:
 
@@ -40,7 +41,7 @@ Responda APENAS com os 3 blocos separados por uma linha em branco, sem introduç
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.4 }
+        generationConfig: { maxOutputTokens: 512, temperature: 0.3 }
       })
     });
 

@@ -250,6 +250,36 @@
     .mock-slide-title { height: 5px; width: 90%; border-radius: 2px; background: rgba(255,255,255,.7); }
     .mock-slide-line  { height: 3px; border-radius: 2px; background: rgba(255,255,255,.2); }
     .mock-slide-teal  { height: 3px; width: 50%; border-radius: 2px; background: rgba(65,193,194,.5); }
+
+    /* ═══════════════════════════════════════════════════════════
+       MOCKUP: CopyWriter
+       Two caption blocks (IG + LI) with platform tags
+    ═══════════════════════════════════════════════════════════ */
+    .mock-copy {
+      width: 220px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .mock-copy-row {
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .mock-copy-tag {
+      font-family: var(--font);
+      font-size: 7px; font-weight: 800; letter-spacing: 2px;
+      color: var(--teal); opacity: .8;
+      flex-shrink: 0; padding-top: 1px;
+    }
+    .mock-copy-lines {
+      display: flex; flex-direction: column; gap: 5px; flex: 1;
+    }
+    .mock-copy-line {
+      height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,.18);
+    }
+    .mock-copy-divider {
+      height: 1px;
+      background: rgba(255,255,255,.07);
+      margin: 0 2px;
+    }
   </style>
 </head>
 <body>
@@ -363,6 +393,36 @@
       <div class="tool-info">
         <div class="tool-title">Carrossel de Artigo</div>
         <div class="tool-desc">Transforma um artigo ou tema em slides prontos para exportar como carrossel no Instagram.</div>
+      </div>
+    </a>
+
+    <!-- CopyWriter -->
+    <a class="tool-card" href="/copywriter.html">
+      <div class="tool-preview">
+        <div class="mock-copy">
+          <div class="mock-copy-row">
+            <span class="mock-copy-tag">IG</span>
+            <div class="mock-copy-lines">
+              <div class="mock-copy-line" style="width:100%"></div>
+              <div class="mock-copy-line" style="width:80%"></div>
+              <div class="mock-copy-line" style="width:60%"></div>
+            </div>
+          </div>
+          <div class="mock-copy-divider"></div>
+          <div class="mock-copy-row">
+            <span class="mock-copy-tag">LI</span>
+            <div class="mock-copy-lines">
+              <div class="mock-copy-line" style="width:95%"></div>
+              <div class="mock-copy-line" style="width:70%"></div>
+              <div class="mock-copy-line" style="width:85%"></div>
+              <div class="mock-copy-line" style="width:50%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tool-info">
+        <div class="tool-title">CopyWriter</div>
+        <div class="tool-desc">Legendas para Instagram e LinkedIn na voz editorial da Rede Líderes — geradas por IA, prontas para publicar.</div>
       </div>
     </a>
 

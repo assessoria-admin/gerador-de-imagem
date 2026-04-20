@@ -12,6 +12,8 @@
     { "src": "/api/proxy-image",      "dest": "/api/proxy-image.js" },
     { "src": "/api/generate",         "dest": "/api/generate.js" },
     { "src": "/api/summarize",        "dest": "/api/summarize.js" },
+    { "src": "/api/copywrite",        "dest": "/api/copywrite.js" },
+    { "src": "/copywriter",           "dest": "/copywriter.html" },
     { "src": "/app",                  "dest": "/app.html" },
     { "src": "/fonts/(.*)",           "dest": "/fonts/$1" },
     { "src": "/logo-rl.png",          "dest": "/logo-rl.png" },

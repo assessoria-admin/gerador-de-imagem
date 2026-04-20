@@ -306,6 +306,63 @@
       color: #41c1c2; border-color: rgba(65,193,194,.35);
       background: rgba(65,193,194,.07);
     }
+
+    /* ── CopyWriter Panel ──────────────────────────────────────── */
+    .cw-panel {
+      display: block;
+      margin-top: 32px;
+      padding: 24px;
+      background: rgba(65,193,194,.08);
+      border: 1px solid rgba(65,193,194,.45);
+      border-radius: 12px;
+    }
+    .cw-panel-title {
+      font-size: 10px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--teal);
+      margin-bottom: 14px;
+    }
+    .cw-cards {
+      display: none;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .cw-cards.visible { display: flex; }
+    .cw-card {
+      flex: 1; min-width: 220px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .cw-card-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--teal); margin-bottom: 10px;
+    }
+    .cw-caption {
+      font-size: 13px; line-height: 1.7; color: rgba(255,255,255,.88);
+      white-space: pre-wrap; margin-bottom: 14px;
+    }
+    .cw-skeleton { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+    .cw-skel-line {
+      height: 3px; border-radius: 2px;
+      background: rgba(65,193,194,.2);
+      animation: cwPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes cwPulse { 0%,100% { opacity: .3; } 50% { opacity: .9; } }
+    .cw-actions { display: flex; gap: 16px; }
+    .cw-action {
+      background: none; border: none; padding: 0;
+      color: rgba(255,255,255,.4); font-family: var(--font);
+      font-size: 10px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .cw-action:hover { color: var(--teal); border-bottom-color: var(--teal); }
+    .cw-placeholder {
+      font-size: 12px; color: var(--muted); letter-spacing: .5px; padding: 4px 0 8px;
+    }
+    .cw-error {
+      font-size: 12px; color: #e05555; margin-top: 8px; display: none;
+    }
   </style>
 </head>
 <body>
@@ -397,6 +454,46 @@
       <canvas id="canvas"></canvas>
       <button class="btn-download" id="btnDownload">↓ &nbsp; Download com Texto</button>
       <button class="btn-download secondary" id="btnDownloadRaw">↓ &nbsp; Download Foto Original (sem texto)</button>
+    </div>
+
+    <!-- CopyWriter Panel -->
+    <div class="cw-panel" id="cwPanel">
+      <div class="cw-panel-title">Legenda para publicação</div>
+      <div class="cw-placeholder" id="cwPlaceholder">
+        <span>Selecione um líder para gerar a legenda automaticamente</span>
+      </div>
+      <div class="cw-cards" id="cwCards">
+        <div class="cw-card">
+          <div class="cw-card-label">Instagram</div>
+          <div class="cw-skeleton" id="cwSkeletonIG">
+            <div class="cw-skel-line" style="width:100%"></div>
+            <div class="cw-skel-line" style="width:85%"></div>
+            <div class="cw-skel-line" style="width:70%"></div>
+            <div class="cw-skel-line" style="width:90%"></div>
+          </div>
+          <div class="cw-caption" id="cwCaptionIG" style="display:none"></div>
+          <div class="cw-actions">
+            <button class="cw-action" id="cwCopiarIG" onclick="cwCopiar('ig')">Copiar</button>
+            <button class="cw-action" onclick="cwRegerar('ig')">Regenerar</button>
+          </div>
+        </div>
+        <div class="cw-card">
+          <div class="cw-card-label">LinkedIn</div>
+          <div class="cw-skeleton" id="cwSkeletonLI">
+            <div class="cw-skel-line" style="width:100%"></div>
+            <div class="cw-skel-line" style="width:75%"></div>
+            <div class="cw-skel-line" style="width:90%"></div>
+            <div class="cw-skel-line" style="width:65%"></div>
+            <div class="cw-skel-line" style="width:80%"></div>
+          </div>
+          <div class="cw-caption" id="cwCaptionLI" style="display:none"></div>
+          <div class="cw-actions">
+            <button class="cw-action" id="cwCopiarLI" onclick="cwCopiar('li')">Copiar</button>
+            <button class="cw-action" onclick="cwRegerar('li')">Regenerar</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw-error" id="cwError">Erro ao gerar legenda. Tente novamente.</div>
     </div>
     </div><!-- /.foto-col-form -->
 
@@ -540,6 +637,7 @@ function acSelect(person) {
   fotoPreviewAtualizar();
   if (person.photoUrl) loadNotionPhoto(person.photoUrl);
   acClose();
+  cwAutoGerar();
 }
 
 async function loadNotionPhoto(url) {
@@ -926,6 +1024,94 @@ function setLoading(on) {
 }
 
 document.addEventListener('DOMContentLoaded', fotoPreviewAtualizar);
+
+/* ── CopyWriter ──────────────────────────────────────────── */
+let _cwIG = '', _cwLI = '';
+
+function cwAutoGerar() {
+  document.getElementById('cwPlaceholder').style.display = 'none';
+  document.getElementById('cwCards').classList.add('visible');
+  cwGerar();
+}
+
+function cwGerar() {
+  const name    = (typeof nameInput !== 'undefined' ? nameInput.value : '') || '';
+  const cargo   = document.getElementById('jobTitle')?.value?.trim()   || '';
+  const empresas = document.getElementById('companies')?.value?.trim() || '';
+  const lider   = name ? { name, cargo, empresas } : null;
+
+  _cwShowLoading();
+
+  fetch('/api/copywrite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: 'imagem-perfil', lider, contexto: 'Mini Bio — imagem de perfil profissional' })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.instagram && data.linkedin) _cwShowResult(data.instagram, data.linkedin);
+    else _cwShowError();
+  })
+  .catch(() => _cwShowError());
+}
+
+function cwRegerar(net) {
+  const name    = (typeof nameInput !== 'undefined' ? nameInput.value : '') || '';
+  const cargo   = document.getElementById('jobTitle')?.value?.trim()   || '';
+  const empresas = document.getElementById('companies')?.value?.trim() || '';
+  const lider   = name ? { name, cargo, empresas } : null;
+  const avoid   = net === 'ig' ? _cwIG : _cwLI;
+
+  _cwShowLoadingOne(net);
+  fetch('/api/copywrite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: 'imagem-perfil', lider, contexto: 'Mini Bio — imagem de perfil profissional', avoid })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (net === 'ig' && data.instagram) { _cwIG = data.instagram; _cwSetCaption('ig', data.instagram); }
+    if (net === 'li' && data.linkedin)  { _cwLI = data.linkedin;  _cwSetCaption('li', data.linkedin); }
+    if (!data.instagram && !data.linkedin) _cwShowError();
+  })
+  .catch(() => _cwShowError());
+}
+
+function cwCopiar(net) {
+  const text = net === 'ig' ? _cwIG : _cwLI;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(net === 'ig' ? 'cwCopiarIG' : 'cwCopiarLI');
+    const orig = btn.textContent;
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+function _cwShowLoading() {
+  document.getElementById('cwPlaceholder').style.display = 'none';
+  document.getElementById('cwCards').classList.add('visible');
+  document.getElementById('cwError').style.display = 'none';
+  ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'flex');
+  ['cwCaptionIG','cwCaptionLI'].forEach(id => { document.getElementById(id).style.display = 'none'; document.getElementById(id).textContent = ''; });
+}
+function _cwShowLoadingOne(net) {
+  document.getElementById(net === 'ig' ? 'cwSkeletonIG' : 'cwSkeletonLI').style.display = 'flex';
+  document.getElementById(net === 'ig' ? 'cwCaptionIG'  : 'cwCaptionLI').style.display  = 'none';
+}
+function _cwShowResult(ig, li) {
+  _cwIG = ig; _cwLI = li;
+  _cwSetCaption('ig', ig); _cwSetCaption('li', li);
+}
+function _cwSetCaption(net, text) {
+  document.getElementById(net === 'ig' ? 'cwSkeletonIG' : 'cwSkeletonLI').style.display = 'none';
+  const el = document.getElementById(net === 'ig' ? 'cwCaptionIG' : 'cwCaptionLI');
+  el.textContent = text; el.style.display = 'block';
+}
+function _cwShowError() {
+  ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('cwError').style.display = 'block';
+}
 </script>
 </body>
 </html>
