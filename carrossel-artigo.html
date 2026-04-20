@@ -460,6 +460,16 @@
             <div class="hint">Cole o artigo completo — a IA vai condensar em 3 blocos otimizados para slide</div>
           </div>
 
+          <div id="notionPermissionWarning" style="display:none; margin: 12px 0; padding: 14px 16px; background: #1a0f00; border: 1px solid #7a4500; border-radius: 10px; font-size: 13px; line-height: 1.6; color: #f0a050;">
+            <strong>⚠️ Lembrete: liberar acesso da integração no Notion</strong><br><br>
+            O artigo desta pessoa não foi encontrado automaticamente porque a integração ainda não tem acesso às páginas de COAUTORES.<br><br>
+            <strong>O que fazer:</strong><br>
+            1. Peça para o <strong>dono do workspace Notion</strong> abrir a página <strong>"CONTROLE - LIVROS"</strong><br>
+            2. Clicar nos <strong>...</strong> (três pontos) no canto superior direito → <strong>Connections</strong><br>
+            3. Adicionar a integração <strong>NOTION_KEY</strong> do projeto<br><br>
+            Isso libera acesso automático para todos os livros e coautores. Enquanto isso, cole o artigo manualmente no campo acima.
+          </div>
+
           <button class="btn-summarize" id="btnResumir" onclick="resumirArtigo()">
             ✦ &nbsp; Resumir com IA
           </button>
@@ -640,6 +650,37 @@
     if (person.photoUrl) loadNotionPhoto(person.photoUrl);
     acClose();
     cwAutoGerar();
+    if (person.name) loadNotionArticle(person.name);
+  }
+
+  async function loadNotionArticle(name) {
+    const warning = document.getElementById('notionPermissionWarning');
+    warning.style.display = 'none';
+    setStatus('Buscando artigo no Notion…');
+    try {
+      const res  = await fetch(`/api/notion/article?name=${encodeURIComponent(name)}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        warning.style.display = 'block';
+        setStatus('');
+        return;
+      }
+
+      if (data.articleTitle) {
+        document.getElementById('articleTitle').value = data.articleTitle;
+      }
+      if (data.articleText) {
+        document.getElementById('articleText').value = data.articleText;
+      }
+
+      warning.style.display = 'none';
+      setStatus('Artigo carregado do Notion ✓');
+      setTimeout(() => setStatus(''), 3000);
+    } catch (err) {
+      warning.style.display = 'block';
+      setStatus('');
+    }
   }
 
   async function loadNotionPhoto(url) {
