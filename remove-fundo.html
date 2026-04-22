@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Remove Fundo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg); color: #fff;
+      font-family: var(--font); min-height: 100vh;
+      padding: 96px 20px 80px;
+    }
+
+    .wrap { max-width: 680px; margin: 0 auto; }
+
+    /* ─── Header ─── */
+    header { text-align: center; margin-bottom: 44px; }
+    .header-rule { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px; }
+    .header-rule span { flex: 1; height: 1px; max-width: 60px; background: linear-gradient(to right, transparent, var(--teal)); }
+    .header-rule span:last-child { background: linear-gradient(to left, transparent, var(--teal)); }
+    h1 { font-size: 20px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+    .back-link {
+      display: inline-block; margin-bottom: 28px;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+      text-decoration: none; transition: color .2s;
+    }
+    .back-link:hover { color: var(--teal); }
+
+    /* ─── Card ─── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+
+    label.field-label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 9px;
+    }
+
+    /* ─── Upload zone ─── */
+    .upload-zone {
+      position: relative; border: 1px dashed var(--border);
+      border-radius: 8px; padding: 32px 16px; text-align: center;
+      cursor: pointer; transition: border-color .2s, background .2s; overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .upload-zone:hover { border-color: rgba(65,193,194,.4); background: rgba(65,193,194,.03); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-idle .arrow { font-size: 28px; color: var(--teal); margin-bottom: 8px; }
+    .upload-idle p { font-size: 13px; color: var(--muted); }
+    .upload-idle strong { color: var(--teal); }
+
+    /* ─── Preview area ─── */
+    .preview-wrap {
+      display: none;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .preview-wrap.visible { display: grid; grid-template-columns: 1fr 1fr; }
+    .preview-box {
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 16px 16px;
+      aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+    }
+    .preview-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .preview-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* ─── Buttons ─── */
+    .btn-primary {
+      width: 100%; background: var(--teal); color: #000; border: none;
+      border-radius: 8px; padding: 15px; font-family: var(--font);
+      font-size: 11px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase;
+      cursor: pointer; transition: opacity .2s, transform .1s; margin-bottom: 12px;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .88; }
+    .btn-primary:active:not(:disabled) { transform: scale(.99); }
+    .btn-primary:disabled { opacity: .28; cursor: not-allowed; }
+
+    .btn-outline {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; background: transparent;
+      border: 1px solid var(--teal); color: var(--teal); border-radius: 8px; padding: 13px;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .btn-outline:hover { background: var(--teal); color: #000; }
+    .btn-outline:disabled { opacity: .28; cursor: not-allowed; pointer-events: none; }
+
+    .btn-ghost {
+      display: block; width: 100%; background: transparent; border: none;
+      color: var(--muted); font-family: var(--font); font-size: 11px;
+      letter-spacing: 1px; text-align: center; cursor: pointer;
+      padding: 10px; margin-top: 8px; transition: color .2s;
+    }
+    .btn-ghost:hover { color: #fff; }
+
+    /* ─── Status ─── */
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; margin-top: 16px; }
+    .spinner {
+      display: none; flex-shrink: 0; width: 15px; height: 15px;
+      border: 2px solid rgba(65,193,194,.2); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
+    .status-msg.err { color: #ff6b6b; }
+
+    /* ─── Tool Nav ─── */
+    .tool-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+      background: rgba(8,8,8,.88); backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1c1c1c; padding: 10px 16px;
+    }
+    .tool-nav a {
+      font-family: 'Neue Machina', sans-serif;
+      font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; text-decoration: none;
+      color: #555; padding: 7px 18px; border-radius: 8px;
+      border: 1px solid transparent; transition: color .2s, border-color .2s, background .2s;
+    }
+    .tool-nav a:hover { color: #fff; }
+    .tool-nav a.active { color: #41c1c2; border-color: rgba(65,193,194,.35); background: rgba(65,193,194,.07); }
+  </style>
+</head>
+<body>
+
+  <nav class="tool-nav">
+    <a href="/minibio.html">✨ Mini Bio</a>
+    <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
+    <a href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
+    <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
+    <a class="active" href="/remove-fundo.html">✂️ Remove Fundo</a>
+  </nav>
+
+  <div class="wrap">
+
+    <a class="back-link" href="/app.html">← Voltar ao hub</a>
+
+    <header>
+      <div class="header-rule">
+        <span></span>
+        <h1>Remove&nbsp;Fundo</h1>
+        <span></span>
+      </div>
+      <p>Envie uma foto e remova o fundo automaticamente via Remove.bg</p>
+    </header>
+
+    <div class="card">
+
+      <label class="field-label">Foto</label>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="photoFile" accept="image/*" />
+        <div class="upload-idle">
+          <div class="arrow">↑</div>
+          <p><strong>Escolher foto</strong>&nbsp;ou arrastar aqui</p>
+        </div>
+      </div>
+
+      <!-- Antes / Depois -->
+      <div class="preview-wrap" id="previewWrap">
+        <div>
+          <div class="preview-label">Original</div>
+          <div class="preview-box"><img id="imgOriginal" src="" alt="Original" /></div>
+        </div>
+        <div>
+          <div class="preview-label">Sem fundo</div>
+          <div class="preview-box"><img id="imgResult" src="" alt="Resultado" style="display:none" /></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btnRemove" disabled>
+        ✂️ &nbsp; Remover Fundo
+      </button>
+
+      <button class="btn-outline" id="btnDownload" disabled>
+        ↓ &nbsp; Download PNG
+      </button>
+
+      <button class="btn-ghost" id="btnReset" style="display:none">
+        Usar outra foto
+      </button>
+
+      <div class="status-bar">
+        <div class="spinner" id="spinner"></div>
+        <span class="status-msg" id="statusMsg"></span>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+let originalDataUrl = null;
+let resultDataUrl   = null;
+
+const photoFile   = document.getElementById('photoFile');
+const btnRemove   = document.getElementById('btnRemove');
+const btnDownload = document.getElementById('btnDownload');
+const btnReset    = document.getElementById('btnReset');
+const imgOriginal = document.getElementById('imgOriginal');
+const imgResult   = document.getElementById('imgResult');
+const previewWrap = document.getElementById('previewWrap');
+const uploadZone  = document.getElementById('uploadZone');
+
+photoFile.addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    originalDataUrl = e.target.result;
+    imgOriginal.src = originalDataUrl;
+    previewWrap.classList.add('visible');
+    uploadZone.style.display = 'none';
+    imgResult.style.display  = 'none';
+    resultDataUrl = null;
+    btnRemove.disabled   = false;
+    btnDownload.disabled = true;
+    btnReset.style.display = 'block';
+    setStatus('');
+  };
+  reader.readAsDataURL(file);
+});
+
+btnRemove.addEventListener('click', async () => {
+  if (!originalDataUrl) return;
+
+  setLoading(true);
+  btnDownload.disabled = true;
+  imgResult.style.display = 'none';
+
+  try {
+    setStatus('Enviando para Remove.bg…');
+    const res  = await fetch('/api/removebg', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ imageBase64: originalDataUrl })
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(json?.message || `Erro ${res.status}`);
+
+    resultDataUrl = json.base64;
+    imgResult.src = resultDataUrl;
+    imgResult.style.display = 'block';
+    btnDownload.disabled = false;
+    setStatus('Fundo removido ✓');
+    setTimeout(() => setStatus(''), 2500);
+
+  } catch (err) {
+    setStatus('Erro: ' + err.message, true);
+  } finally {
+    setLoading(false);
+  }
+});
+
+btnDownload.addEventListener('click', () => {
+  if (!resultDataUrl) return;
+  const a = document.createElement('a');
+  a.download = 'sem-fundo.png';
+  a.href     = resultDataUrl;
+  a.click();
+});
+
+btnReset.addEventListener('click', () => {
+  originalDataUrl = null;
+  resultDataUrl   = null;
+  photoFile.value = '';
+  imgOriginal.src = '';
+  imgResult.src   = '';
+  imgResult.style.display  = 'none';
+  previewWrap.classList.remove('visible');
+  uploadZone.style.display = '';
+  btnRemove.disabled   = true;
+  btnDownload.disabled = true;
+  btnReset.style.display = 'none';
+  setStatus('');
+});
+
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className   = 'status-msg' + (isError ? ' err' : '');
+}
+
+function setLoading(on) {
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  btnRemove.disabled = on;
+}
+</script>
+</body>
+</html>

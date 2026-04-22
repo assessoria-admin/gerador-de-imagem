@@ -252,6 +252,58 @@
     .mock-slide-teal  { height: 3px; width: 50%; border-radius: 2px; background: rgba(65,193,194,.5); }
 
     /* ═══════════════════════════════════════════════════════════
+       MOCKUP: Seletor de Prompts
+    ═══════════════════════════════════════════════════════════ */
+    .mock-seletor { display: flex; align-items: center; justify-content: center; }
+    .mock-seletor-grid {
+      display: grid; grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(2, 48px); gap: 6px;
+    }
+    .mock-tile {
+      border-radius: 6px;
+      background: #161616;
+      border: 1px solid #252525;
+    }
+    .mock-tile--active {
+      border-color: rgba(65,193,194,.5);
+      background: rgba(65,193,194,.08);
+      box-shadow: 0 0 8px rgba(65,193,194,.2);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       MOCKUP: Remove Fundo
+    ═══════════════════════════════════════════════════════════ */
+    .mock-removefundo {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px;
+    }
+    .mock-rf-before {
+      width: 60px; height: 72px; border-radius: 6px;
+      background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+      border: 1px solid #252525;
+      position: relative; overflow: hidden;
+    }
+    .mock-rf-before::after {
+      content: ''; position: absolute;
+      inset: 0; background: rgba(255,255,255,.06);
+    }
+    .mock-rf-arrow {
+      font-size: 14px; color: var(--teal); opacity: .7; flex-shrink: 0;
+    }
+    .mock-rf-after {
+      width: 60px; height: 72px; border-radius: 6px;
+      border: 1px solid rgba(65,193,194,.3);
+      background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 10px 10px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 12px rgba(65,193,194,.1);
+    }
+    .mock-rf-person {
+      width: 28px; height: 44px; border-radius: 14px 14px 8px 8px;
+      background: linear-gradient(160deg, #3a4a4a, #2a3636);
+      border: 1px solid rgba(65,193,194,.25);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        MOCKUP: CopyWriter
        Two caption blocks (IG + LI) with platform tags
     ═══════════════════════════════════════════════════════════ */
@@ -393,6 +445,43 @@
       <div class="tool-info">
         <div class="tool-title">Carrossel de Artigo</div>
         <div class="tool-desc">Transforma um artigo ou tema em slides prontos para exportar como carrossel no Instagram.</div>
+      </div>
+    </a>
+
+    <!-- Seletor de Prompts -->
+    <a class="tool-card" href="/seletor-prompts.html">
+      <div class="tool-preview">
+        <div class="mock-seletor">
+          <div class="mock-seletor-grid">
+            <div class="mock-tile mock-tile--active"></div>
+            <div class="mock-tile"></div>
+            <div class="mock-tile"></div>
+            <div class="mock-tile"></div>
+            <div class="mock-tile"></div>
+            <div class="mock-tile"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tool-info">
+        <div class="tool-title">Seletor de Prompts</div>
+        <div class="tool-desc">Escolha um dos 6 estilos visuais, selecione a pessoa e gere a imagem com IA — sem texto, só a foto processada.</div>
+      </div>
+    </a>
+
+    <!-- Remove Fundo -->
+    <a class="tool-card" href="/remove-fundo.html">
+      <div class="tool-preview">
+        <div class="mock-removefundo">
+          <div class="mock-rf-before"></div>
+          <div class="mock-rf-arrow">→</div>
+          <div class="mock-rf-after">
+            <div class="mock-rf-person"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tool-info">
+        <div class="tool-title">Remove Fundo</div>
+        <div class="tool-desc">Envie qualquer foto e remova o fundo automaticamente via Remove.bg — resultado em PNG transparente.</div>
       </div>
     </a>
 

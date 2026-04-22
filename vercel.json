@@ -1,10 +1,11 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
-    { "src": "*.html",      "use": "@vercel/static" },
-    { "src": "fonts/**",    "use": "@vercel/static" },
-    { "src": "*.png",       "use": "@vercel/static" }
+    { "src": "api/**/*.js",           "use": "@vercel/node" },
+    { "src": "*.html",                "use": "@vercel/static" },
+    { "src": "fonts/**",              "use": "@vercel/static" },
+    { "src": "assets/**",             "use": "@vercel/static" },
+    { "src": "*.png",                 "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/generate/([^/]+)", "dest": "/api/generate/[taskId].js?taskId=$1" },
@@ -13,9 +14,13 @@
     { "src": "/api/generate",         "dest": "/api/generate.js" },
     { "src": "/api/summarize",        "dest": "/api/summarize.js" },
     { "src": "/api/copywrite",        "dest": "/api/copywrite.js" },
+    { "src": "/api/removebg",         "dest": "/api/removebg.js" },
     { "src": "/copywriter",           "dest": "/copywriter.html" },
     { "src": "/app",                  "dest": "/app.html" },
+    { "src": "/seletor-prompts",      "dest": "/seletor-prompts.html" },
+    { "src": "/remove-fundo",         "dest": "/remove-fundo.html" },
     { "src": "/fonts/(.*)",           "dest": "/fonts/$1" },
+    { "src": "/assets/(.*)",          "dest": "/assets/$1" },
     { "src": "/logo-rl.png",          "dest": "/logo-rl.png" },
     { "src": "/",                     "dest": "/index.html" }
   ]
