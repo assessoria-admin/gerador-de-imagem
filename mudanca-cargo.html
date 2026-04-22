@@ -390,6 +390,8 @@
     <a href="/minibio.html">✨ Mini Bio</a>
     <a class="active" href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
     <a href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
+    <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
+    <a href="/remove-fundo.html">✂️ Remove Fundo</a>
   </nav>
 
 <div class="wrap">
@@ -511,8 +513,8 @@
             📷 Selecionar foto
             <input type="file" accept="image/*" id="c-file-foto" onchange="cCarregarFoto(this)">
           </button>
-          <button class="c-btn" onclick="cGerarFotoFreepik(window._cFotoDataUrl)"
-            id="c-btn-freepik" style="opacity:.4; cursor:not-allowed;" disabled>
+          <button class="c-btn" onclick="cGerarFotoIA(window._cFotoDataUrl)"
+            id="c-btn-ia" style="opacity:.4; cursor:not-allowed;" disabled>
             ✨ Enviar para IA
           </button>
         </div>
@@ -729,7 +731,7 @@ function cDefinirFotoCard(dataUrl) {
   img.src = dataUrl;
   img.style.display = 'block';
   document.getElementById('c-placeholder').style.display = 'none';
-  const btn = document.getElementById('c-btn-freepik');
+  const btn = document.getElementById('c-btn-ia');
   btn.disabled = false;
   btn.style.opacity = '1';
   btn.style.cursor  = 'pointer';
@@ -744,23 +746,17 @@ async function cCarregarFoto(input) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   FREEPIK IA
+   GEMINI IA
 ════════════════════════════════════════════════════════════════ */
-async function cGerarFotoFreepik(dataUrl) {
+async function cGerarFotoIA(dataUrl) {
   if (!dataUrl) { cSetStatus('Nenhuma foto carregada.', false); return; }
   try {
-    cSetStatus('Enviando para Freepik…', true);
+    cSetStatus('Enviando para Gemini…', true);
     const resized = await resizeDataUrl(dataUrl, 1024, 0.82);
     const base64  = resized.split(',')[1];
     const genResult = await startGeneration(base64);
 
-    let imageSrc;
-    if (genResult.type === 'immediate') {
-      imageSrc = genResult.data;
-    } else {
-      cSetStatus('Gerando com IA… (aguarde ~30s)', true);
-      imageSrc = await cPollGeneration(genResult.taskId);
-    }
+    const imageSrc = genResult.data;
 
     const final = imageSrc.startsWith('http')
       ? `/api/proxy-image?url=${encodeURIComponent(imageSrc)}`
@@ -772,16 +768,14 @@ async function cGerarFotoFreepik(dataUrl) {
     cSetStatus('Foto IA pronta ✓', false);
     setTimeout(() => cSetStatus('', false), 3000);
   } catch (err) {
-    cSetStatus('Erro Freepik: ' + err.message, false);
+    cSetStatus('Erro Gemini: ' + err.message, false);
   }
 }
 
 async function startGeneration(base64Image) {
   const body = {
     prompt:           PROMPT,
-    reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }],
-    aspect_ratio:     '4:5',
-    guidance_scale:   7
+    reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }]
   };
   const res  = await fetch(`${API_BASE}/api/generate`, {
     method: 'POST',
@@ -790,31 +784,11 @@ async function startGeneration(base64Image) {
   });
   const json = await res.json().catch(() => null);
   if (!res.ok) {
-    const detail = json?.errors ? '\n' + JSON.stringify(json.errors, null, 2) : '';
-    throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}${detail}`);
+    throw new Error(`Gemini API (${res.status}): ${json?.message || res.statusText}`);
   }
-  const taskId = json?.data?.task_id;
-  if (taskId) return { type: 'async', taskId };
   const generated = json?.data?.generated;
   if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
-  throw new Error('Resposta inesperada da API Freepik — veja o console.');
-}
-
-async function cPollGeneration(taskId) {
-  for (let i = 0; i < 80; i++) {
-    await sleep(3000);
-    const res = await fetch(`${API_BASE}/api/generate/${taskId}`);
-    if (!res.ok) continue;
-    const json   = await res.json().catch(() => null);
-    const status = (json?.data?.status || json?.status || '').toUpperCase();
-    if (status === 'COMPLETED') {
-      const generated = json?.data?.generated;
-      if (Array.isArray(generated) && generated.length > 0) return generated[0];
-    }
-    if (status === 'FAILED' || status === 'ERROR') throw new Error('A geração falhou na Freepik.');
-    cSetStatus(`Gerando com IA… ${(i + 1) * 3}s`, true);
-  }
-  throw new Error('Timeout na geração Freepik.');
+  throw new Error('Resposta inesperada da API Gemini — veja o console.');
 }
 
 /* ════════════════════════════════════════════════════════════════

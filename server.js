@@ -8,69 +8,70 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const FREEPIK_KEY  = process.env.FREEPIK_KEY;
-const FREEPIK_EDIT = process.env.FREEPIK_EDIT;
-
 const NOTION_KEY         = process.env.NOTION_KEY;
 const NOTION_DB          = process.env.NOTION_DB;
 const NOTION_COAUTORES_DB = process.env.NOTION_COAUTORES_DB;
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
+const GEMINI_KEY      = process.env.GEMINI_API_KEY;
+const GEMINI_URL      = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
+const GEMINI_IMG_URL  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '30mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// ── POST /api/generate — inicia a geração ─────────────────────────────────────
+// ── POST /api/generate — geração de imagem via Gemini ────────────────────────
 app.post('/api/generate', async (req, res) => {
-  try {
-    console.log('[generate] enviando para Freepik...');
+  if (!GEMINI_KEY) {
+    return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no .env' });
+  }
 
-    if (!FREEPIK_KEY || !FREEPIK_EDIT) {
-      return res.status(500).json({
-        message: 'Variáveis de ambiente FREEPIK_KEY ou FREEPIK_EDIT não configuradas'
-      });
+  const { prompt, reference_images } = req.body || {};
+  if (!prompt) return res.status(400).json({ message: 'Campo "prompt" é obrigatório.' });
+
+  const parts = [{ text: prompt }];
+  if (Array.isArray(reference_images) && reference_images.length > 0) {
+    for (const ref of reference_images) {
+      parts.push({ inlineData: { mimeType: ref.mime_type || 'image/jpeg', data: ref.image } });
     }
+  }
 
-    const freepikRes = await fetch(FREEPIK_EDIT, {
+  try {
+    console.log('[generate] enviando para Gemini...');
+    const geminiRes = await fetch(`${GEMINI_IMG_URL}?key=${GEMINI_KEY}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-freepik-api-key': FREEPIK_KEY
-      },
-      body: JSON.stringify(req.body)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+      })
     });
 
-    const data = await freepikRes.json();
-    console.log('[generate] status Freepik:', freepikRes.status, JSON.stringify(data));
-    res.status(freepikRes.status).json(data);
+    const data = await geminiRes.json();
+    console.log('[generate] status Gemini:', geminiRes.status);
+
+    if (!geminiRes.ok) {
+      const msg = data?.error?.message || geminiRes.statusText;
+      console.error('[generate] erro Gemini:', msg);
+      return res.status(geminiRes.status).json({ message: msg });
+    }
+
+    const parts_out = data?.candidates?.[0]?.content?.parts || [];
+    const imgPart   = parts_out.find(p => p.inlineData?.data);
+
+    if (!imgPart) {
+      console.error('[generate] sem imagem na resposta:', JSON.stringify(data).slice(0, 500));
+      return res.status(500).json({ message: 'Gemini não retornou imagem. Verifique o prompt ou a chave da API.' });
+    }
+
+    const { mimeType, data: b64 } = imgPart.inlineData;
+    const dataUrl = `data:${mimeType};base64,${b64}`;
+    console.log('[generate] imagem gerada —', mimeType, Math.round(b64.length / 1024), 'KB base64');
+
+    res.status(200).json({ data: { generated: [dataUrl] } });
 
   } catch (err) {
     console.error('[generate] erro:', err.message);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// ── GET /api/generate/:taskId — polling de status ─────────────────────────────
-app.get('/api/generate/:taskId', async (req, res) => {
-  try {
-    if (!FREEPIK_KEY || !FREEPIK_EDIT) {
-      return res.status(500).json({
-        message: 'Variáveis de ambiente não configuradas'
-      });
-    }
-
-    const freepikRes = await fetch(`${FREEPIK_EDIT}/${req.params.taskId}`, {
-      headers: { 'x-freepik-api-key': FREEPIK_KEY }
-    });
-
-    const data = await freepikRes.json();
-    console.log('[poll] taskId:', req.params.taskId, '— status:', data?.data?.status || data?.status);
-    res.status(freepikRes.status).json(data);
-
-  } catch (err) {
-    console.error('[poll] erro:', err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -545,6 +546,50 @@ RESPOSTA JSON: {"instagram":"Parabéns, Rafael Torres!\\n\\nRafael acaba de assu
 
   } catch (err) {
     console.error('[copywrite] erro:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── POST /api/removebg — remove fundo via Remove.bg ──────────────────────────
+app.post('/api/removebg', async (req, res) => {
+  const REMOVEBG_KEY = process.env.REMOVEBG_KEY;
+  if (!REMOVEBG_KEY) return res.status(500).json({ message: 'REMOVEBG_KEY não configurada no .env' });
+
+  const { imageUrl, imageBase64 } = req.body || {};
+  if (!imageUrl && !imageBase64) return res.status(400).json({ message: 'Informe imageUrl ou imageBase64.' });
+
+  try {
+    const formData = new FormData();
+    formData.append('size', 'auto');
+
+    if (imageUrl) {
+      formData.append('image_url', imageUrl);
+    } else {
+      const base64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64, 'base64');
+      const blob   = new Blob([buffer], { type: 'image/jpeg' });
+      formData.append('image_file', blob, 'image.jpg');
+    }
+
+    console.log('[removebg] enviando para Remove.bg...');
+    const rbRes = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method:  'POST',
+      headers: { 'X-Api-Key': REMOVEBG_KEY },
+      body:    formData
+    });
+
+    if (!rbRes.ok) {
+      const errText = await rbRes.text().catch(() => '');
+      return res.status(rbRes.status).json({ message: `Remove.bg retornou ${rbRes.status}: ${errText.slice(0, 120)}` });
+    }
+
+    const buffer = await rbRes.arrayBuffer();
+    const base64Result = Buffer.from(buffer).toString('base64');
+    console.log('[removebg] ok —', buffer.byteLength, 'bytes');
+    res.json({ base64: `data:image/png;base64,${base64Result}` });
+
+  } catch (err) {
+    console.error('[removebg] erro:', err.message);
     res.status(500).json({ message: err.message });
   }
 });

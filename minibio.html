@@ -371,6 +371,8 @@
     <a class="active" href="/minibio.html">✨ Mini Bio</a>
     <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
     <a href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
+    <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
+    <a href="/remove-fundo.html">✂️ Remove Fundo</a>
   </nav>
 
 <div class="wrap">
@@ -748,7 +750,7 @@ document.getElementById('form').addEventListener('submit', async e => {
     }
     const base64Img = dataUrl.split(',')[1];
 
-    setStatus('Enviando para Freepik API…');
+    setStatus('Enviando para Gemini…');
     const genResult = await startGeneration(base64Img);
 
     let imageSrc;
@@ -781,14 +783,12 @@ document.getElementById('form').addEventListener('submit', async e => {
 });
 
 /* ════════════════════════════════════════════════════════════════
-   FREEPIK API
+   GEMINI API
 ════════════════════════════════════════════════════════════════ */
 async function startGeneration(base64Image) {
   const body = {
     prompt:           PROMPT,
-    reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }],
-    aspect_ratio:     '4:5',
-    guidance_scale:   7
+    reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }]
   };
   const res  = await fetch(`${API_BASE}/api/generate`, {
     method: 'POST',
@@ -797,31 +797,11 @@ async function startGeneration(base64Image) {
   });
   const json = await res.json().catch(() => null);
   if (!res.ok) {
-    const detail = json?.errors ? '\n' + JSON.stringify(json.errors, null, 2) : '';
-    throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}${detail}`);
+    throw new Error(`Gemini API (${res.status}): ${json?.message || res.statusText}`);
   }
-  const taskId = json?.data?.task_id;
-  if (taskId) return { type: 'async', taskId };
   const generated = json?.data?.generated;
   if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
-  throw new Error('Resposta inesperada da API Freepik — veja o console.');
-}
-
-async function pollGeneration(taskId) {
-  for (let i = 0; i < 80; i++) {
-    await sleep(3000);
-    const res = await fetch(`${API_BASE}/api/generate/${taskId}`);
-    if (!res.ok) continue;
-    const json   = await res.json().catch(() => null);
-    const status = (json?.data?.status || json?.status || '').toUpperCase();
-    if (status === 'COMPLETED') {
-      const generated = json?.data?.generated;
-      if (Array.isArray(generated) && generated.length > 0) return generated[0];
-    }
-    if (status === 'FAILED' || status === 'ERROR') throw new Error('A geração da imagem falhou na Freepik API.');
-    setStatus(`Gerando imagem… ${(i + 1) * 3}s`);
-  }
-  throw new Error('Timeout: a geração demorou mais do que o esperado.');
+  throw new Error('Resposta inesperada da API Gemini — veja o console.');
 }
 
 /* ════════════════════════════════════════════════════════════════
