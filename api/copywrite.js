@@ -2,7 +2,7 @@
 // Gera legendas para Instagram e LinkedIn na voz editorial da Rede Líderes
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
 
 const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
 

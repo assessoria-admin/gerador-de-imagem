@@ -16,7 +16,7 @@ const NOTION_DB          = process.env.NOTION_DB;
 const NOTION_COAUTORES_DB = process.env.NOTION_COAUTORES_DB;
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '30mb' }));
@@ -467,7 +467,7 @@ Responda APENAS com os 3 blocos separados por uma linha em branco, sem introduç
 // ── POST /api/copywrite — gera legendas IG + LI com Gemini ───────────────────
 app.post('/api/copywrite', async (req, res) => {
   const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
-  const COPY_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+  const COPY_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
 
   if (!GEMINI_KEY) return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no .env' });
 
