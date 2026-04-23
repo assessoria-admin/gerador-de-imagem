@@ -6,54 +6,89 @@ const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/
 
 const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
 
-function buildPrompt(tipo, lider, contexto, avoid) {
-  const persona = `Você é o redator editorial da Rede Líderes — uma comunidade premium B2B de líderes empresariais do Brasil.
-Seu tom é direto, editorial e premium. Nunca corporativo engessado. Nunca genérico.
-Nunca use hashtags. Nunca use emojis excessivos (máximo 0, prefira zero).
-Escreva sempre em português brasileiro formal-moderno.
-Instagram: curto-médio, CTA editorial tipográfico, máximo 600 caracteres.
-LinkedIn: insight ou dado primeiro, convite à reflexão no final, máximo 1300 caracteres.`;
+function buildLiderLine(lider) {
+  if (!lider) return null;
+  return `Líder: ${lider.name}${lider.cargo ? ` | Cargo atual: ${lider.cargo}` : ''}${lider.empresas ? ` | Empresas anteriores (histórico): ${lider.empresas}` : ''}`;
+}
 
-  const exemplos = `EXEMPLO 1:
-INPUT: Líder: Glauco Sampaio | Cargo: CEO | Empresas: BeePhish, Santander, Banco Votorantim, Cielo | Contexto: Trajetória em cibersegurança, cofundador e CEO da BeePhish
-RESPOSTA JSON: {"instagram":"Com uma ampla carreira em grandes empresas como Santander, Banco Votorantim e Cielo, hoje Glauco Sampaio, líder de cibersegurança, é cofundador e CEO da BeePhish, empresa com foco em minimizar o risco humano dentro de negócios de todos os portes.\\n\\nConheça um pouco da sua trajetória e as novidades que estão por vir.","linkedin":"Com uma ampla carreira em grandes empresas como Santander, Banco Votorantim e Cielo, hoje Glauco Sampaio, líder de cibersegurança, é cofundador e CEO da BeePhish, empresa com foco em minimizar o risco humano dentro de negócios de todos os portes.\\n\\nConheça um pouco da sua trajetória e as novidades que estão por vir."}
-
-EXEMPLO 2:
-INPUT: Líder: Marli Matos | Cargo: Líder de Finanças | Contexto: Lançamento de livro autoral pela Editora da Rede Líderes
-RESPOSTA JSON: {"instagram":"Temos mais um lançamento em nossa Editora. Parabéns, Marli Matos!\\n\\nA Marli é líder de finanças e agora terá sua trajetória posicionada para todo o mercado.","linkedin":"Temos mais um lançamento em nossa Editora. Parabéns, Marli Matos!\\n\\nA Marli é líder de finanças e agora terá sua trajetória posicionada para todo o mercado.\\n\\nDesta vez, com um livro totalmente autoral pela Editora da Rede Líderes. Não é um capítulo. É um livro inteiro dedicado a uma única líder.\\n\\nSua carreira, suas decisões reais, sua visão estratégica sobre o papel de finanças nas organizações e como a tecnologia e vendas podem mudar essa área. O tipo de conteúdo que só quem viveu consegue compartilhar.\\n\\nEm breve, mais detalhes sobre a data de lançamento.\\n\\nwww.redelideres.com"}
-
-EXEMPLO 3:
-INPUT: Contexto: Reunião do Conselho sobre gestão de pessoas, premiação Líder Destaque do Ano
-RESPOSTA JSON: {"instagram":"Reunimos diversas lideranças em mais uma Reunião de Conselho.\\n\\nO encontro foi dedicado à análise de movimentos que vêm redesenhando a gestão de pessoas nas organizações.","linkedin":"Reunimos diversas lideranças em mais uma Reunião de Conselho.\\n\\nO encontro foi dedicado à análise de movimentos que vêm redesenhando a gestão de pessoas nas organizações.\\n\\nAo reunir diferentes perspectivas em um mesmo espaço de reflexão, ampliamos a leitura sobre os desafios e oportunidades que atravessam as empresas e as carreiras.\\n\\nEncerramos o encontro com a premiação de Líder Destaque do Ano, reconhecendo algumas das lideranças de RH."}`;
-
-  const liderLine = lider
-    ? `Líder: ${lider.name}${lider.cargo ? ` | Cargo: ${lider.cargo}` : ''}${lider.empresas ? ` | Empresas: ${lider.empresas}` : ''}`
-    : null;
-
-  const requestLines = [
-    `Tipo: ${tipo}`,
+function buildPromptInstagram(tipo, lider, contexto, avoid) {
+  const liderLine = buildLiderLine(lider);
+  const lines = [
     liderLine,
     `Contexto: ${contexto}`,
     avoid ? `Evite repetir: ${avoid}` : null
   ].filter(Boolean).join('\n');
 
-  return `${persona}
+  return `Você é o redator editorial da Rede Líderes — comunidade premium B2B de líderes empresariais do Brasil.
+Tom: direto, editorial, premium. Nunca corporativo engessado. Nunca genérico.
+Sem hashtags. Sem emojis.
+Escreva em português brasileiro formal-moderno.
 
-${exemplos}
+TAREFA: Escreva APENAS a legenda para INSTAGRAM.
+- Curto, impacto imediato, máximo 600 caracteres.
+- Mencione o nome do líder, o novo cargo e a empresa.
+- Mencione as empresas anteriores do histórico (se houver) em uma frase de contextualização rápida.
+- CTA editorial direto no final.
+
+EXEMPLOS:
+INPUT: Líder: Glauco Sampaio | Cargo atual: CEO | Empresas anteriores (histórico): Santander, Banco Votorantim, Cielo | Contexto: Parabenização por nova posição: CEO na BeePhish
+SAÍDA: Com passagens por Santander, Banco Votorantim e Cielo, Glauco Sampaio assume como CEO da BeePhish — empresa com foco em minimizar o risco humano nas organizações.\\n\\nParabéns, Glauco. Nova etapa, mesmo nível de entrega.
+
+INPUT: Líder: Ana Carvalho | Cargo atual: Diretora de Operações | Empresas anteriores (histórico): Ambev, Unilever, P&G | Contexto: Parabenização por nova posição: Diretora de Operações na Nestlé
+SAÍDA: Passando por P&G, Unilever e Ambev, Ana Carvalho assume como Diretora de Operações na Nestlé.\\n\\nParabéns, Ana. Mais um passo numa trajetória que inspira.
 
 AGORA GERE PARA:
-${requestLines}
+${lines}
 
-Retorne APENAS o JSON, sem markdown, sem explicações: {"instagram":"...","linkedin":"..."}`;
+Retorne APENAS o texto puro da legenda, sem JSON, sem aspas, sem markdown.`;
 }
 
-function extractJSON(raw) {
-  // Strip markdown code fences if present
-  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-  // Find first { ... } block
-  const match = stripped.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('Resposta do Gemini não contém JSON válido.');
-  return JSON.parse(match[0]);
+function buildPromptLinkedIn(tipo, lider, contexto, avoid) {
+  const liderLine = buildLiderLine(lider);
+  const lines = [
+    liderLine,
+    `Contexto: ${contexto}`,
+    avoid ? `Evite repetir: ${avoid}` : null
+  ].filter(Boolean).join('\n');
+
+  return `Você é o redator editorial da Rede Líderes — comunidade premium B2B de líderes empresariais do Brasil.
+Tom: direto, editorial, premium. Nunca corporativo engessado. Nunca genérico.
+Sem hashtags. Sem emojis.
+Escreva em português brasileiro formal-moderno.
+
+TAREFA: Escreva APENAS a legenda para LINKEDIN.
+- Mais longa e elaborada. Entre 600 e 1300 caracteres.
+- OBRIGATÓRIO: abra com as empresas anteriores do histórico — cite as últimas 3 pelo nome em uma frase de abertura forte.
+- Depois apresente o novo cargo e empresa.
+- Adicione um parágrafo de reflexão ou insight editorial sobre o que essa trajetória representa.
+- Encerre com parabéns e www.redelideres.com na última linha.
+
+EXEMPLOS:
+INPUT: Líder: Glauco Sampaio | Cargo atual: CEO | Empresas anteriores (histórico): Santander, Banco Votorantim, Cielo | Contexto: Parabenização por nova posição: CEO na BeePhish
+SAÍDA: Uma carreira construída em grandes instituições — Santander, Banco Votorantim e Cielo — agora abre um novo capítulo.\\n\\nGlauco Sampaio assume como CEO da BeePhish, levando para o empreendedorismo em cibersegurança toda a visão acumulada em anos de mercado financeiro.\\n\\nEssa movimentação reforça um padrão que vemos com frequência na Rede Líderes: líderes forjados em ambientes de alta exigência tendem a criar as empresas mais relevantes do próximo ciclo.\\n\\nParabéns, Glauco.\\n\\nwww.redelideres.com
+
+INPUT: Líder: Ana Carvalho | Cargo atual: Diretora de Operações | Empresas anteriores (histórico): Ambev, Unilever, P&G | Contexto: Parabenização por nova posição: Diretora de Operações na Nestlé
+SAÍDA: P&G, Unilever e Ambev — uma trajetória construída nas maiores operações do mundo.\\n\\nAgora, Ana Carvalho assume como Diretora de Operações na Nestlé, levando consigo um histórico que poucos líderes no Brasil podem apresentar.\\n\\nEsse movimento reforça o que vemos com frequência na Rede Líderes: líderes com trajetória sólida em grandes organizações são disputados pelos melhores ambientes.\\n\\nParabéns, Ana.\\n\\nwww.redelideres.com
+
+AGORA GERE PARA:
+${lines}
+
+Retorne APENAS o texto puro da legenda, sem JSON, sem aspas, sem markdown.`;
+}
+
+async function callGemini(prompt) {
+  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      contents:         [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 800, temperature: 0.75 }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || res.statusText);
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return text.trim();
 }
 
 module.exports = async (req, res) => {
@@ -77,35 +112,22 @@ module.exports = async (req, res) => {
     return res.status(400).json({ message: 'Campo "contexto" é obrigatório.' });
   }
 
-  const prompt = buildPrompt(tipo, lider || null, contexto.trim(), avoid || null);
+  const l = lider || null;
+  const c = contexto.trim();
+  const a = avoid || null;
 
   try {
-    const geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        contents:         [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
-      })
-    });
+    const [instagram, linkedin] = await Promise.all([
+      callGemini(buildPromptInstagram(tipo, l, c, a)),
+      callGemini(buildPromptLinkedIn(tipo, l, c, a)),
+    ]);
 
-    const data = await geminiRes.json();
-
-    if (!geminiRes.ok) {
-      const msg = data?.error?.message || geminiRes.statusText;
-      console.error('[copywrite] erro Gemini:', msg);
-      return res.status(500).json({ message: `Erro do Gemini: ${msg}` });
+    if (!instagram || !linkedin) {
+      throw new Error('Resposta vazia do Gemini.');
     }
 
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const result = extractJSON(raw);
-
-    if (!result.instagram || !result.linkedin) {
-      throw new Error('JSON retornado pelo Gemini está incompleto.');
-    }
-
-    console.log('[copywrite] ok — tipo:', tipo, lider ? `| líder: ${lider.name}` : '');
-    res.json({ instagram: result.instagram, linkedin: result.linkedin });
+    console.log('[copywrite] ok — tipo:', tipo, l ? `| líder: ${l.name}` : '');
+    res.json({ instagram, linkedin });
 
   } catch (err) {
     console.error('[copywrite] erro:', err.message);
