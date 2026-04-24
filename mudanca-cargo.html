@@ -191,36 +191,37 @@
     }
     .c-cargo-bloco { margin-bottom: 28px; }
     .c-cargo-label1 {
-      font-size: 62px; font-weight: 800;
+      font-size: 38px; font-weight: 500;
       color: #ffffff;
-      letter-spacing: -1px; text-transform: uppercase;
-      margin-bottom: 0; line-height: 1;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 0; line-height: 1.2;
     }
     .c-cargo-label {
-      font-size: 62px; font-weight: 800;
+      font-size: 38px; font-weight: 500;
       color: #ffffff;
-      letter-spacing: -1px; text-transform: uppercase;
-      margin-bottom: 28px; line-height: 1;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 4px; line-height: 1.2;
     }
     .c-cargo-nome {
-      font-size: 52px; font-weight: 700;
-      color: #03d8d2; line-height: 1.1; letter-spacing: 1px;
+      font-size: 62px; font-weight: 800;
+      color: #03d8d2; line-height: 1; letter-spacing: -1px;
       text-transform: uppercase;
       text-shadow: 0 0 40px rgba(3,216,210,0.4);
+      margin-bottom: 28px;
     }
     .c-nome-bloco {
       display: flex; align-items: center; gap: 19px;
-      margin-top: 28px; margin-bottom: 28px;
+      margin-top: 0; margin-bottom: 36px;
     }
     .c-nome-bloco .separador-v {
-      width: 4px; height: 28px;
+      width: 4px; height: 38px;
       background: rgba(3,216,210,0.4); border-radius: 2px; flex-shrink: 0;
     }
     .c-nome {
-      font-size: 42px; font-weight: 500;
-      color: rgba(255,255,255,0.65); line-height: 1.2; white-space: nowrap;
+      font-size: 72px; font-weight: 700;
+      color: #ffffff; line-height: 1.05; white-space: nowrap;
     }
-    .c-nome .sobrenome { color: rgba(255,255,255,0.88); font-weight: 700; }
+    .c-nome .sobrenome { color: #ffffff; font-weight: 800; }
     .c-empresa-destaque {
       margin-bottom: 33px; display: flex; flex-direction: column; gap: 5px;
       border-left: 7px solid #03d8d2; padding-left: 28px;
@@ -443,17 +444,17 @@
 
         <!-- Conteúdo em fluxo normal -->
         <div class="c-content">
-          <div class="c-cargo-bloco">
-            <div class="c-cargo-label1">Conselheiro assume</div>
-            <div class="c-cargo-label">nova posição de</div>
-            <div class="c-cargo-nome" id="c-txt-cargo">Cargo</div>
-          </div>
-
           <div class="c-nome-bloco">
             <div class="separador-v"></div>
             <div class="c-nome">
               <span id="c-txt-nome">Nome</span> <span class="sobrenome" id="c-txt-sobrenome">Sobrenome</span>
             </div>
+          </div>
+
+          <div class="c-cargo-bloco">
+            <div class="c-cargo-label1">Conselheiro assume</div>
+            <div class="c-cargo-label">nova posição de</div>
+            <div class="c-cargo-nome" id="c-txt-cargo">Cargo</div>
           </div>
 
           <div class="c-empresa-destaque">

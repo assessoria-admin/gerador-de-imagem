@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rede Líderes — Ferramentas de Imagem</title>
+  <title>Rede Líderes — Ferramentas</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <script>
@@ -20,502 +20,270 @@
     }
 
     :root {
-      --teal:   #41c1c2;
-      --bg:     #080808;
-      --card:   #0f0f0f;
-      --border: #1c1c1c;
-      --muted:  #555;
-      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+      --teal:      #41c1c2;
+      --teal-dim:  rgba(65,193,194,.12);
+      --teal-glow: rgba(65,193,194,.18);
+      --bg:        #080808;
+      --card:      #0f0f0f;
+      --border:    #1c1c1c;
+      --border-hl: rgba(65,193,194,.3);
+      --muted:     #555;
+      --muted-lt:  #888;
+      --font:      'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
     }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg); color: #fff;
-      font-family: var(--font); min-height: 100vh;
-      padding: 48px 20px 80px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--bg);
+      color: #fff;
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 20px 80px;
     }
 
-    header { text-align: center; margin-bottom: 56px; }
-    .header-rule {
-      display: flex; align-items: center; justify-content: center;
-      gap: 14px; margin-bottom: 10px;
+    /* ── Header ──────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 64px;
     }
-    .header-rule span {
-      flex: 1; height: 1px; max-width: 60px;
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 14px;
+      opacity: .8;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .header-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 16px auto;
+      width: 120px;
+    }
+    .header-divider::before,
+    .header-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
       background: linear-gradient(to right, transparent, var(--teal));
     }
-    .header-rule span:last-child {
+    .header-divider::after {
       background: linear-gradient(to left, transparent, var(--teal));
     }
-    h1 { font-size: 20px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; }
-    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
-
-    /* ── Grid ──────────────────────────────────────────────────── */
-    .tools { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
-
-    .tool-card {
-      display: flex; flex-direction: column;
-      width: 300px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; text-decoration: none; color: #fff;
-      overflow: hidden;
-      transition: border-color .25s, background .25s, transform .25s;
-    }
-    .tool-card:hover {
-      border-color: rgba(65,193,194,.5);
-      background: rgba(65,193,194,.03);
-      transform: translateY(-3px);
-    }
-
-    /* ── Preview area ──────────────────────────────────────────── */
-    .tool-preview {
-      width: 100%; height: 160px;
-      background: #111;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* ── Info area ─────────────────────────────────────────────── */
-    .tool-info { padding: 22px 22px 24px; }
-    .tool-title {
-      font-size: 11px; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--teal); margin-bottom: 6px;
-    }
-    .tool-desc { font-size: 12px; color: var(--muted); line-height: 1.65; letter-spacing: .3px; }
-
-    /* ═══════════════════════════════════════════════════════════
-       MOCKUP: Mini Bio
-       Profile card with AI background + overlay
-    ═══════════════════════════════════════════════════════════ */
-    .mock-minibio {
-      width: 110px; height: 138px;
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 8px 32px rgba(0,0,0,.6);
-      flex-shrink: 0;
-    }
-    .mock-minibio-bg {
-      width: 100%; height: 100%;
-      background: linear-gradient(135deg, #1a2a2a 0%, #0d1f1f 40%, #162020 100%);
-    }
-    /* Simulated AI texture blobs */
-    .mock-minibio-bg::before {
-      content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 30% 40%, rgba(65,193,194,.18) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 60% at 75% 60%, rgba(65,193,194,.10) 0%, transparent 70%);
-    }
-    /* Avatar circle */
-    .mock-minibio-avatar {
-      position: absolute;
-      top: 18px; left: 50%; transform: translateX(-50%);
-      width: 44px; height: 44px;
+    .header-divider-dot {
+      width: 4px; height: 4px;
       border-radius: 50%;
-      background: linear-gradient(145deg, #2a3a3a, #1a2828);
-      border: 2px solid rgba(65,193,194,.4);
-    }
-    .mock-minibio-avatar::after {
-      content: '';
-      position: absolute; inset: 6px;
-      border-radius: 50%;
-      background: linear-gradient(145deg, #3a4a4a, #2a3636);
-    }
-    /* Bottom overlay bar */
-    .mock-minibio-overlay {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 8px 8px 7px;
-      background: linear-gradient(to top, rgba(8,8,8,.95) 0%, rgba(8,8,8,.7) 100%);
-    }
-    .mock-minibio-name {
-      height: 5px; width: 70%; border-radius: 3px;
-      background: #fff; margin-bottom: 4px; opacity: .9;
-    }
-    .mock-minibio-role {
-      height: 3px; width: 55%; border-radius: 3px;
-      background: var(--teal); margin-bottom: 3px; opacity: .8;
-    }
-    .mock-minibio-company {
-      height: 3px; width: 40%; border-radius: 3px;
-      background: rgba(255,255,255,.35);
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       MOCKUP: Mudança de Cargo
-       LinkedIn-style post card with badge
-    ═══════════════════════════════════════════════════════════ */
-    .mock-cargo {
-      width: 200px; height: 130px;
-      border-radius: 8px; overflow: hidden;
-      background: #161616;
-      border: 1px solid #252525;
-      box-shadow: 0 8px 32px rgba(0,0,0,.5);
-      padding: 12px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    /* Top row: avatar + name/role */
-    .mock-cargo-top {
-      display: flex; align-items: center; gap: 8px;
-    }
-    .mock-cargo-avatar {
-      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(145deg, #2a3a3a, #1a2828);
-      border: 1.5px solid rgba(65,193,194,.35);
-      position: relative; overflow: hidden;
-    }
-    .mock-cargo-avatar::after {
-      content: '';
-      position: absolute; inset: 4px; border-radius: 50%;
-      background: linear-gradient(145deg, #3a4a4a, #2a3636);
-    }
-    .mock-cargo-meta { display: flex; flex-direction: column; gap: 3px; }
-    .mock-cargo-name  { height: 4px; width: 72px; border-radius: 2px; background: rgba(255,255,255,.7); }
-    .mock-cargo-role  { height: 3px; width: 52px; border-radius: 2px; background: rgba(255,255,255,.25); }
-
-    /* Badge */
-    .mock-cargo-badge {
-      display: flex; align-items: center; gap: 5px;
-      background: rgba(65,193,194,.1);
-      border: 1px solid rgba(65,193,194,.25);
-      border-radius: 5px; padding: 4px 7px; width: fit-content;
-    }
-    .mock-cargo-badge-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--teal); flex-shrink: 0;
-    }
-    .mock-cargo-badge-text { display: flex; flex-direction: column; gap: 2px; }
-    .mock-cargo-badge-line1 { height: 3px; width: 90px; border-radius: 2px; background: var(--teal); opacity: .8; }
-    .mock-cargo-badge-line2 { height: 2px; width: 60px; border-radius: 2px; background: rgba(65,193,194,.45); }
-
-    /* Body lines */
-    .mock-cargo-body { display: flex; flex-direction: column; gap: 3px; }
-    .mock-cargo-line { height: 2.5px; border-radius: 2px; background: rgba(255,255,255,.15); }
-
-    /* ═══════════════════════════════════════════════════════════
-       MOCKUP: Carrossel
-       3 stacked slides in perspective
-    ═══════════════════════════════════════════════════════════ */
-    .mock-carrossel {
-      position: relative;
-      width: 88px; height: 110px;
-    }
-    .mock-slide {
-      position: absolute;
-      width: 80px; height: 100px;
-      border-radius: 6px;
-      background: #161616;
-      border: 1px solid #252525;
-      overflow: hidden;
-    }
-    /* Slide 3 — back */
-    .mock-slide:nth-child(1) {
-      bottom: 0; left: 8px;
-      opacity: .4;
-      transform: rotate(5deg);
-    }
-    /* Slide 2 — middle */
-    .mock-slide:nth-child(2) {
-      bottom: 4px; left: 4px;
+      background: var(--teal);
       opacity: .7;
-      transform: rotate(2.5deg);
     }
-    /* Slide 1 — front */
-    .mock-slide:nth-child(3) {
-      bottom: 8px; left: 0;
-      opacity: 1;
-      transform: rotate(0deg);
-      border-color: rgba(65,193,194,.3);
-      box-shadow: 0 6px 20px rgba(0,0,0,.5);
-    }
-    /* Slide content */
-    .mock-slide-header {
-      height: 28px;
-      background: linear-gradient(135deg, #1a2a2a, #0f1f1f);
-      border-bottom: 1px solid #252525;
-      display: flex; align-items: center; padding: 0 7px; gap: 4px;
-    }
-    .mock-slide-logo {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--teal); opacity: .8;
-    }
-    .mock-slide-logo-text {
-      height: 3px; width: 28px; border-radius: 2px;
-      background: rgba(255,255,255,.4);
-    }
-    .mock-slide-body { padding: 8px 7px; display: flex; flex-direction: column; gap: 4px; }
-    .mock-slide-title { height: 5px; width: 90%; border-radius: 2px; background: rgba(255,255,255,.7); }
-    .mock-slide-line  { height: 3px; border-radius: 2px; background: rgba(255,255,255,.2); }
-    .mock-slide-teal  { height: 3px; width: 50%; border-radius: 2px; background: rgba(65,193,194,.5); }
 
-    /* ═══════════════════════════════════════════════════════════
-       MOCKUP: Seletor de Prompts
-    ═══════════════════════════════════════════════════════════ */
-    .mock-seletor { display: flex; align-items: center; justify-content: center; }
-    .mock-seletor-grid {
-      display: grid; grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(2, 48px); gap: 6px;
+    header p {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      line-height: 1.6;
     }
-    .mock-tile {
-      border-radius: 6px;
+
+    /* ── Tool List ───────────────────────────────────────────── */
+    .tools {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-link {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 24px;
+      text-decoration: none;
+      color: #fff;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      transition: background .2s, padding-left .2s;
+      overflow: hidden;
+    }
+
+    .tool-link::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--teal);
+      transform: scaleY(0);
+      transition: transform .2s;
+      transform-origin: center;
+    }
+
+    .tool-link:first-child { border-top: 1px solid var(--border); }
+
+    .tool-link:hover {
+      background: var(--teal-dim);
+      padding-left: 30px;
+    }
+    .tool-link:hover::before {
+      transform: scaleY(1);
+    }
+
+    /* Icon */
+    .tool-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
       background: #161616;
-      border: 1px solid #252525;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: border-color .2s, background .2s;
     }
-    .mock-tile--active {
-      border-color: rgba(65,193,194,.5);
-      background: rgba(65,193,194,.08);
-      box-shadow: 0 0 8px rgba(65,193,194,.2);
+    .tool-link:hover .tool-icon {
+      border-color: var(--border-hl);
+      background: var(--teal-dim);
+    }
+    .tool-icon svg {
+      width: 18px; height: 18px;
+      stroke: var(--teal);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: .85;
+      transition: opacity .2s;
+    }
+    .tool-link:hover .tool-icon svg { opacity: 1; }
+
+    /* Text */
+    .tool-body { flex: 1; min-width: 0; }
+
+    .tool-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 4px;
+      transition: color .2s;
+    }
+    .tool-link:hover .tool-title { color: var(--teal); }
+
+    .tool-desc {
+      font-size: 11.5px;
+      color: var(--muted-lt);
+      line-height: 1.6;
+      letter-spacing: .2px;
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       MOCKUP: Remove Fundo
-    ═══════════════════════════════════════════════════════════ */
-    .mock-removefundo {
-      display: flex; align-items: center; justify-content: center;
-      gap: 10px;
+    /* Arrow */
+    .tool-arrow {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      color: var(--muted);
+      transition: color .2s, transform .2s;
     }
-    .mock-rf-before {
-      width: 60px; height: 72px; border-radius: 6px;
-      background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-      border: 1px solid #252525;
-      position: relative; overflow: hidden;
-    }
-    .mock-rf-before::after {
-      content: ''; position: absolute;
-      inset: 0; background: rgba(255,255,255,.06);
-    }
-    .mock-rf-arrow {
-      font-size: 14px; color: var(--teal); opacity: .7; flex-shrink: 0;
-    }
-    .mock-rf-after {
-      width: 60px; height: 72px; border-radius: 6px;
-      border: 1px solid rgba(65,193,194,.3);
-      background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 10px 10px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 12px rgba(65,193,194,.1);
-    }
-    .mock-rf-person {
-      width: 28px; height: 44px; border-radius: 14px 14px 8px 8px;
-      background: linear-gradient(160deg, #3a4a4a, #2a3636);
-      border: 1px solid rgba(65,193,194,.25);
+    .tool-link:hover .tool-arrow {
+      color: var(--teal);
+      transform: translateX(3px);
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       MOCKUP: CopyWriter
-       Two caption blocks (IG + LI) with platform tags
-    ═══════════════════════════════════════════════════════════ */
-    .mock-copy {
-      width: 220px;
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .mock-copy-row {
-      display: flex; align-items: flex-start; gap: 8px;
-    }
-    .mock-copy-tag {
-      font-family: var(--font);
-      font-size: 7px; font-weight: 800; letter-spacing: 2px;
-      color: var(--teal); opacity: .8;
-      flex-shrink: 0; padding-top: 1px;
-    }
-    .mock-copy-lines {
-      display: flex; flex-direction: column; gap: 5px; flex: 1;
-    }
-    .mock-copy-line {
-      height: 3px; border-radius: 2px;
-      background: rgba(255,255,255,.18);
-    }
-    .mock-copy-divider {
-      height: 1px;
-      background: rgba(255,255,255,.07);
-      margin: 0 2px;
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      margin-top: 48px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      opacity: .5;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="header-rule">
-      <span></span>
-      <h1>Rede&nbsp;Líderes</h1>
-      <span></span>
-    </div>
-    <p>Ferramentas de imagem para a comunidade</p>
+    <div class="eyebrow">Comunidade B2B Premium</div>
+    <h1>Rede Líderes</h1>
+    <div class="header-divider"><div class="header-divider-dot"></div></div>
+    <p>Ferramentas de imagem e conteúdo</p>
   </header>
 
-  <div class="tools">
+  <nav class="tools">
 
-    <!-- Mini Bio -->
-    <a class="tool-card" href="/minibio.html">
-      <div class="tool-preview">
-        <div class="mock-minibio">
-          <div class="mock-minibio-bg"></div>
-          <div class="mock-minibio-avatar"></div>
-          <div class="mock-minibio-overlay">
-            <div class="mock-minibio-name"></div>
-            <div class="mock-minibio-role"></div>
-            <div class="mock-minibio-company"></div>
-          </div>
-        </div>
+    <a class="tool-link" href="/minibio.html">
+      <div class="tool-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       </div>
-      <div class="tool-info">
+      <div class="tool-body">
         <div class="tool-title">Mini Bio</div>
-        <div class="tool-desc">Foto de perfil com fundo gerado por IA e overlay com nome, cargo e empresas — pronta para o Instagram.</div>
+        <div class="tool-desc">Foto de perfil com fundo IA e overlay de nome, cargo e empresa.</div>
       </div>
+      <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
 
-    <!-- Mudança de Cargo -->
-    <a class="tool-card" href="/mudanca-cargo.html">
-      <div class="tool-preview">
-        <div class="mock-cargo">
-          <div class="mock-cargo-top">
-            <div class="mock-cargo-avatar"></div>
-            <div class="mock-cargo-meta">
-              <div class="mock-cargo-name"></div>
-              <div class="mock-cargo-role"></div>
-            </div>
-          </div>
-          <div class="mock-cargo-badge">
-            <div class="mock-cargo-badge-dot"></div>
-            <div class="mock-cargo-badge-text">
-              <div class="mock-cargo-badge-line1"></div>
-              <div class="mock-cargo-badge-line2"></div>
-            </div>
-          </div>
-          <div class="mock-cargo-body">
-            <div class="mock-cargo-line" style="width:100%"></div>
-            <div class="mock-cargo-line" style="width:85%"></div>
-            <div class="mock-cargo-line" style="width:60%"></div>
-          </div>
-        </div>
+    <a class="tool-link" href="/mudanca-cargo.html">
+      <div class="tool-icon">
+        <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       </div>
-      <div class="tool-info">
+      <div class="tool-body">
         <div class="tool-title">Mudança de Cargo</div>
-        <div class="tool-desc">Card de nova posição com foto IA e copy pronto para publicar no LinkedIn.</div>
+        <div class="tool-desc">Card de nova posição com foto IA e copy pronto para LinkedIn.</div>
       </div>
+      <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
 
-    <!-- Carrossel de Artigo -->
-    <a class="tool-card" href="/carrossel-artigo.html">
-      <div class="tool-preview">
-        <div class="mock-carrossel">
-          <!-- Slide 3 — back -->
-          <div class="mock-slide">
-            <div class="mock-slide-header">
-              <div class="mock-slide-logo"></div>
-              <div class="mock-slide-logo-text"></div>
-            </div>
-            <div class="mock-slide-body">
-              <div class="mock-slide-title"></div>
-              <div class="mock-slide-line" style="width:100%"></div>
-              <div class="mock-slide-line" style="width:80%"></div>
-              <div class="mock-slide-teal"></div>
-            </div>
-          </div>
-          <!-- Slide 2 — middle -->
-          <div class="mock-slide">
-            <div class="mock-slide-header">
-              <div class="mock-slide-logo"></div>
-              <div class="mock-slide-logo-text"></div>
-            </div>
-            <div class="mock-slide-body">
-              <div class="mock-slide-title"></div>
-              <div class="mock-slide-line" style="width:100%"></div>
-              <div class="mock-slide-line" style="width:80%"></div>
-              <div class="mock-slide-teal"></div>
-            </div>
-          </div>
-          <!-- Slide 1 — front -->
-          <div class="mock-slide">
-            <div class="mock-slide-header">
-              <div class="mock-slide-logo"></div>
-              <div class="mock-slide-logo-text"></div>
-            </div>
-            <div class="mock-slide-body">
-              <div class="mock-slide-title"></div>
-              <div class="mock-slide-line" style="width:100%"></div>
-              <div class="mock-slide-line" style="width:80%"></div>
-              <div class="mock-slide-teal"></div>
-            </div>
-          </div>
-        </div>
+    <a class="tool-link" href="/carrossel-artigo.html">
+      <div class="tool-icon">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M8 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2"/></svg>
       </div>
-      <div class="tool-info">
+      <div class="tool-body">
         <div class="tool-title">Carrossel de Artigo</div>
-        <div class="tool-desc">Transforma um artigo ou tema em slides prontos para exportar como carrossel no Instagram.</div>
+        <div class="tool-desc">Transforma um artigo em slides prontos para exportar no Instagram.</div>
       </div>
+      <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
 
-    <!-- Seletor de Prompts -->
-    <a class="tool-card" href="/seletor-prompts.html">
-      <div class="tool-preview">
-        <div class="mock-seletor">
-          <div class="mock-seletor-grid">
-            <div class="mock-tile mock-tile--active"></div>
-            <div class="mock-tile"></div>
-            <div class="mock-tile"></div>
-            <div class="mock-tile"></div>
-            <div class="mock-tile"></div>
-            <div class="mock-tile"></div>
-          </div>
-        </div>
+    <a class="tool-link" href="/seletor-prompts.html">
+      <div class="tool-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
       </div>
-      <div class="tool-info">
+      <div class="tool-body">
         <div class="tool-title">Seletor de Prompts</div>
-        <div class="tool-desc">Escolha um dos 6 estilos visuais, selecione a pessoa e gere a imagem com IA — sem texto, só a foto processada.</div>
+        <div class="tool-desc">Escolha um dos 6 estilos visuais e gere a imagem com IA.</div>
       </div>
+      <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
 
-    <!-- Remove Fundo -->
-    <a class="tool-card" href="/remove-fundo.html">
-      <div class="tool-preview">
-        <div class="mock-removefundo">
-          <div class="mock-rf-before"></div>
-          <div class="mock-rf-arrow">→</div>
-          <div class="mock-rf-after">
-            <div class="mock-rf-person"></div>
-          </div>
-        </div>
+    <a class="tool-link" href="/remove-fundo.html">
+      <div class="tool-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 6l3-3 4 4 4-4 3 3"/><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M8 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM14 14l6 4M14 18l6-4"/></svg>
       </div>
-      <div class="tool-info">
+      <div class="tool-body">
         <div class="tool-title">Remove Fundo</div>
-        <div class="tool-desc">Envie qualquer foto e remova o fundo automaticamente via Remove.bg — resultado em PNG transparente.</div>
+        <div class="tool-desc">Remova o fundo de qualquer foto automaticamente — PNG transparente.</div>
       </div>
+      <svg class="tool-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
 
-    <!-- CopyWriter -->
-    <a class="tool-card" href="/copywriter.html">
-      <div class="tool-preview">
-        <div class="mock-copy">
-          <div class="mock-copy-row">
-            <span class="mock-copy-tag">IG</span>
-            <div class="mock-copy-lines">
-              <div class="mock-copy-line" style="width:100%"></div>
-              <div class="mock-copy-line" style="width:80%"></div>
-              <div class="mock-copy-line" style="width:60%"></div>
-            </div>
-          </div>
-          <div class="mock-copy-divider"></div>
-          <div class="mock-copy-row">
-            <span class="mock-copy-tag">LI</span>
-            <div class="mock-copy-lines">
-              <div class="mock-copy-line" style="width:95%"></div>
-              <div class="mock-copy-line" style="width:70%"></div>
-              <div class="mock-copy-line" style="width:85%"></div>
-              <div class="mock-copy-line" style="width:50%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="tool-info">
-        <div class="tool-title">CopyWriter</div>
-        <div class="tool-desc">Legendas para Instagram e LinkedIn na voz editorial da Rede Líderes — geradas por IA, prontas para publicar.</div>
-      </div>
-    </a>
+  </nav>
 
-  </div>
+  <footer>redelideres.com</footer>
 
 </body>
 </html>
