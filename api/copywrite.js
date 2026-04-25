@@ -52,28 +52,24 @@ function buildPromptLinkedIn(tipo, lider, contexto, avoid) {
   ].filter(Boolean).join('\n');
 
   return `Você é o redator editorial da Rede Líderes — comunidade premium B2B de líderes empresariais do Brasil.
-Tom: direto, editorial, premium. Nunca corporativo engessado. Nunca genérico.
-Sem hashtags. Sem emojis.
-Escreva em português brasileiro formal-moderno.
+Tom: direto, editorial, caloroso. Sem hashtags. Sem emojis. Português brasileiro formal-moderno.
 
-TAREFA: Escreva APENAS a legenda para LINKEDIN.
-- Mais longa e elaborada. Entre 600 e 1300 caracteres.
-- OBRIGATÓRIO: abra com as empresas anteriores do histórico — cite as últimas 3 pelo nome em uma frase de abertura forte.
-- Depois apresente o novo cargo e empresa.
-- Adicione um parágrafo de reflexão ou insight editorial sobre o que essa trajetória representa.
-- Encerre com parabéns e www.redelideres.com na última linha.
+TAREFA: Legenda de parabenização para LINKEDIN. LIMITE ABSOLUTO: 800 caracteres (incluindo espaços e quebras de linha). Não ultrapasse.
 
-EXEMPLOS:
-INPUT: Líder: Glauco Sampaio | Cargo atual: CEO | Empresas anteriores (histórico): Santander, Banco Votorantim, Cielo | Contexto: Parabenização por nova posição: CEO na BeePhish
-SAÍDA: Uma carreira construída em grandes instituições — Santander, Banco Votorantim e Cielo — agora abre um novo capítulo.\\n\\nGlauco Sampaio assume como CEO da BeePhish, levando para o empreendedorismo em cibersegurança toda a visão acumulada em anos de mercado financeiro.\\n\\nEssa movimentação reforça um padrão que vemos com frequência na Rede Líderes: líderes forjados em ambientes de alta exigência tendem a criar as empresas mais relevantes do próximo ciclo.\\n\\nParabéns, Glauco.\\n\\nwww.redelideres.com
+ESTRUTURA (3 parágrafos curtos + URL):
+1. Mencione o histórico de empresas anteriores em uma frase de impacto.
+2. Apresente o novo cargo e empresa. Parabenize pelo nome.
+3. Uma frase editorial sobre o que essa trajetória representa.
+Última linha: www.redelideres.com
 
-INPUT: Líder: Ana Carvalho | Cargo atual: Diretora de Operações | Empresas anteriores (histórico): Ambev, Unilever, P&G | Contexto: Parabenização por nova posição: Diretora de Operações na Nestlé
-SAÍDA: P&G, Unilever e Ambev — uma trajetória construída nas maiores operações do mundo.\\n\\nAgora, Ana Carvalho assume como Diretora de Operações na Nestlé, levando consigo um histórico que poucos líderes no Brasil podem apresentar.\\n\\nEsse movimento reforça o que vemos com frequência na Rede Líderes: líderes com trajetória sólida em grandes organizações são disputados pelos melhores ambientes.\\n\\nParabéns, Ana.\\n\\nwww.redelideres.com
+EXEMPLO:
+INPUT: Líder: Glauco Sampaio | Cargo atual: CEO | Empresas anteriores: Santander, Banco Votorantim, Cielo | Contexto: Parabenização por nova posição: CEO na BeePhish
+SAÍDA: Santander, Banco Votorantim e Cielo — uma trajetória construída nas maiores instituições financeiras do país.\\n\\nGlauco Sampaio assume como CEO da BeePhish, empresa focada em reduzir o risco humano nas organizações. Parabéns, Glauco.\\n\\nLíderes forjados em ambientes de alta exigência chegam ao empreendedorismo com visão que poucos têm.\\n\\nwww.redelideres.com
 
 AGORA GERE PARA:
 ${lines}
 
-Retorne APENAS o texto puro da legenda, sem JSON, sem aspas, sem markdown.`;
+Retorne APENAS o texto puro, sem JSON, sem aspas, sem markdown. Máximo 800 caracteres.`;
 }
 
 async function callGemini(prompt) {
@@ -82,7 +78,7 @@ async function callGemini(prompt) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({
       contents:         [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 800, temperature: 0.75 }
+      generationConfig: { maxOutputTokens: 600, temperature: 0.75 }
     })
   });
   const data = await res.json();
@@ -126,8 +122,12 @@ module.exports = async (req, res) => {
       throw new Error('Resposta vazia do Gemini.');
     }
 
+    const linkedinTruncado = linkedin.length > 800
+      ? linkedin.slice(0, 800).replace(/\s+\S*$/, '') + '\n\nwww.redelideres.com'
+      : linkedin;
+
     console.log('[copywrite] ok — tipo:', tipo, l ? `| líder: ${l.name}` : '');
-    res.json({ instagram, linkedin });
+    res.json({ instagram, linkedin: linkedinTruncado });
 
   } catch (err) {
     console.error('[copywrite] erro:', err.message);
