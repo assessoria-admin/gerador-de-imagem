@@ -2,7 +2,7 @@
 // Proxy para Gemini Imagen (resolve CORS do browser)
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
 
 const handler = async (req, res) => {
   if (req.method !== 'POST') {
