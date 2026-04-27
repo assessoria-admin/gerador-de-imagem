@@ -949,14 +949,11 @@
       sh = photo.naturalWidth / canvasAR;
       sy = 0;
     }
-    // Faixa escura no topo onde fica o título — foto começa abaixo dela
+    // Foto cobre o canvas inteiro (full bleed) — degradê no topo cobre o título
     const TOP_BAR  = 140;
-    const destH    = SH - TOP_BAR;
-    const destAR   = SW / destH;
-
-    // Recalcula o crop com a proporção da área de destino real
-    let sx2 = 0, sy2 = 0, sw2 = photo.naturalWidth, sh2 = photo.naturalHeight;
     const srcAR = photo.naturalWidth / photo.naturalHeight;
+    const destAR = SW / SH;
+    let sx2 = 0, sy2 = 0, sw2 = photo.naturalWidth, sh2 = photo.naturalHeight;
     if (srcAR > destAR) {
       sw2 = photo.naturalHeight * destAR;
       sx2 = (photo.naturalWidth - sw2) / 2;
@@ -964,18 +961,15 @@
       sh2 = photo.naturalWidth / destAR;
       sy2 = 0;
     }
-    ctx.drawImage(photo, sx2, sy2, sw2, sh2, 0, TOP_BAR, SW, destH);
+    ctx.drawImage(photo, sx2, sy2, sw2, sh2, 0, 0, SW, SH);
 
-    // ── TOP BAR — fundo sólido para o título não sobrepor a foto ──
-    ctx.fillStyle = '#080808';
-    ctx.fillRect(0, 0, SW, TOP_BAR);
-
-    // Gradiente suave de transição entre a barra e a foto
-    const topGrad = ctx.createLinearGradient(0, TOP_BAR, 0, TOP_BAR + 80);
-    topGrad.addColorStop(0, 'rgba(8,8,8,0.55)');
-    topGrad.addColorStop(1, 'rgba(8,8,8,0)');
+    // ── TOP GRADIENT — preto sólido no topo, esmaecendo até o fim do espaçamento do título ──
+    const topGrad = ctx.createLinearGradient(0, 0, 0, TOP_BAR + 60);
+    topGrad.addColorStop(0,    'rgba(8,8,8,1)');
+    topGrad.addColorStop(0.55, 'rgba(8,8,8,0.75)');
+    topGrad.addColorStop(1,    'rgba(8,8,8,0)');
     ctx.fillStyle = topGrad;
-    ctx.fillRect(0, TOP_BAR, SW, 80);
+    ctx.fillRect(0, 0, SW, TOP_BAR + 60);
 
     // ── BOTTOM GRADIENT OVERLAY ───────────────────────────────────
     const botGrad = ctx.createLinearGradient(0, TITLE_Y - 100, 0, SH);
