@@ -1,8 +1,9 @@
 // Vercel Serverless Function — POST /api/copywrite
 // Gera legendas para Instagram e LinkedIn na voz editorial da Rede Líderes
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL     = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
+const GROQ_KEY   = process.env.GROQ_KEY;
+const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
 
@@ -72,18 +73,20 @@ ${lines}
 Retorne APENAS o texto puro, sem JSON, sem aspas, sem markdown. Máximo 800 caracteres.`;
 }
 
-async function callGemini(prompt) {
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+async function callGroq(prompt) {
+  const res = await fetch(GROQ_URL, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
     body:    JSON.stringify({
-      contents:         [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 600, temperature: 0.75 }
+      model:       GROQ_MODEL,
+      messages:    [{ role: 'user', content: prompt }],
+      max_tokens:  600,
+      temperature: 0.75
     })
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || res.statusText);
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = data?.choices?.[0]?.message?.content || '';
   return text.trim();
 }
 
@@ -92,8 +95,8 @@ module.exports = async (req, res) => {
     return res.status(405).json({ message: 'Método não permitido.' });
   }
 
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no servidor.' });
+  if (!GROQ_KEY) {
+    return res.status(500).json({ message: 'GROQ_KEY não configurada no servidor.' });
   }
 
   const { tipo, lider, contexto, avoid } = req.body || {};
@@ -114,8 +117,8 @@ module.exports = async (req, res) => {
 
   try {
     const [instagram, linkedin] = await Promise.all([
-      callGemini(buildPromptInstagram(tipo, l, c, a)),
-      callGemini(buildPromptLinkedIn(tipo, l, c, a)),
+      callGroq(buildPromptInstagram(tipo, l, c, a)),
+      callGroq(buildPromptLinkedIn(tipo, l, c, a)),
     ]);
 
     if (!instagram || !linkedin) {

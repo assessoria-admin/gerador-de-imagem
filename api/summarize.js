@@ -1,12 +1,13 @@
 // Vercel Serverless Function — POST /api/summarize
 // Usa Gemini Flash (gratuito) para condensar artigo em 3 blocos para slides
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
+const GROQ_KEY = process.env.GROQ_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
-  if (!GEMINI_KEY) return res.status(500).json({ message: 'GEMINI_API_KEY não configurada.' });
+  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada.' });
 
   const { article, title } = req.body || {};
   if (!article) return res.status(400).json({ message: 'Campo article obrigatório.' });
@@ -36,19 +37,21 @@ Responda APENAS com os 3 blocos separados por uma linha em branco, sem introduç
 [bloco 3]`;
 
   try {
-    const response = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+    const response = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 512, temperature: 0.3 }
+        model: GROQ_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 512,
+        temperature: 0.3
       })
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data?.error?.message || response.statusText);
 
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = data?.choices?.[0]?.message?.content || '';
     const parts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).slice(0, 3);
     if (parts.length < 3) throw new Error('Gemini não retornou 3 blocos. Tente novamente.');
 

@@ -481,13 +481,8 @@
             <span class="status-msg" id="statusMsg"></span>
           </div>
 
-          <button class="btn-generate" id="btnGerar" onclick="gerarCarrossel()">
+          <button class="btn-generate" id="btnGerar" onclick="gerarSemIA()">
             ✨ &nbsp; Gerar Carrossel
-          </button>
-
-          <button class="btn-generate" id="btnTeste" onclick="gerarSemIA()"
-            style="margin-top:10px; background:transparent; border:1px solid #333; color:#555;">
-            🧪 &nbsp; Testar sem IA
           </button>
 
           <button class="btn-download" id="btnDownload" disabled onclick="downloadAll()">
@@ -651,7 +646,6 @@
     if (person.empresas) document.getElementById('companies').value = person.empresas;
     if (person.photoUrl) loadNotionPhoto(person.photoUrl);
     acClose();
-    cwAutoGerar();
     if (person.name) loadNotionArticle(person.name);
   }
 
@@ -674,6 +668,9 @@
       }
       if (data.articleText) {
         document.getElementById('articleText').value = data.articleText;
+        warning.style.display = 'none';
+        await resumirArtigo();
+        return;
       }
 
       warning.style.display = 'none';
@@ -791,17 +788,13 @@
         photoDataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
       }
 
-      const bgImg = await loadImage('/bg-spheres.png').catch(() => null);
       await document.fonts.ready;
 
-      const photo = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload  = () => resolve(img);
-        img.onerror = reject;
-        img.src = photoDataUrl;
-      });
+      setStatus('Buscando imagens do artigo…');
+      const articleTitle = document.getElementById('articleTitle')?.value?.trim() || '';
+      const stockUrls = await fetchStockImages(articleParts, articleTitle);
 
-      await renderAllSlides(photoDataUrl, firstName, lastName, companies, articleParts);
+      await renderAllSlides(photoDataUrl, firstName, lastName, companies, articleParts, stockUrls);
       setStatus('Preview gerado (sem IA) ✓');
       setLoading(false);
       slidesReady = true;
@@ -852,14 +845,17 @@
 
       const imageSrc = genResult.data;
 
+      setStatus('Buscando imagens do artigo…');
+      const articleTitle = document.getElementById('articleTitle')?.value?.trim() || '';
+      const stockUrls = await fetchStockImages(articleParts, articleTitle);
+
       setStatus('Compondo slides…');
-      await renderAllSlides(imageSrc, firstName, lastName, companies, articleParts);
+      await renderAllSlides(imageSrc, firstName, lastName, companies, articleParts, stockUrls);
 
       setStatus('');
       setLoading(false);
       slidesReady = true;
       document.getElementById('btnDownload').disabled = false;
-      cwAutoGerar();
 
     } catch (err) {
       console.error(err);
@@ -892,9 +888,30 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
+     STOCK IMAGES
+  ═══════════════════════════════════════════════════════════════ */
+  async function fetchStockImages(articleParts, articleTitle) {
+    try {
+      const articleFullText = document.getElementById('articleText').value.trim();
+      const leaderCargo     = document.getElementById('jobTitle').value.trim();
+      const leaderEmpresas  = document.getElementById('companies').value.trim();
+      const res = await fetch('/api/stock-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parts: articleParts, articleTitle, articleFullText, leaderCargo, leaderEmpresas })
+      });
+      if (!res.ok) return [null, null, null];
+      const data = await res.json();
+      return data.images || [null, null, null];
+    } catch {
+      return [null, null, null];
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
      SLIDE RENDERING
   ═══════════════════════════════════════════════════════════════ */
-  async function renderAllSlides(photoSrc, firstName, lastName, companies, articleParts) {
+  async function renderAllSlides(photoSrc, firstName, lastName, companies, articleParts, stockUrls) {
     await document.fonts.ready;
     try {
       await document.fonts.load('800 80px "Neue Machina"');
@@ -907,296 +924,274 @@
     const photo = await loadImage(photoSrc);
     const bgImg = await loadImage('/bg-spheres.png').catch(() => null);
 
+    // Carrega imagens de stock (com proxy para evitar CORS no canvas)
+    const stockImgs = await Promise.all((stockUrls || [null, null, null]).map(url => {
+      if (!url) return Promise.resolve(null);
+      return loadImage(url).catch(() => null);
+    }));
+
     await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies);
-    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02', bgImg);
-    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03', bgImg);
-    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04', bgImg);
-    await renderSlide5(document.getElementById('canvas5'), firstName, lastName, bgImg);
+    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02', bgImg, stockImgs[0] || photo);
+    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03', bgImg, stockImgs[1] || photo);
+    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04', bgImg, stockImgs[2] || photo);
+    await renderSlide5(document.getElementById('canvas5'), firstName, lastName, bgImg, photo);
+  }
+
+  /* ─── Helper: rounded rect path ────────────────────────────── */
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  /* ─── Helper: draw photo in rounded rect ────────────────────── */
+  function drawPhotoCard(ctx, photo, x, y, w, h, radius) {
+    ctx.save();
+    roundRectPath(ctx, x, y, w, h, radius);
+    ctx.clip();
+    const ar  = photo.naturalWidth / photo.naturalHeight;
+    const dar = w / h;
+    let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
+    if (ar > dar) {
+      // foto mais larga que o slot — corta laterais, centraliza horizontalmente
+      sw = photo.naturalHeight * dar;
+      sx = (photo.naturalWidth - sw) / 2;
+    } else {
+      // foto mais alta que o slot — corta embaixo, ancora no terço superior (onde fica o sujeito)
+      sh = photo.naturalWidth / dar;
+      sy = (photo.naturalHeight - sh) * 0.25;
+    }
+    ctx.drawImage(photo, sx, sy, sw, sh, x, y, w, h);
+    ctx.restore();
+  }
+
+  /* ─── Helper: wrap text centered, returns next Y ────────────── */
+  function wrapCentered(ctx, text, cx, y, maxW, size, color, lineHeightMult = 1.55) {
+    ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = color;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    const words = text.split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(test).width > maxW) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    const lh = size * lineHeightMult;
+    for (const line of lines) { ctx.fillText(line, cx, y); y += lh; }
+    return y;
+  }
+
+  /* ─── Helper: draw logo top-left ────────────────────────────── */
+  async function drawLogo(ctx, x, y, h, invert = false) {
+    const logo = await loadImage('/logo-rl.png').catch(() => null);
+    if (!logo) return;
+    const w = logo.naturalWidth * (h / logo.naturalHeight);
+    if (invert) ctx.filter = 'invert(1)';
+    ctx.drawImage(logo, x, y, w, h);
+    if (invert) ctx.filter = 'none';
   }
 
   /* ─── Slide 1: Capa ─────────────────────────────────────────── */
   async function renderSlide1(canvas, photo, firstName, lastName, companies) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
-    const PAD  = 60;
+    const PAD = 60;
 
-    // Companies: split into up to 3, displayed horizontally with space-between
-    const compList    = companies ? companies.split(' | ').filter(Boolean).slice(0, 3) : [];
-    const COMP_FONT   = 34;
-    const COMP_LINE_H = 44;                        // gap between wrapped lines within a block
-    const COMP_BLOCK_H = COMP_FONT + COMP_LINE_H; // always reserve 2-line height so layout is stable
-    const COL_W       = (SW - PAD * 2) / 3;
-    const COL_MAX_W   = COL_W - 24;               // max text width before wrapping
-    const COL_CX      = [PAD + COL_W / 2, SW / 2, SW - PAD - COL_W / 2]; // 2ª sempre em SW/2
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, SW, SH);
 
-    // Bottom block anchors — built upward from bottom margin
-    const BOTTOM_MARGIN = 20;
-    const COMP_MID_Y    = SH - BOTTOM_MARGIN - COMP_BLOCK_H / 2;
-    const COMP_START_Y  = COMP_MID_Y - COMP_BLOCK_H / 2;
-    const MINIBIO_Y     = COMP_START_Y - 28 - 31;
-    const NAME_Y        = MINIBIO_Y - 44 - 45;
-    const LINE_Y        = NAME_Y - 20;
-    const TITLE_Y       = LINE_Y - 230;                       // headline (95px × 2 linhas + gap)
+    // Logo top-left — invertida para aparecer preta no fundo branco
+    await drawLogo(ctx, PAD, PAD, 50, true);
 
-    // ── PHOTO — deslocada para baixo e levemente maior ───────────
-    const photoAR  = photo.naturalWidth / photo.naturalHeight;
-    const canvasAR = SW / SH;
-    let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
-    if (photoAR > canvasAR) {
-      sw = photo.naturalHeight * canvasAR;
-      sx = (photo.naturalWidth - sw) / 2;
-    } else {
-      sh = photo.naturalWidth / canvasAR;
-      sy = 0;
+    // "COMO PENSAM AS LIDERANÇAS" — label centralizado, maior
+    ctx.font         = `400 36px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = '#555555';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('COMO PENSAM AS LIDERANÇAS', SW / 2, 130);
+
+    // Título do artigo — bold, acima da foto
+    const titleSize = 68;
+    const titleMaxW = SW - PAD * 2;
+    ctx.font         = `800 ${titleSize}px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = '#111111';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    const titleText = getArticleTitle();
+    const tWords = titleText.split(' ');
+    const tLines = [];
+    let tCur = '';
+    for (const w of tWords) {
+      const test = tCur ? tCur + ' ' + w : w;
+      if (ctx.measureText(test).width > titleMaxW) { tLines.push(tCur); tCur = w; }
+      else tCur = test;
     }
-    // Foto cobre o canvas inteiro (full bleed) — degradê no topo protege a legibilidade do título
-    const TOP_BAR = 140;
-    const destAR  = SW / SH;
-    let sx2 = 0, sy2 = 0, sw2 = photo.naturalWidth, sh2 = photo.naturalHeight;
-    const srcAR = photo.naturalWidth / photo.naturalHeight;
-    if (srcAR > destAR) {
-      sw2 = photo.naturalHeight * destAR;
-      sx2 = (photo.naturalWidth - sw2) / 2;
-    } else {
-      sh2 = photo.naturalWidth / destAR;
-      sy2 = 0;
-    }
-    ctx.drawImage(photo, sx2, sy2, sw2, sh2, 0, 0, SW, SH);
+    if (tCur) tLines.push(tCur);
+    let titleY = 168;
+    const titleLH = titleSize * 1.18;
+    for (const line of tLines.slice(0, 4)) { ctx.fillText(line, PAD, titleY); titleY += titleLH; }
 
-    // ── TOP GRADIENT — preto sólido no topo, esmaecendo até o fim do espaçamento do título ──
-    const topGrad = ctx.createLinearGradient(0, 0, 0, TOP_BAR + 60);
-    topGrad.addColorStop(0,    'rgba(8,8,8,1)');
-    topGrad.addColorStop(0.55, 'rgba(8,8,8,0.75)');
-    topGrad.addColorStop(1,    'rgba(8,8,8,0)');
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, SW, TOP_BAR + 60);
+    // Foto colada no inferior — começa após o título, vai até a borda inferior
+    const photoTop = titleY + 28;
+    const photoW   = SW - PAD * 2;
+    const photoH   = SH - photoTop;
 
-    // ── BOTTOM GRADIENT OVERLAY ───────────────────────────────────
-    const botGrad = ctx.createLinearGradient(0, TITLE_Y - 100, 0, SH);
-    botGrad.addColorStop(0, 'rgba(8,8,8,0)');
-    botGrad.addColorStop(0.18, 'rgba(8,8,8,0.82)');
-    botGrad.addColorStop(1, 'rgba(8,8,8,0.97)');
-    ctx.fillStyle = botGrad;
-    ctx.fillRect(0, TITLE_Y - 100, SW, SH - (TITLE_Y - 100));
-
-    // ── ARTICLE TITLE — 2 linhas equilibradas na top bar ────────
-    const articleTopic = getArticleTitle();
-    if (articleTopic && articleTopic !== COVER_TITLE) {
-      const maxTitleW = SW - PAD * 2;
-      const titleSize = 56;
-      ctx.font          = `400 ${titleSize}px "Gobold", sans-serif`;
-      ctx.letterSpacing = `${-0.06 * titleSize}px`;
-      ctx.fillStyle     = '#ffffff';
-      ctx.textAlign     = 'center';
-      ctx.textBaseline  = 'middle';
-
-      // Divide nas 2 linhas mais equilibradas possíveis
-      const words = articleTopic.split(' ');
-      let best = 1, bestDiff = Infinity;
-      for (let i = 1; i < words.length; i++) {
-        const w1 = ctx.measureText(words.slice(0, i).join(' ')).width;
-        const w2 = ctx.measureText(words.slice(i).join(' ')).width;
-        const diff = Math.abs(w1 - w2);
-        if (diff < bestDiff) { bestDiff = diff; best = i; }
-      }
-      const line1 = words.slice(0, best).join(' ');
-      const line2 = words.slice(best).join(' ');
-      const lineH = titleSize * 1.2;
-      const blockH = lineH * 2;
-      const startY = (TOP_BAR - blockH) / 2 + lineH * 0.5;
-
-      ctx.fillText(line1, SW / 2, startY);
-      ctx.fillText(line2, SW / 2, startY + lineH);
-      ctx.letterSpacing = '0px';
-    }
-
-    // ── HEADLINE — Gobold Regular 115px, last word on own line ───
-    // Fixed split: everything before last word / last word alone
-    const titleParts  = COVER_TITLE.trim().split(' ');
-    const titleL1     = titleParts.slice(0, -1).join(' ');
-    const titleL2     = titleParts[titleParts.length - 1];
-    ctx.font          = `400 95px "Gobold", sans-serif`;
-    ctx.letterSpacing = `${-0.06 * 115}px`;
-    ctx.fillStyle     = '#ffffff';
-    ctx.textAlign     = 'center';
-    ctx.textBaseline  = 'top';
-    ctx.fillText(titleL1, SW / 2, TITLE_Y);
-    ctx.fillText(titleL2, SW / 2, TITLE_Y + 112);
-    ctx.letterSpacing = '0px';
-
-    // ── TEAL SEPARATOR LINE — 1/3 width, centered ────────────────
-    const lineW = (SW - PAD * 2) / 3;
-    ctx.strokeStyle = TEAL;
-    ctx.lineWidth   = 1.5;
+    // Clip com raio apenas nos cantos superiores, inferior segue a borda do canvas
+    ctx.save();
     ctx.beginPath();
-    ctx.moveTo(SW / 2 - lineW / 2, LINE_Y);
-    ctx.lineTo(SW / 2 + lineW / 2, LINE_Y);
-    ctx.stroke();
+    const r = 28;
+    ctx.moveTo(PAD + r, photoTop);
+    ctx.lineTo(PAD + photoW - r, photoTop);
+    ctx.quadraticCurveTo(PAD + photoW, photoTop, PAD + photoW, photoTop + r);
+    ctx.lineTo(PAD + photoW, photoTop + photoH);
+    ctx.lineTo(PAD, photoTop + photoH);
+    ctx.lineTo(PAD, photoTop + r);
+    ctx.quadraticCurveTo(PAD, photoTop, PAD + r, photoTop);
+    ctx.closePath();
+    ctx.clip();
 
-    // ── LEADER NAME — Gobold Regular 45px ────────────────────────
-    ctx.font         = `400 45px "Gobold", sans-serif`;
-    ctx.fillStyle    = '#ffffff';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText((firstName + ' ' + lastName).toUpperCase(), SW / 2, NAME_Y);
+    const ar  = photo.naturalWidth / photo.naturalHeight;
+    const dar = photoW / photoH;
+    let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
+    if (ar > dar) { sw = photo.naturalHeight * dar; sx = (photo.naturalWidth - sw) / 2; }
+    else          { sh = photo.naturalWidth / dar;  sy = (photo.naturalHeight - sh) / 2; }
+    ctx.drawImage(photo, sx, sy, sw, sh, PAD, photoTop, photoW, photoH);
+    ctx.restore();
 
-    // ── MINI BIO — Gobold Thin 31px ──────────────────────────────
-    ctx.font         = `100 31px "Gobold", sans-serif`;
-    ctx.fillStyle    = TEAL;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('MINI BIO', SW / 2, MINIBIO_Y);
+    // Gradiente + empresas na base da foto
+    if (companies) {
+      const ovH = 120;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(PAD + r, photoTop);
+      ctx.lineTo(PAD + photoW - r, photoTop);
+      ctx.quadraticCurveTo(PAD + photoW, photoTop, PAD + photoW, photoTop + r);
+      ctx.lineTo(PAD + photoW, photoTop + photoH);
+      ctx.lineTo(PAD, photoTop + photoH);
+      ctx.lineTo(PAD, photoTop + r);
+      ctx.quadraticCurveTo(PAD, photoTop, PAD + r, photoTop);
+      ctx.closePath();
+      ctx.clip();
+      const grad = ctx.createLinearGradient(0, SH - ovH, 0, SH);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(PAD, SH - ovH, photoW, ovH);
+      ctx.restore();
 
-    // ── COMPANIES — horizontal, space-between, 2ª sempre centrada ─
-    if (compList.length) {
-      ctx.font          = `100 ${COMP_FONT}px "Gobold", sans-serif`;
-      ctx.letterSpacing = `${-0.06 * COMP_FONT}px`;
-      ctx.fillStyle     = 'rgba(255,255,255,0.85)';
-      ctx.textAlign     = 'center';
-      ctx.textBaseline  = 'middle';
-
-      compList.forEach((c, i) => {
-        const text = c.toUpperCase();
-        const cx   = COL_CX[i] ?? SW / 2;
-
-        if (ctx.measureText(text).width <= COL_MAX_W) {
-          ctx.fillText(text, cx, COMP_MID_Y);
-        } else {
-          // Quebra em 2 linhas equilibradas dentro do próprio bloco
-          const words = text.split(' ');
-          let best = 1, bestDiff = Infinity;
-          for (let j = 1; j < words.length; j++) {
-            const diff = Math.abs(
-              ctx.measureText(words.slice(0, j).join(' ')).width -
-              ctx.measureText(words.slice(j).join(' ')).width
-            );
-            if (diff < bestDiff) { bestDiff = diff; best = j; }
-          }
-          const half = COMP_LINE_H / 2;
-          ctx.fillText(words.slice(0, best).join(' '), cx, COMP_MID_Y - half);
-          ctx.fillText(words.slice(best).join(' '),    cx, COMP_MID_Y + half);
-        }
-      });
-
-      // Pipes separadores entre colunas
-      if (compList.length > 1) {
-        ctx.font         = `100 ${Math.round(COMP_FONT * 1.6)}px "Gobold", sans-serif`;
-        ctx.fillStyle    = 'rgba(65,193,194,0.50)';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('|', PAD + COL_W,     COMP_MID_Y);
-        if (compList.length === 3)
-          ctx.fillText('|', PAD + COL_W * 2, COMP_MID_Y);
-      }
-
-      ctx.letterSpacing = '0px';
+      ctx.font         = `400 28px "Neue Machina", sans-serif`;
+      ctx.fillStyle    = 'rgba(255,255,255,0.92)';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(companies, SW / 2, SH - 42);
     }
   }
 
   /* ─── Slides 2–4: Artigo ────────────────────────────────────── */
-  async function renderArticleSlide(canvas, text, firstName, lastName, num, bgImg) {
+  async function renderArticleSlide(canvas, text, firstName, lastName, num, bgImg, photo) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
-    const PAD = 80;
+    const PAD = 60;
 
-    // Background: blurred spheres image or flat fallback
-    if (bgImg) {
-      const BLEED = 60;
-      ctx.filter = 'blur(38px)';
-      ctx.drawImage(bgImg, -BLEED, -BLEED, SW + BLEED * 2, SH + BLEED * 2);
-      ctx.filter = 'none';
-      // Dark veil so text stays readable
-      ctx.fillStyle = 'rgba(6,6,6,0.82)';
-      ctx.fillRect(0, 0, SW, SH);
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, SW, SH);
+
+    // Logo top-left — invertida para aparecer preta no fundo branco
+    await drawLogo(ctx, PAD, PAD, 50, true);
+
+    // Dot indicators top-right
+    const dotSlides = ['02', '03', '04'];
+    const dotR   = 11;
+    const dotGap = 32;
+    const dotsBaseX = SW - PAD;
+    const dotsY = PAD + 25;
+    dotSlides.forEach((s, i) => {
+      const x = dotsBaseX - (dotSlides.length - 1 - i) * dotGap;
+      ctx.beginPath();
+      ctx.arc(x, dotsY, dotR, 0, Math.PI * 2);
+      ctx.fillStyle = s === num ? '#111111' : '#cccccc';
+      ctx.fill();
+    });
+
+    const photoW = SW - PAD * 2;
+    const textMaxW = SW - PAD * 2;
+    const textCX = SW / 2;
+    const articleLabel = 'Título do artigo: ' + getArticleTitle();
+
+    if (num === '02') {
+      // Photo top, text bottom
+      const photoH = 380;
+      const photoTop = 144;
+      if (photo) drawPhotoCard(ctx, photo, PAD, photoTop, photoW, photoH, 28);
+      const textY = photoTop + photoH + 52;
+      wrapCentered(ctx, text, textCX, textY, textMaxW, 38, '#111111');
+    } else if (num === '03') {
+      // Text top, photo bottom
+      const textY = 144;
+      const textEnd = wrapCentered(ctx, text, textCX, textY, textMaxW, 38, '#111111');
+      if (photo) {
+        const photoTop = textEnd + 44;
+        const photoH   = Math.max(200, SH - photoTop - 120);
+        drawPhotoCard(ctx, photo, PAD, photoTop, photoW, photoH, 28);
+      }
     } else {
-      ctx.fillStyle = '#080808';
-      ctx.fillRect(0, 0, SW, SH);
+      // num === '04': text top half, photo middle, text bottom half
+      const words   = text.split(' ');
+      const half    = Math.ceil(words.length / 2);
+      const textTop = words.slice(0, half).join(' ');
+      const textBot = words.slice(half).join(' ');
+
+      const t1End = wrapCentered(ctx, textTop, textCX, 144, textMaxW, 38, '#111111');
+      if (photo) {
+        const photoTop = t1End + 40;
+        const photoH   = 360;
+        drawPhotoCard(ctx, photo, PAD, photoTop, photoW, photoH, 28);
+        wrapCentered(ctx, textBot, textCX, photoTop + photoH + 44, textMaxW, 38, '#111111');
+      } else {
+        wrapCentered(ctx, textBot, textCX, t1End + 44, textMaxW, 38, '#111111');
+      }
     }
 
-    // Subtle top teal bar
-    ctx.fillStyle = TEAL;
-    ctx.fillRect(0, 0, SW, 4);
-
-    // Header: "REDE LÍDERES" left
-    ctx.font         = `800 20px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = TEAL;
+    // Article title bottom-left
+    ctx.font         = `700 24px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = '#111111';
     ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('REDE LÍDERES', PAD, 64);
-
-    // Header: slide counter right
-    ctx.fillStyle = 'rgba(65,193,194,0.40)';
-    ctx.textAlign = 'right';
-    ctx.fillText(num + ' / 05', SW - PAD, 64);
-
-    // Teal left accent bar
-    ctx.fillStyle = TEAL;
-    ctx.fillRect(PAD, 126, 4, 72);
-
-    // Article series label
-    ctx.font         = `800 17px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(255,255,255,0.35)';
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(getArticleTitle(), PAD + 20, 140);
-
-    // Article text — large, auto-sized to fit
-    ctx.fillStyle    = '#ffffff';
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    wrapText(ctx, text, PAD, 268, SW - PAD * 2, 50);
-
-    // Bottom separator
-    const lineY = SH - 140;
-    ctx.strokeStyle = 'rgba(65,193,194,0.30)';
-    ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(PAD, lineY);
-    ctx.lineTo(SW - PAD, lineY);
-    ctx.stroke();
-
-    // Person name
-    ctx.font         = `400 22px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(255,255,255,0.45)';
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(firstName + ' ' + lastName, PAD, lineY + 26);
-
-    // Slide dot indicators
-    const dotY  = SH - 56;
-    const dotR  = 5;
-    const dotGap = 16;
-    const slides = ['02', '03', '04'];
-    const totalW = slides.length * dotR * 2 + (slides.length - 1) * (dotGap - dotR * 2);
-    let dotX = SW - PAD - totalW;
-    slides.forEach((s, i) => {
-      ctx.beginPath();
-      ctx.arc(dotX + dotR, dotY, dotR, 0, Math.PI * 2);
-      ctx.fillStyle = s === num ? TEAL : 'rgba(65,193,194,0.25)';
-      ctx.fill();
-      dotX += dotGap;
-    });
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(articleLabel, PAD, SH - PAD);
   }
 
   /* ─── Slide 5: CTA ──────────────────────────────────────────── */
-  async function renderSlide5(canvas, firstName, lastName, bgImg) {
+  async function renderSlide5(canvas, firstName, lastName, bgImg, photo) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
-    const PAD = 80;
+    const PAD = 60;
 
-    // ── Background ───────────────────────────────────────────────
-    if (bgImg) {
+    // ── Full-bleed background: leader photo blurred, or spheres ──
+    const bgSource = photo || bgImg;
+    if (bgSource) {
       const BLEED = 60;
-      ctx.filter = 'blur(18px)';
-      ctx.drawImage(bgImg, -BLEED, -BLEED, SW + BLEED * 2, SH + BLEED * 2);
+      ctx.filter = 'blur(10px)';
+      const bgar = bgSource.naturalWidth / bgSource.naturalHeight;
+      const cgar = SW / SH;
+      let bsx=0,bsy=0,bsw=bgSource.naturalWidth,bsh=bgSource.naturalHeight;
+      if(bgar>cgar){bsw=bgSource.naturalHeight*cgar;bsx=(bgSource.naturalWidth-bsw)/2;}
+      else{bsh=bgSource.naturalWidth/cgar;bsy=0;}
+      ctx.drawImage(bgSource, bsx, bsy, bsw, bsh, -BLEED, -BLEED, SW+BLEED*2, SH+BLEED*2);
       ctx.filter = 'none';
-      // Lighter veil so spheres glow comes through
-      const overlay = ctx.createLinearGradient(0, 0, 0, SH);
-      overlay.addColorStop(0,   'rgba(4,10,12,0.78)');
-      overlay.addColorStop(0.5, 'rgba(4,12,15,0.72)');
-      overlay.addColorStop(1,   'rgba(6,6,6,0.88)');
-      ctx.fillStyle = overlay;
-      ctx.fillRect(0, 0, SW, SH);
     } else {
       const bg = ctx.createLinearGradient(0, 0, 0, SH);
       bg.addColorStop(0, '#001E23');
@@ -1205,94 +1200,73 @@
       ctx.fillRect(0, 0, SW, SH);
     }
 
-    // ── Top accent bar ───────────────────────────────────────────
-    ctx.fillStyle = TEAL;
-    ctx.fillRect(0, 0, SW, 5);
+    // ── Dark overlay — heavier at bottom ─────────────────────────
+    const overlay = ctx.createLinearGradient(0, 0, 0, SH);
+    overlay.addColorStop(0,   'rgba(4,8,10,0.55)');
+    overlay.addColorStop(0.45,'rgba(4,8,10,0.72)');
+    overlay.addColorStop(1,   'rgba(4,8,10,0.93)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, SW, SH);
 
-    // ── Brand label — small, top-center ─────────────────────────
-    ctx.font         = `800 18px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(65,193,194,0.55)';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('REDE LÍDERES', SW / 2, 64);
+    // ── Logo top-left ─────────────────────────────────────────────
+    await drawLogo(ctx, PAD, PAD, 52);
 
-    // ── Thin top rule ────────────────────────────────────────────
-    ctx.strokeStyle = 'rgba(65,193,194,0.15)';
-    ctx.lineWidth   = 1;
-    ctx.beginPath(); ctx.moveTo(PAD + 60, 108); ctx.lineTo(SW - PAD - 60, 108); ctx.stroke();
-
-    // ── Main headline — large, white ─────────────────────────────
-    ctx.font         = `800 108px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = '#ffffff';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('CONHEÇA', SW / 2, 160);
-    ctx.fillText('A REDE.', SW / 2, 278);
-
-    // ── Subline — teal ───────────────────────────────────────────
-    ctx.font      = `400 34px "Neue Machina", sans-serif`;
-    ctx.fillStyle = TEAL;
-    ctx.fillText('Para líderes que transformam', SW / 2, 432);
-    ctx.fillText('organizações.', SW / 2, 484);
-
-    // ── Mid rule ─────────────────────────────────────────────────
-    ctx.strokeStyle = 'rgba(65,193,194,0.18)';
-    ctx.lineWidth   = 1;
-    ctx.beginPath(); ctx.moveTo(PAD, 572); ctx.lineTo(SW - PAD, 572); ctx.stroke();
-
-    // ── Body copy — muted white ──────────────────────────────────
-    const bodyLines = [
-      'Conteúdo exclusivo, conexões',
-      'estratégicas e desenvolvimento',
-      'para quem transforma organizações.'
-    ];
-    ctx.font      = `300 36px "Neue Machina", sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    let bodyY = 612;
-    for (const line of bodyLines) {
-      ctx.fillText(line, SW / 2, bodyY);
-      bodyY += 58;
-    }
-
-    // ── CTA — link na bio ────────────────────────────────────────
-    const ctaY = 800;
-
-    // Seta ↑ em teal — aponta para a bio no topo do perfil
-    ctx.font         = `800 64px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = TEAL;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('↑', SW / 2, ctaY);
-
-    // "LINK NA BIO" — headline da ação
-    ctx.font      = `800 86px "Neue Machina", sans-serif`;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('LINK NA BIO', SW / 2, ctaY + 76);
-
-    // Linha teal fina abaixo do headline
-    ctx.font = `800 86px "Neue Machina", sans-serif`; // mede a largura
-    const ctaLineW = ctx.measureText('LINK NA BIO').width * 0.6;
+    // ── Teal separator line (horizontal, ~60% height) ─────────────
+    const lineY = Math.round(SH * 0.58);
     ctx.strokeStyle = TEAL;
-    ctx.lineWidth   = 2;
+    ctx.lineWidth   = 3;
     ctx.beginPath();
-    ctx.moveTo(SW / 2 - ctaLineW / 2, ctaY + 76 + 92);
-    ctx.lineTo(SW / 2 + ctaLineW / 2, ctaY + 76 + 92);
+    ctx.moveTo(PAD, lineY);
+    ctx.lineTo(SW - PAD, lineY);
     ctx.stroke();
 
-    // URL — sutil, abaixo da linha
-    ctx.font      = `300 30px "Neue Machina", sans-serif`;
-    ctx.fillStyle = 'rgba(65,193,194,0.60)';
-    ctx.fillText('redelideres.com.br', SW / 2, ctaY + 76 + 92 + 24);
+    // ── Main CTA text below line — article title, wrapped left ───
+    const ctaFontSize = 86;
+    ctx.font         = `800 ${ctaFontSize}px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = '#ffffff';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    const ctaWords = getArticleTitle().split(' ');
+    const ctaMaxW  = SW - PAD * 2;
+    const ctaLines = [];
+    let ctaCur = '';
+    for (const w of ctaWords) {
+      const test = ctaCur ? ctaCur + ' ' + w : w;
+      if (ctx.measureText(test).width > ctaMaxW) { ctaLines.push(ctaCur); ctaCur = w; }
+      else ctaCur = test;
+    }
+    if (ctaCur) ctaLines.push(ctaCur);
+    let ctaY = lineY + 40;
+    for (const line of ctaLines.slice(0, 4)) {
+      ctx.fillText(line, PAD, ctaY);
+      ctaY += ctaFontSize * 1.18;
+    }
 
-    // ── Person attribution — bottom ──────────────────────────────
-    ctx.font         = `300 20px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(255,255,255,0.22)';
+    // ── Chamada para bio ──────────────────────────────────────────
+    ctx.font         = `400 32px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    const bioText  = 'Acesse o link na bio e leia o artigo completo →';
+    const bioMaxW  = SW - PAD * 2;
+    const bioWords = bioText.split(' ');
+    const bioLines = [];
+    let bioCur = '';
+    for (const w of bioWords) {
+      const test = bioCur ? bioCur + ' ' + w : w;
+      if (ctx.measureText(test).width > bioMaxW) { bioLines.push(bioCur); bioCur = w; }
+      else bioCur = test;
+    }
+    if (bioCur) bioLines.push(bioCur);
+    let bioY = ctaY + 24;
+    for (const line of bioLines) { ctx.fillText(line, PAD, bioY); bioY += 32 * 1.4; }
+
+    // ── Person attribution — very bottom ─────────────────────────
+    ctx.font         = `300 22px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.35)';
+    ctx.textAlign    = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(firstName + ' ' + lastName, SW / 2, SH - 28);
-
-    // ── Bottom accent bar ────────────────────────────────────────
-    ctx.fillStyle = TEAL;
-    ctx.fillRect(0, SH - 5, SW, 5);
+    ctx.fillText(firstName + ' ' + lastName, PAD, SH - PAD);
   }
 
 

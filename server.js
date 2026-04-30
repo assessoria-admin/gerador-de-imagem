@@ -13,8 +13,10 @@ const NOTION_DB          = process.env.NOTION_DB;
 const NOTION_COAUTORES_DB = process.env.NOTION_COAUTORES_DB;
 
 const GEMINI_KEY      = process.env.GEMINI_API_KEY;
-const GEMINI_URL      = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
 const GEMINI_IMG_URL  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const GROQ_KEY        = process.env.GROQ_KEY;
+const GROQ_URL        = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL      = 'llama-3.3-70b-versatile';
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '30mb' }));
@@ -196,7 +198,10 @@ function mapNotionResults(pages) {
       if (k.includes('linkedin') && !linkedin) {
         linkedin = extractProp(val);
       }
-      if ((k === 'foto' || k === 'photo') && !fotoProp) {
+      if (k === 'foto_ia') {
+        fotoProp = val; // foto_ia tem prioridade
+        console.log(`[notion-debug] prop foto_ia raw:`, JSON.stringify(val).slice(0, 300));
+      } else if ((k === 'foto' || k === 'photo') && !fotoProp) {
         fotoProp = val;
         console.log(`[notion-debug] prop foto raw:`, JSON.stringify(val).slice(0, 300));
       }
@@ -327,50 +332,30 @@ app.get('/api/notion/article', async (req, res) => {
   }
 
   try {
+    // Passo 1: busca direta pelo título "ARTIGO - REDE LÍDERES ({nome})"
+    const searchResp = await fetch('https://api.notion.com/v1/search', {
+      method: 'POST',
+      headers: notionHeaders,
+      body: JSON.stringify({
+        query: `ARTIGO - REDE LÍDERES (${name})`,
+        filter: { value: 'page', property: 'object' },
+        page_size: 10
+      })
+    });
+    const searchData = await searchResp.json();
+
     const nameLower = name.toLowerCase();
+    const artPage = (searchData.results || []).find(p => {
+      const title = (p.properties?.title?.title || []).map(t => t.plain_text).join('').toLowerCase();
+      return title.includes('artigo') && title.includes(nameLower);
+    });
 
-    // Passo 1: encontra a página da pessoa no banco COAUTORES (NOTION_COAUTORES_DB)
-    let personPageId = null;
-    for (const filterType of ['title', 'rich_text']) {
-      const dbResp = await fetch(`https://api.notion.com/v1/databases/${NOTION_COAUTORES_DB}/query`, {
-        method: 'POST',
-        headers: notionHeaders,
-        body: JSON.stringify({
-          filter: { property: 'user', [filterType]: { contains: name } },
-          page_size: 5
-        })
-      });
-      const dbData = await dbResp.json();
-      if (dbData.object === 'error') continue;
-      const match = (dbData.results || []).find(p => {
-        const arr = p.properties?.user?.title || p.properties?.user?.rich_text || [];
-        return richTextToPlain(arr).toLowerCase().includes(nameLower);
-      });
-      if (match) { personPageId = match.id; break; }
+    if (!artPage) {
+      return res.status(404).json({ error: `Página de artigo não encontrada para "${name}"` });
     }
 
-    if (!personPageId) {
-      return res.status(404).json({ error: `Pessoa "${name}" não encontrada no banco COAUTORES` });
-    }
-
-    // Passo 2: lista os blocos filhos da página da pessoa e acha o ARTIGO
-    const childrenResp = await fetch(
-      `https://api.notion.com/v1/blocks/${personPageId}/children?page_size=50`,
-      { headers: notionHeaders }
-    );
-    const childrenData = await childrenResp.json();
-
-    const artBlock = (childrenData.results || []).find(block =>
-      block.type === 'child_page' &&
-      (block.child_page?.title || '').toUpperCase().includes('ARTIGO')
-    );
-
-    if (!artBlock) {
-      return res.status(404).json({ error: `Subpágina de artigo não encontrada para "${name}"` });
-    }
-
-    const articlePageId = artBlock.id;
-    const pageTitle = artBlock.child_page?.title || '';
+    const articlePageId = artPage.id;
+    const pageTitle = (artPage.properties?.title?.title || []).map(t => t.plain_text).join('');
 
     // Percorre os blocos procurando o título em CAPS LOCK e o corpo do artigo
     const allBlocks = await fetchBlocks(articlePageId);
@@ -417,11 +402,104 @@ app.get('/api/notion/article', async (req, res) => {
   }
 });
 
-// ── POST /api/summarize — resume artigo com Gemini ────────────────────────────
+// ── POST /api/stock-images — busca imagens no Pexels por texto do artigo ──────
+app.post('/api/stock-images', async (req, res) => {
+  const PEXELS_KEY = process.env.PEXELS_KEY;
+  if (!PEXELS_KEY) return res.status(500).json({ message: 'PEXELS_KEY não configurada no .env' });
+  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
+
+  const { parts, articleTitle, articleFullText, leaderCargo, leaderEmpresas } = req.body || {};
+  if (!Array.isArray(parts) || parts.length === 0) {
+    return res.status(400).json({ message: 'Campo "parts" (array de textos) é obrigatório.' });
+  }
+
+  // 1. Usa Groq para extrair palavras-chave visuais e específicas de cada parte
+  async function extractKeywords(slideText, title) {
+    const leaderContext = [leaderCargo, leaderEmpresas].filter(Boolean).join(' | ');
+    const articleContext = articleFullText ? articleFullText.slice(0, 1200) : '';
+
+    const prompt = `You are a visual content researcher for a premium Brazilian executive network (Rede Líderes).
+
+LEADER CONTEXT: ${leaderContext || 'senior executive, business leader'}
+ARTICLE TITLE: ${title || 'executive article'}
+FULL ARTICLE EXCERPT: "${articleContext}"
+SLIDE TEXT TO ILLUSTRATE: "${slideText.slice(0, 400)}"
+
+Return ONLY 3-4 English keywords for a Pexels stock photo search. Rules:
+- Keywords must be SPECIFIC and VISUAL — things you can actually photograph
+- Match the EXACT theme of the slide text, informed by the full article context
+- Incorporate the leader's industry/sector from the leader context when relevant
+- Prefer concrete scenes: e.g. "CEO boardroom presentation", "tech startup team", "financial analyst charts"
+- Avoid standalone abstract words like "success", "leadership", "growth"
+- Return ONLY the keywords separated by spaces, nothing else
+
+Keywords:`;
+
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 40,
+        temperature: 0.2
+      })
+    });
+    const d = await r.json();
+    const raw = d?.choices?.[0]?.message?.content || '';
+    const clean = raw.replace(/[\r\n]+/g, ' ').replace(/['".,\-]/g, '').replace(/\s+/g, ' ').trim();
+    return clean || 'executive business meeting';
+  }
+
+  // 2. Busca no Pexels — evita repetir fotos já usadas
+  async function searchPexels(query, usedIds) {
+    const safeQuery = query.replace(/[\r\n]/g, ' ').trim().slice(0, 100);
+    if (!safeQuery) return null;
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(safeQuery)}&per_page=20&orientation=landscape`;
+    const r = await fetch(url, { headers: { Authorization: PEXELS_KEY } });
+    if (!r.ok) {
+      const errBody = await r.text().catch(() => '');
+      console.error(`[stock-images] Pexels ${r.status} para query "${safeQuery}": ${errBody.slice(0, 200)}`);
+      return null;
+    }
+    const d = await r.json();
+    const photos = (d.photos || []).filter(p => !usedIds.has(p.id));
+    if (!photos.length) return null;
+    const pick = photos[0];
+    usedIds.add(pick.id);
+    return pick.src.large2x || pick.src.large || pick.src.original;
+  }
+
+  try {
+    const title = articleTitle || '';
+    const imageUrls = [];
+    const usedIds = new Set();
+
+    for (const part of parts.slice(0, 3)) {
+      const keywords = await extractKeywords(part, title);
+      console.log(`[stock-images] keywords: "${keywords}"`);
+      const url = await searchPexels(keywords, usedIds);
+      if (!url) {
+        const fallbackUrl = await searchPexels(title.split(' ').slice(0, 3).join(' ') || 'business leadership', usedIds);
+        imageUrls.push(fallbackUrl || null);
+      } else {
+        imageUrls.push(url);
+      }
+    }
+
+    console.log(`[stock-images] ok — ${imageUrls.filter(Boolean).length}/3 imagens encontradas`);
+    res.json({ images: imageUrls });
+  } catch (err) {
+    console.error('[stock-images] erro:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── POST /api/summarize — resume artigo com Groq ─────────────────────────────
 app.post('/api/summarize', async (req, res) => {
   const { article, title } = req.body || {};
   if (!article) return res.status(400).json({ message: 'Campo article obrigatório.' });
-  if (!GEMINI_KEY) return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no .env' });
+  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
 
   const prompt = `Você é um editor de conteúdo para Instagram da Rede Líderes, uma rede de executivos do Brasil.
 
@@ -441,21 +519,23 @@ Sua tarefa é criar EXATAMENTE 3 blocos de texto para slides de carrossel do Ins
 Responda APENAS com os 3 blocos separados por uma linha em branco, sem introdução, sem explicação, sem numeração.`;
 
   try {
-    const response = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+    const response = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.4 }
+        model: GROQ_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1024,
+        temperature: 0.4
       })
     });
 
     const data = await response.json();
     if (!response.ok) throw new Error(data?.error?.message || response.statusText);
 
-    const text  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text  = data?.choices?.[0]?.message?.content || '';
     const parts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).slice(0, 3);
-    if (parts.length < 3) throw new Error('Gemini não retornou 3 blocos. Tente novamente.');
+    if (parts.length < 3) throw new Error('Groq não retornou 3 blocos. Tente novamente.');
 
     console.log('[summarize] ok —', parts.length, 'blocos gerados');
     res.json({ parts });
@@ -465,12 +545,11 @@ Responda APENAS com os 3 blocos separados por uma linha em branco, sem introduç
   }
 });
 
-// ── POST /api/copywrite — gera legendas IG + LI com Gemini ───────────────────
+// ── POST /api/copywrite — gera legendas IG + LI com Groq ─────────────────────
 app.post('/api/copywrite', async (req, res) => {
   const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
-  const COPY_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent';
 
-  if (!GEMINI_KEY) return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no .env' });
+  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
 
   const { tipo, lider, contexto, avoid } = req.body || {};
 
@@ -481,18 +560,20 @@ app.post('/api/copywrite', async (req, res) => {
     return res.status(400).json({ message: 'Campo "contexto" é obrigatório.' });
   }
 
-  async function callGemini(prompt) {
-    const response = await fetch(`${COPY_URL}?key=${GEMINI_KEY}`, {
+  async function callGroq(prompt) {
+    const response = await fetch(GROQ_URL, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body:    JSON.stringify({
-        contents:         [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1400, temperature: 0.75 }
+        model:       GROQ_MODEL,
+        messages:    [{ role: 'user', content: prompt }],
+        max_tokens:  1400,
+        temperature: 0.75
       })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data?.error?.message || response.statusText);
-    return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    return (data?.choices?.[0]?.message?.content || '').trim();
   }
 
   function buildLiderLine(l) {
@@ -556,11 +637,11 @@ Retorne APENAS o texto puro da legenda, sem JSON, sem aspas, sem markdown.`;
 
   try {
     const [instagram, linkedin] = await Promise.all([
-      callGemini(promptIG),
-      callGemini(promptLI),
+      callGroq(promptIG),
+      callGroq(promptLI),
     ]);
 
-    if (!instagram || !linkedin) throw new Error('Resposta vazia do Gemini.');
+    if (!instagram || !linkedin) throw new Error('Resposta vazia do Groq.');
 
     const linkedinTruncado = linkedin.length > 800
       ? linkedin.slice(0, 800).replace(/\s+\S*$/, '') + '\n\nwww.redelideres.com'
