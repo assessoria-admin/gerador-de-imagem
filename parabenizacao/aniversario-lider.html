@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<!--
+  DOM TREE — aniversario-lider.html
+  Canvas: 1080 × 1350 px (Instagram portrait)
+
+  .canvas                        — 1080 × 1350, bg #080808, clip root
+    .noise-overlay                — full-bleed SVG grain texture (CSS bg)
+    .grid-lines                   — decorative vertical/horizontal hairlines (CSS)
+    .top-bar                      — top edge strip: "REDE LÍDERES" left + year right
+    .center-block                 — flex column, vertically centered ~top 40%
+      .eyebrow                    — "COMUNIDADE · LÍDERES" small caps label
+      .heading-group
+        .heading-parabens         — "PARABÉNS," Ultrabold 800, ~200px
+        .teal-rule                — horizontal SVG line, teal, full width
+      .name-block                 — placeholder [NOME DO LÍDER]
+        .name-prefix              — "a" or empty (removed for brevity)
+        .name-placeholder         — name, Ultrabold 800, ~96px, teal
+    .message-block                — short congratulatory sentence, Light 300
+    .date-tag                     — "[DATA · MÊS · ANO]" small monospace-style
+    .bottom-bar                   — Rede Líderes logotype + tagline
+      .logo-text                  — "REDE LÍDERES" Ultrabold, tracking wide
+      .tagline                    — tagline, Light 300
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>Parabéns — Rede Líderes</title>
+  <link
+    rel="stylesheet"
+    href="https://api.fontshare.com/v2/css?f[]=neue-machina@300,400,800&display=swap"
+  />
+  <style>
+    /* ─── Reset ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ─── Brand tokens ──────────────────────────────────────────────────── */
+    :root {
+      --teal:       #41c1c2;
+      --bg:         #080808;
+      --card-bg:    #0f0f0f;
+      --border:     #1c1c1c;
+      --white:      #f5f5f5;
+      --muted:      #555555;
+      --font:       'Neue Machina', sans-serif;
+    }
+
+    /* ─── Canvas root ───────────────────────────────────────────────────── */
+    html, body {
+      width:  1080px;
+      height: 1350px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .canvas {
+      position: relative;
+      width:  1080px;
+      height: 1350px;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--white);
+      overflow: hidden;
+    }
+
+    /* ─── Noise / grain layer ────────────────────────────────────────────── */
+    .noise-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      /* SVG fractal noise as data URI */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      opacity: 0.6;
+    }
+
+    /* ─── Decorative grid hairlines ─────────────────────────────────────── */
+    .grid-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ─── Top bar ────────────────────────────────────────────────────────── */
+    .top-bar {
+      position: absolute;
+      top: 64px;
+      left: 72px;
+      right: 72px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+    }
+
+    .top-bar .brand-label {
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .top-bar .year-tag {
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+    }
+
+    /* ─── Main content wrapper ──────────────────────────────────────────── */
+    .center-block {
+      position: absolute;
+      top: 220px;
+      left: 72px;
+      right: 72px;
+      z-index: 10;
+    }
+
+    /* ─── Eyebrow label ─────────────────────────────────────────────────── */
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 48px;
+    }
+
+    /* ─── Heading group ─────────────────────────────────────────────────── */
+    .heading-group {
+      margin-bottom: 0;
+    }
+
+    .heading-parabens {
+      font-size: 176px;
+      font-weight: 800;
+      line-height: 0.88;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      color: var(--white);
+      display: block;
+    }
+
+    /* ─── Teal horizontal rule ──────────────────────────────────────────── */
+    .teal-rule {
+      display: block;
+      width: 100%;
+      height: 3px;
+      background: var(--teal);
+      margin-top: 36px;
+      margin-bottom: 48px;
+    }
+
+    /* ─── Name block ─────────────────────────────────────────────────────── */
+    .name-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .name-label {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .name-placeholder {
+      font-size: 88px;
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: var(--teal);
+      /* Break long names gracefully */
+      word-break: break-word;
+      hyphens: auto;
+    }
+
+    /* ─── Message block ──────────────────────────────────────────────────── */
+    .message-block {
+      position: absolute;
+      top: 900px;
+      left: 72px;
+      right: 72px;
+      z-index: 10;
+    }
+
+    .message-text {
+      font-size: 22px;
+      font-weight: 300;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+      color: #8a8a8a;
+      max-width: 780px;
+    }
+
+    .message-text em {
+      color: var(--white);
+      font-style: normal;
+      font-weight: 400;
+    }
+
+    /* ─── Date tag ───────────────────────────────────────────────────────── */
+    .date-tag {
+      position: absolute;
+      top: 1018px;
+      left: 72px;
+      z-index: 10;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ─── Corner accent (SVG geometric) ─────────────────────────────────── */
+    .corner-accent {
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* ─── Large background numeral ──────────────────────────────────────── */
+    .bg-numeral {
+      position: absolute;
+      bottom: 200px;
+      right: 40px;
+      z-index: 2;
+      pointer-events: none;
+      font-size: 480px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--border);
+      text-transform: none;
+      user-select: none;
+    }
+
+    /* ─── Bottom bar ─────────────────────────────────────────────────────── */
+    .bottom-bar {
+      position: absolute;
+      bottom: 64px;
+      left: 72px;
+      right: 72px;
+      z-index: 10;
+      border-top: 1px solid var(--border);
+      padding-top: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .tagline {
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ─── Vertical teal accent bar (left edge) ───────────────────────────── */
+    .left-accent {
+      position: absolute;
+      left: 40px;
+      top: 280px;
+      width: 2px;
+      height: 600px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--teal) 20%,
+        var(--teal) 80%,
+        transparent 100%
+      );
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* ─── Small teal dot accent ──────────────────────────────────────────── */
+    .dot-accent {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+      z-index: 10;
+    }
+    .dot-accent.top-left {
+      top: 64px;
+      left: 40px;
+    }
+    .dot-accent.bottom-right {
+      bottom: 64px;
+      right: 40px;
+    }
+  </style>
+</head>
+<body>
+<div class="canvas">
+
+  <!-- Noise / grain texture overlay -->
+  <div class="noise-overlay"></div>
+
+  <!-- Decorative grid lines (SVG) -->
+  <svg class="grid-lines" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <!-- Vertical grid hairlines -->
+    <line x1="72"   y1="0" x2="72"   y2="1350" stroke="#1c1c1c" stroke-width="1" opacity="0.6"/>
+    <line x1="1008" y1="0" x2="1008" y2="1350" stroke="#1c1c1c" stroke-width="1" opacity="0.6"/>
+    <!-- Horizontal dividers -->
+    <line x1="0" y1="155" x2="1080" y2="155" stroke="#1c1c1c" stroke-width="1" opacity="0.4"/>
+    <line x1="0" y1="1080" x2="1080" y2="1080" stroke="#1c1c1c" stroke-width="1" opacity="0.4"/>
+    <!-- Cross-hair at teal rule anchor -->
+    <circle cx="72" cy="493" r="4" fill="#41c1c2" opacity="0.9"/>
+    <circle cx="1008" cy="493" r="4" fill="#41c1c2" opacity="0.9"/>
+  </svg>
+
+  <!-- Corner SVG geometric accent (top right) -->
+  <svg class="corner-accent" width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M200 0 L200 200 L0 0 Z" fill="#0f0f0f" opacity="0.5"/>
+    <path d="M200 0 L200 80" stroke="#41c1c2" stroke-width="2" opacity="0.7"/>
+    <path d="M120 0 L200 0" stroke="#41c1c2" stroke-width="2" opacity="0.7"/>
+    <path d="M200 0 L130 70" stroke="#1c1c1c" stroke-width="1" opacity="0.8"/>
+  </svg>
+
+  <!-- Left vertical teal accent -->
+  <div class="left-accent"></div>
+
+  <!-- Dot accents -->
+  <div class="dot-accent top-left"></div>
+  <div class="dot-accent bottom-right"></div>
+
+  <!-- Background ghost numeral -->
+  <div class="bg-numeral" aria-hidden="true">✦</div>
+
+  <!-- ── Top bar ─────────────────────────────────────────── -->
+  <header class="top-bar">
+    <span class="brand-label">Rede Líderes</span>
+    <!-- PLACEHOLDER: substituir pelo ano atual ou remover -->
+    <span class="year-tag"><!-- [ANO] -->&nbsp;</span>
+  </header>
+
+  <!-- ── Main center block ──────────────────────────────── -->
+  <main class="center-block">
+
+    <!-- Eyebrow category label -->
+    <p class="eyebrow">Comunidade · Líderes · Parabéns</p>
+
+    <!-- Primary heading -->
+    <div class="heading-group">
+      <span class="heading-parabens">Parabéns,</span>
+    </div>
+
+    <!-- Teal horizontal rule -->
+    <span class="teal-rule" role="separator"></span>
+
+    <!-- Leader's name block -->
+    <div class="name-block">
+      <span class="name-label"><!-- Placeholder: nome do líder --></span>
+      <!-- PLACEHOLDER: substituir pelo nome completo do líder -->
+      <span class="name-placeholder">[Nome<br>do Líder]</span>
+    </div>
+
+  </main>
+
+  <!-- ── Congratulatory message ─────────────────────────── -->
+  <section class="message-block">
+    <!-- PLACEHOLDER: personalizar a mensagem abaixo -->
+    <p class="message-text">
+      Que este novo ciclo traga <em>conquistas extraordinárias,</em><br>
+      novas conexões e ainda mais realizações<br>
+      para a sua trajetória de liderança.
+    </p>
+  </section>
+
+  <!-- Date tag -->
+  <!-- PLACEHOLDER: substituir pela data de aniversário -->
+  <p class="date-tag">[Dia · Mês · Ano]</p>
+
+  <!-- ── Bottom bar — Rede Líderes logotype ─────────────── -->
+  <footer class="bottom-bar">
+    <span class="logo-text">Rede Líderes</span>
+    <span class="tagline">Comunidade Premium para Líderes</span>
+  </footer>
+
+</div>
+</body>
+</html>
