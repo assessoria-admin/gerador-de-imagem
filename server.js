@@ -332,19 +332,21 @@ app.get('/api/notion/article', async (req, res) => {
   }
 
   try {
-    // Passo 1: busca direta pelo título "ARTIGO - REDE LÍDERES ({nome})"
+    // Busca flexível: cobre "ARTIGO - REDE LÍDERES (Nome)" e "Artigo - Nome"
+    const nameLower = name.toLowerCase();
+    const firstName = name.split(/\s+/)[0];
+
     const searchResp = await fetch('https://api.notion.com/v1/search', {
       method: 'POST',
       headers: notionHeaders,
       body: JSON.stringify({
-        query: `ARTIGO - REDE LÍDERES (${name})`,
+        query: `artigo ${firstName}`,
         filter: { value: 'page', property: 'object' },
-        page_size: 10
+        page_size: 20
       })
     });
     const searchData = await searchResp.json();
 
-    const nameLower = name.toLowerCase();
     const artPage = (searchData.results || []).find(p => {
       const title = (p.properties?.title?.title || []).map(t => t.plain_text).join('').toLowerCase();
       return title.includes('artigo') && title.includes(nameLower);
@@ -501,22 +503,34 @@ app.post('/api/summarize', async (req, res) => {
   if (!article) return res.status(400).json({ message: 'Campo article obrigatório.' });
   if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
 
-  const prompt = `Você é um editor de conteúdo para Instagram da Rede Líderes, uma rede de executivos do Brasil.
+  const prompt = `Você é um editor de conteúdo para Instagram da Rede Líderes, rede de executivos do Brasil.
 
-Recebeu o seguinte artigo${title ? ` com o tema "${title}"` : ''}:
+Recebeu o artigo${title ? ` com o tema "${title}"` : ''}:
 
 ---
 ${article}
 ---
 
-Sua tarefa é criar EXATAMENTE 3 blocos de texto para slides de carrossel do Instagram. Cada bloco deve:
-- Ter entre 3 e 5 frases curtas e diretas
-- Capturar uma ideia central diferente do artigo
-- Ser escrito em linguagem executiva, clara e impactante
-- Preservar as ideias mais relevantes do original
-- NÃO usar bullet points, numeração ou títulos — apenas parágrafos corridos
+Gere EXATAMENTE 4 blocos separados por linha em branco.
 
-Responda APENAS com os 3 blocos separados por uma linha em branco, sem introdução, sem explicação, sem numeração.`;
+BLOCO 1 — GANCHO DE CAPA:
+Crie UMA frase que instigue dúvida imediata e faça o leitor sentir que está perdendo algo importante se não ler o artigo. Máximo 10 palavras. Regras obrigatórias:
+- Deve gerar uma pergunta na cabeça do leitor, mesmo sem ser uma pergunta direta
+- Pode ser uma afirmação que contradiz o senso comum, uma provocação ou uma revelação incompleta que exige continuação
+- Extraia a ideia mais surpreendente ou contraintuitiva do artigo e use como base
+- PROIBIDO: frases genéricas, clichês executivos, palavras como "descubra", "aprenda", "conheça"
+- Sem ponto final
+
+BLOCO 2 — PRIMEIRO SLIDE:
+A frase mais instigante do artigo — uma provocação ou verdade que faz o leitor querer continuar. DEVE ter entre 42 e 60 palavras. Escreva frases completas com contexto e profundidade, não apenas slogans.
+
+BLOCO 3 — SEGUNDO SLIDE:
+Aprofunda outra ideia central do artigo. DEVE ter entre 25 e 35 palavras. Frases completas, ritmo fluido.
+
+BLOCO 4 — TERCEIRO SLIDE:
+Encerra com uma reflexão ou consequência prática. DEVE ter entre 25 e 35 palavras. Frases completas, linguagem executiva.
+
+Responda APENAS com os 4 blocos separados por linha em branco. Sem introdução, sem numeração, sem títulos.`;
 
   try {
     const response = await fetch(GROQ_URL, {
@@ -525,8 +539,8 @@ Responda APENAS com os 3 blocos separados por uma linha em branco, sem introduç
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1024,
-        temperature: 0.4
+        max_tokens: 1200,
+        temperature: 0.92
       })
     });
 
@@ -534,11 +548,20 @@ Responda APENAS com os 3 blocos separados por uma linha em branco, sem introduç
     if (!response.ok) throw new Error(data?.error?.message || response.statusText);
 
     const text  = data?.choices?.[0]?.message?.content || '';
-    const parts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).slice(0, 3);
-    if (parts.length < 3) throw new Error('Groq não retornou 3 blocos. Tente novamente.');
+    const allParts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    if (allParts.length < 4) throw new Error('Groq não retornou 4 blocos. Tente novamente.');
+    const hook  = allParts[0];
+    const parts = allParts.slice(1, 4);
 
-    console.log('[summarize] ok —', parts.length, 'blocos gerados');
-    res.json({ parts });
+    // Valida contagem de palavras dos blocos de conteúdo
+    const minWords = [42, 20, 20]; // bloco 2: 42+, blocos 3 e 4: 20+
+    for (let i = 0; i < parts.length; i++) {
+      const count = parts[i].split(/\s+/).filter(Boolean).length;
+      if (count < minWords[i]) throw new Error(`Bloco ${i + 2} veio com apenas ${count} palavras (mínimo ${minWords[i]}). Tente novamente.`);
+    }
+
+    console.log('[summarize] ok —', parts.length, 'blocos + gancho:', hook.slice(0, 60));
+    res.json({ hook, parts });
   } catch (err) {
     console.error('[summarize] erro:', err.message);
     res.status(500).json({ message: err.message });

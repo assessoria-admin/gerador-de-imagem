@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Aniversário do Líder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: 'Space Grotesk', 'Neue Machina', sans-serif;
+      min-height: 100vh;
+      padding: 96px 20px 80px;
+    }
+
+    .wrap { max-width: 1060px; margin: 0 auto; }
+
+    /* ─── Header ────────────────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 44px; }
+    .header-rule {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .header-rule span {
+      flex: 1; height: 1px; max-width: 60px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .header-rule span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    h1 {
+      font-size: 20px; font-weight: 800;
+      letter-spacing: 5px; text-transform: uppercase;
+      font-family: var(--font);
+    }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+    .back-link {
+      display: inline-block; margin-bottom: 28px;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+      text-decoration: none; transition: color .2s; font-family: var(--font);
+    }
+    .back-link:hover { color: var(--teal); }
+
+    /* ─── Status bar ─────────────────────────────────────────────── */
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; }
+    .spinner {
+      display: none; flex-shrink: 0; width: 15px; height: 15px;
+      border: 2px solid rgba(65,193,194,.2); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
+    .ac-spin {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(65,193,194,.2);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+
+    /* ─── Layout lado a lado ──────────────────────────────────────── */
+    .aniv-wrap {
+      display: flex; gap: 36px; align-items: flex-start; width: 100%;
+    }
+    .aniv-col-inputs  { flex: 1; min-width: 280px; order: 1; }
+    .aniv-col-preview { flex-shrink: 0; order: 2; }
+
+    @media (max-width: 960px) {
+      .aniv-wrap { flex-direction: column; align-items: center; }
+      .aniv-col-inputs  { width: 460px; min-width: unset; order: 2; }
+      .aniv-col-preview { order: 1; }
+    }
+
+    /* ─── Card wrapper (preview escalado) ───────────────────────── */
+    /* Card nativo: 1080×1350 → scale 460/1080 = 0.42593 → wrapper height: 1350×0.42593 ≈ 575px */
+    .a-card-wrap {
+      width:  460px;
+      height: 575px;
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 32px 96px rgba(0,0,0,0.85);
+      flex-shrink: 0;
+    }
+
+    /* ─── Card (dimensões nativas 1080×1350) ─────────────────────── */
+    .a-canvas {
+      position: relative;
+      width:  1080px;
+      height: 1350px;
+      background: #080808;
+      font-family: 'Neue Machina', sans-serif;
+      color: #f5f5f5;
+      overflow: hidden;
+      transform: scale(0.42593);
+      transform-origin: top left;
+    }
+
+    /* ─── Noise overlay ─────────────────────────────────────────── */
+    .a-noise {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-repeat: repeat; opacity: 0.6;
+    }
+
+    /* ─── Grid lines ────────────────────────────────────────────── */
+    .a-grid { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
+    /* ─── Top bar ────────────────────────────────────────────────── */
+    .a-top-bar {
+      position: absolute; top: 64px; left: 72px; right: 72px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 10; border-bottom: 1px solid #1c1c1c; padding-bottom: 24px;
+    }
+    .a-brand-label {
+      font-size: 13px; font-weight: 400; letter-spacing: 0.25em;
+      text-transform: uppercase; color: #555;
+    }
+    .a-year-tag {
+      font-size: 13px; font-weight: 300; letter-spacing: 0.2em; color: #555;
+    }
+
+    /* ─── Center block ───────────────────────────────────────────── */
+    .a-center {
+      position: absolute; top: 220px; left: 72px; right: 72px; z-index: 10;
+    }
+    .a-eyebrow {
+      font-size: 11px; font-weight: 400; letter-spacing: 0.35em;
+      text-transform: uppercase; color: #41c1c2; margin-bottom: 32px;
+    }
+    .a-heading-parabens {
+      font-size: 136px; font-weight: 800; line-height: 0.88;
+      letter-spacing: -0.03em; text-transform: uppercase; color: #f5f5f5; display: block;
+    }
+    .a-teal-rule {
+      display: block; width: 100%; height: 3px;
+      background: #41c1c2; margin-top: 28px; margin-bottom: 36px;
+    }
+
+    /* ─── Foto circular ──────────────────────────────────────────── */
+    .a-photo-wrap {
+      display: flex; justify-content: center; margin-bottom: 32px;
+    }
+    .a-photo-circle {
+      width: 340px; height: 340px; border-radius: 50%;
+      border: 3px solid #41c1c2;
+      overflow: hidden; flex-shrink: 0;
+      background: #141414;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .a-photo-circle img {
+      width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block;
+    }
+    .a-photo-circle svg { opacity: 0.2; }
+
+    /* ─── Nome (inferior) ────────────────────────────────────────── */
+    .a-name-block {
+      position: absolute; top: 1080px; left: 72px; right: 72px; z-index: 10;
+    }
+    .a-name-label {
+      font-size: 10px; font-weight: 400; letter-spacing: 0.3em;
+      text-transform: uppercase; color: #555; margin-bottom: 10px;
+    }
+    .a-name-text {
+      font-size: 58px; font-weight: 800; line-height: 0.92;
+      letter-spacing: -0.02em; text-transform: uppercase; color: #41c1c2;
+      word-break: break-word; hyphens: auto;
+    }
+
+    /* ─── Message block ──────────────────────────────────────────── */
+    .a-message-block {
+      position: absolute; top: 870px; left: 72px; right: 72px; z-index: 10;
+    }
+    .a-message-text {
+      font-size: 19px; font-weight: 300; line-height: 1.6;
+      letter-spacing: 0.01em; color: #8a8a8a; max-width: 780px;
+    }
+    .a-message-text em { color: #f5f5f5; font-style: normal; font-weight: 400; }
+
+    /* ─── Date tag ───────────────────────────────────────────────── */
+    .a-date-tag {
+      position: absolute; top: 1010px; left: 72px; z-index: 10;
+      font-size: 12px; font-weight: 400; letter-spacing: 0.3em;
+      text-transform: uppercase; color: #555;
+    }
+
+    /* ─── Corner accent ──────────────────────────────────────────── */
+    .a-corner { position: absolute; top: 0; right: 0; z-index: 2; pointer-events: none; }
+
+    /* ─── Left accent bar ────────────────────────────────────────── */
+    .a-left-accent {
+      position: absolute; left: 40px; top: 280px; width: 2px; height: 600px;
+      background: linear-gradient(to bottom, transparent 0%, #41c1c2 20%, #41c1c2 80%, transparent 100%);
+      z-index: 3; pointer-events: none;
+    }
+
+    /* ─── Dot accents ────────────────────────────────────────────── */
+    .a-dot {
+      position: absolute; width: 8px; height: 8px;
+      border-radius: 50%; background: #41c1c2; z-index: 10;
+    }
+    .a-dot.tl { top: 64px; left: 40px; }
+    .a-dot.br { bottom: 64px; right: 40px; }
+
+    /* ─── BG numeral ─────────────────────────────────────────────── */
+    .a-bg-numeral {
+      position: absolute; bottom: 200px; right: 40px; z-index: 2;
+      pointer-events: none; font-size: 480px; font-weight: 800;
+      line-height: 1; letter-spacing: -0.05em;
+      color: transparent; -webkit-text-stroke: 1px #1c1c1c; user-select: none;
+    }
+
+    /* ─── Bottom bar ─────────────────────────────────────────────── */
+    .a-bottom-bar {
+      position: absolute; bottom: 64px; left: 72px; right: 72px; z-index: 10;
+      border-top: 1px solid #1c1c1c; padding-top: 28px;
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .a-logo-text {
+      font-size: 20px; font-weight: 800; letter-spacing: 0.22em;
+      text-transform: uppercase; color: #f5f5f5;
+    }
+    .a-tagline {
+      font-size: 12px; font-weight: 300; letter-spacing: 0.18em;
+      text-transform: uppercase; color: #555;
+    }
+
+    /* ─── Painel de inputs ───────────────────────────────────────── */
+    .a-painel { display: flex; flex-direction: column; gap: 10px; }
+    .a-painel-row { display: flex; gap: 10px; }
+    .a-field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .a-field label {
+      font-size: 9.5px; font-weight: 700; letter-spacing: 1.8px;
+      text-transform: uppercase; color: rgba(255,255,255,0.35);
+    }
+    .a-field input[type=text], .a-field input[type=date], .a-field textarea {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(3,216,210,0.25);
+      border-radius: 8px; padding: 9px 12px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500;
+      color: #ffffff; outline: none; transition: border-color 0.2s, background 0.2s; width: 100%;
+    }
+    .a-field textarea {
+      resize: vertical; min-height: 80px; line-height: 1.5;
+    }
+    .a-field input::placeholder, .a-field textarea::placeholder { color: rgba(255,255,255,0.2); }
+    .a-field input:focus, .a-field textarea:focus {
+      border-color: rgba(3,216,210,0.65); background: rgba(3,216,210,0.06);
+    }
+    /* date input color fix */
+    .a-field input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+
+    .a-divider { width: 100%; height: 1px; background: rgba(255,255,255,0.07); margin: 4px 0; }
+    .a-actions { display: flex; gap: 10px; }
+    .a-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 20px; border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+      border: 1px solid rgba(3,216,210,0.3); background: rgba(3,216,210,0.10); color: #03d8d2;
+    }
+    .a-btn:hover { background: rgba(3,216,210,0.22); border-color: rgba(3,216,210,0.6); }
+
+    /* ─── Autocomplete ───────────────────────────────────────────── */
+    .a-ac-wrap { position: relative; }
+    .a-ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      z-index: 200; background: #141414;
+      border: 1px solid rgba(65,193,194,.25); border-radius: 8px; overflow: hidden;
+      display: none; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    .a-ac-dropdown.open { display: block; }
+    .a-ac-item {
+      padding: 11px 15px; cursor: pointer;
+      border-bottom: 1px solid var(--border); transition: background .15s;
+    }
+    .a-ac-item:last-child { border-bottom: none; }
+    .a-ac-item:hover { background: rgba(65,193,194,.08); }
+    .a-ac-item-name { font-size: 14px; color: #fff; }
+    .a-ac-item-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .a-ac-empty { padding: 13px 15px; font-size: 12px; color: var(--muted); text-align: center; }
+    .a-ac-loading { padding: 13px 15px; font-size: 12px; color: var(--teal); display: flex; align-items: center; gap: 8px; }
+
+    /* ─── Tool Nav ───────────────────────────────────────────────── */
+    .tool-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; justify-content: center; gap: 8px;
+      background: rgba(8,8,8,.88); backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1c1c1c; padding: 10px 16px;
+    }
+    .tool-nav a {
+      font-family: 'Neue Machina', sans-serif;
+      font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; text-decoration: none;
+      color: #555; padding: 7px 18px; border-radius: 8px;
+      border: 1px solid transparent; transition: color .2s, border-color .2s, background .2s;
+    }
+    .tool-nav a:hover { color: #fff; }
+    .tool-nav a.active {
+      color: #41c1c2; border-color: rgba(65,193,194,.35); background: rgba(65,193,194,.07);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="tool-nav">
+    <a href="/minibio.html">✨ Mini Bio</a>
+    <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
+    <a class="active" href="/aniversario-lider.html">🎂 Aniversário</a>
+    <a href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
+    <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
+    <a href="/remove-fundo.html">✂️ Remove Fundo</a>
+  </nav>
+
+<div class="wrap">
+
+  <a class="back-link" href="/app.html">← Voltar ao hub</a>
+
+  <header>
+    <div class="header-rule">
+      <span></span>
+      <h1>Aniversário&nbsp;do&nbsp;Líder</h1>
+      <span></span>
+    </div>
+    <p>Card de parabéns pronto para publicar</p>
+  </header>
+
+  <div class="aniv-wrap">
+
+    <!-- Preview -->
+    <div class="aniv-col-preview">
+      <div class="a-card-wrap">
+        <div class="a-canvas" id="a-canvas">
+
+          <div class="a-noise"></div>
+
+          <svg class="a-grid" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <line x1="72"   y1="0" x2="72"   y2="1350" stroke="#1c1c1c" stroke-width="1" opacity="0.6"/>
+            <line x1="1008" y1="0" x2="1008" y2="1350" stroke="#1c1c1c" stroke-width="1" opacity="0.6"/>
+            <line x1="0" y1="155" x2="1080" y2="155" stroke="#1c1c1c" stroke-width="1" opacity="0.4"/>
+            <line x1="0" y1="1080" x2="1080" y2="1080" stroke="#1c1c1c" stroke-width="1" opacity="0.4"/>
+            <circle cx="72" cy="493" r="4" fill="#41c1c2" opacity="0.9"/>
+            <circle cx="1008" cy="493" r="4" fill="#41c1c2" opacity="0.9"/>
+          </svg>
+
+          <svg class="a-corner" width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <path d="M200 0 L200 200 L0 0 Z" fill="#0f0f0f" opacity="0.5"/>
+            <path d="M200 0 L200 80" stroke="#41c1c2" stroke-width="2" opacity="0.7"/>
+            <path d="M120 0 L200 0" stroke="#41c1c2" stroke-width="2" opacity="0.7"/>
+            <path d="M200 0 L130 70" stroke="#1c1c1c" stroke-width="1" opacity="0.8"/>
+          </svg>
+
+          <div class="a-left-accent"></div>
+          <div class="a-dot tl"></div>
+          <div class="a-dot br"></div>
+          <div class="a-bg-numeral" aria-hidden="true">✦</div>
+
+          <header class="a-top-bar">
+            <span class="a-brand-label">Rede Líderes</span>
+            <span class="a-year-tag" id="a-year"></span>
+          </header>
+
+          <main class="a-center">
+            <p class="a-eyebrow">Comunidade · Líderes · Parabéns</p>
+            <div>
+              <span class="a-heading-parabens">Parabéns,</span>
+            </div>
+            <span class="a-teal-rule"></span>
+
+            <div class="a-photo-wrap">
+              <div class="a-photo-circle" id="a-photo-circle">
+                <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
+                  <circle cx="60" cy="42" r="26" stroke="#41c1c2" stroke-width="2"/>
+                  <path d="M12 108 C12 80 108 80 108 108" stroke="#41c1c2" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+            </div>
+
+          </main>
+
+          <div class="a-name-block">
+            <div class="a-name-label">Líder</div>
+            <span class="a-name-text" id="a-nome-text">[Nome do Líder]</span>
+          </div>
+
+          <section class="a-message-block">
+            <p class="a-message-text" id="a-msg-text">
+              Que este novo ciclo traga <em>conquistas extraordinárias,</em><br>
+              novas conexões e ainda mais realizações<br>
+              para a sua trajetória de liderança.
+            </p>
+          </section>
+
+          <p class="a-date-tag" id="a-date-text">[Dia · Mês · Ano]</p>
+
+          <footer class="a-bottom-bar">
+            <span class="a-logo-text">Rede Líderes</span>
+            <span class="a-tagline">Comunidade Premium para Líderes</span>
+          </footer>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="aniv-col-inputs">
+      <div class="a-painel">
+
+        <div class="a-field">
+          <label>Buscar na Rede Líderes</label>
+          <div class="a-ac-wrap" id="aAcWrap">
+            <input type="text" id="a-search" placeholder="Digite o nome para buscar…"
+              autocomplete="off" oninput="aAcInput(this.value)" />
+            <div class="a-ac-dropdown" id="aAcDropdown"></div>
+          </div>
+        </div>
+
+        <div class="a-field">
+          <label>Nome completo</label>
+          <input type="text" id="a-inp-nome" placeholder="Preenchido pelo Notion"
+            readonly style="opacity:.6; cursor:default;" />
+        </div>
+
+        <div class="a-field">
+          <label>Data de aniversário</label>
+          <input type="date" id="a-inp-data" onchange="aAtualizar()" />
+        </div>
+
+        <div class="a-field">
+          <label>Mensagem (opcional)</label>
+          <textarea id="a-inp-msg" placeholder="Deixe em branco para usar o texto padrão" oninput="aAtualizar()"></textarea>
+        </div>
+
+        <div class="a-divider"></div>
+
+        <div class="a-actions">
+          <button class="a-btn" onclick="aExportar()">⬇ Exportar PNG</button>
+        </div>
+
+        <div class="status-bar" id="a-status-bar" style="margin-top:12px; display:none;">
+          <div class="spinner" id="a-spinner" style="display:none;"></div>
+          <span class="status-msg" id="a-status-msg"></span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   AUTOCOMPLETE NOTION
+════════════════════════════════════════════════════════════════ */
+let aAcTimer = null;
+
+function aAcInput(q) {
+  clearTimeout(aAcTimer);
+  const dd = document.getElementById('aAcDropdown');
+  if (q.length < 2) { dd.classList.remove('open'); return; }
+  dd.innerHTML = '<div class="a-ac-loading"><div class="ac-spin"></div>Buscando…</div>';
+  dd.classList.add('open');
+  aAcTimer = setTimeout(() => aNotionSearch(q), 350);
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('aAcWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('aAcDropdown').classList.remove('open');
+  }
+});
+
+async function aNotionSearch(q) {
+  const dd = document.getElementById('aAcDropdown');
+  try {
+    const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    aAcRender(data.results || []);
+  } catch {
+    dd.innerHTML = '<div class="a-ac-empty">Erro ao buscar no Notion</div>';
+  }
+}
+
+function aAcRender(results) {
+  const dd = document.getElementById('aAcDropdown');
+  if (results.length === 0) {
+    dd.innerHTML = '<div class="a-ac-empty">Nenhum resultado encontrado</div>';
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = '';
+  results.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'a-ac-item';
+    el.innerHTML = `
+      <div class="a-ac-item-name">${esc(person.name)}</div>
+      ${person.cargo ? `<div class="a-ac-item-role">${esc(person.cargo)}</div>` : ''}
+    `;
+    el.addEventListener('mousedown', e => { e.preventDefault(); aAcSelect(person); });
+    dd.appendChild(el);
+  });
+  dd.classList.add('open');
+}
+
+function aAcSelect(person) {
+  document.getElementById('a-search').value   = person.name || '';
+  document.getElementById('a-inp-nome').value = person.name || '';
+  document.getElementById('aAcDropdown').classList.remove('open');
+  aAtualizar();
+  if (person.photoUrl) {
+    aCarregarFotoUrl(person.photoUrl);
+  }
+}
+
+async function aCarregarFotoUrl(url) {
+  try {
+    aSetStatus('Carregando foto…', true);
+    const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const res     = await fetch(proxied);
+    const blob    = await res.blob();
+    const dataUrl = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+    aDefinirFoto(dataUrl);
+    aSetStatus('Foto carregada ✓', false);
+    setTimeout(() => aSetStatus('', false), 2000);
+  } catch (err) {
+    aSetStatus('Erro ao carregar foto: ' + err.message, false);
+  }
+}
+
+function aDefinirFoto(dataUrl) {
+  const circle = document.getElementById('a-photo-circle');
+  circle.innerHTML = `<img src="${dataUrl}" alt="">`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ATUALIZAR CARD
+════════════════════════════════════════════════════════════════ */
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function aAtualizar() {
+  const nome = document.getElementById('a-inp-nome').value.trim() || '[Nome do Líder]';
+  const data = document.getElementById('a-inp-data').value;
+  const msg  = document.getElementById('a-inp-msg').value.trim();
+
+  document.getElementById('a-nome-text').textContent = nome.toUpperCase();
+
+  if (data) {
+    const [y, m, d] = data.split('-');
+    const mes = MESES[parseInt(m, 10) - 1];
+    document.getElementById('a-date-text').textContent = `${parseInt(d, 10)} · ${mes} · ${y}`;
+    document.getElementById('a-year').textContent = y;
+  } else {
+    document.getElementById('a-date-text').textContent = '[Dia · Mês · Ano]';
+    document.getElementById('a-year').textContent = '';
+  }
+
+  const msgEl = document.getElementById('a-msg-text');
+  if (msg) {
+    msgEl.textContent = msg;
+  } else {
+    msgEl.innerHTML = `Que este novo ciclo traga <em>conquistas extraordinárias,</em><br>
+      novas conexões e ainda mais realizações<br>
+      para a sua trajetória de liderança.`;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   EXPORTAR PNG
+════════════════════════════════════════════════════════════════ */
+async function aExportar() {
+  const nome = document.getElementById('a-inp-nome').value.trim() || 'lider';
+  aSetStatus('Exportando…', true);
+  await document.fonts.ready;
+
+  const card = document.getElementById('a-canvas');
+
+  const clone = card.cloneNode(true);
+  clone.style.cssText = [
+    'position:fixed',
+    'top:-9999px',
+    'left:-9999px',
+    'transform:none',
+    'border-radius:0',
+    'width:1080px',
+    'height:1350px',
+    'overflow:hidden',
+  ].join(';');
+
+  // Substitui img do círculo por background-image para o html2canvas renderizar corretamente
+  const srcImg = document.querySelector('#a-photo-circle img');
+  if (srcImg) {
+    const cloneCircle = clone.querySelector('#a-photo-circle');
+    cloneCircle.style.backgroundImage    = `url(${srcImg.src})`;
+    cloneCircle.style.backgroundSize     = 'cover';
+    cloneCircle.style.backgroundPosition = 'center top';
+    cloneCircle.innerHTML = '';
+  }
+
+  document.body.appendChild(clone);
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 1,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#080808',
+      width: 1080,
+      height: 1350,
+      logging: false,
+      x: 0, y: 0, scrollX: 0, scrollY: 0,
+    });
+
+    const slug = nome.toLowerCase()
+      .replace(/\s+/g, '-')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+    const link = document.createElement('a');
+    link.download = 'aniversario-' + slug + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    document.body.removeChild(clone);
+  }
+  aSetStatus('', false);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════════════ */
+function esc(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function aSetStatus(msg, loading) {
+  const bar     = document.getElementById('a-status-bar');
+  const spinner = document.getElementById('a-spinner');
+  const msgEl   = document.getElementById('a-status-msg');
+  bar.style.display     = msg ? 'flex' : 'none';
+  spinner.style.display = loading ? 'block' : 'none';
+  msgEl.textContent     = msg;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Preencher ano corrente no card
+  document.getElementById('a-year').textContent = new Date().getFullYear();
+  // Pré-preencher data de hoje
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('a-inp-data').value = today;
+  aAtualizar();
+});
+</script>
+</body>
+</html>

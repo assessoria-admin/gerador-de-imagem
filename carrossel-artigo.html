@@ -367,6 +367,7 @@
   <nav class="tool-nav">
     <a href="/minibio.html">✨ Mini Bio</a>
     <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
+    <a href="/aniversario-lider.html">🎂 Aniversário</a>
     <a class="active" href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
     <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
     <a href="/remove-fundo.html">✂️ Remove Fundo</a>
@@ -583,6 +584,7 @@
 
   let outfit = 'black';
   let slidesReady = false;
+  let coverHook = '';
 
   function setOutfit(o) {
     outfit = o;
@@ -743,6 +745,7 @@
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || res.statusText);
 
+      coverHook = json.hook || '';
       document.getElementById('articleText').value = json.parts.join('\n\n');
       setStatus('Artigo resumido ✓ — revise e clique em Gerar Carrossel.');
     } catch (err) {
@@ -973,6 +976,76 @@
     ctx.restore();
   }
 
+  /* ─── Helper: left-aligned wrap, returns next Y ────────────────── */
+  function wrapLeft(ctx, text, x, y, maxW, size, color, lineHeightMult = 1.35) {
+    ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = color;
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    const words = text.split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    const lh = size * lineHeightMult;
+    for (const line of lines) { ctx.fillText(line, x, y); y += lh; }
+    return y;
+  }
+
+  /* ─── Helper: justified text, last line centered, returns next Y ── */
+  function wrapJustified(ctx, text, x, y, maxW, size, color, lineHeightMult = 1.35) {
+    ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = color;
+    ctx.textBaseline = 'top';
+
+    const words = text.split(' ');
+    const lines = [];
+    let cur = [];
+    for (const w of words) {
+      const test = [...cur, w].join(' ');
+      if (ctx.measureText(test).width > maxW && cur.length > 0) {
+        lines.push(cur);
+        cur = [w];
+      } else {
+        cur.push(w);
+      }
+    }
+    if (cur.length) lines.push(cur);
+
+    const normalSpaceW = ctx.measureText(' ').width;
+    const maxGap = normalSpaceW * 3.5; // limite: espaço nunca ultrapassa 3.5x o espaço normal
+    const lh = size * lineHeightMult;
+
+    for (let i = 0; i < lines.length; i++) {
+      const lineWords = lines[i];
+      const isLast = i === lines.length - 1;
+      const wordsOnlyW = lineWords.reduce((sum, w) => sum + ctx.measureText(w).width, 0);
+      const gapCount = lineWords.length - 1;
+      const gapW = gapCount > 0 ? (maxW - wordsOnlyW) / gapCount : 0;
+      const shouldCenter = isLast || lineWords.length === 1 || gapW > maxGap;
+
+      if (shouldCenter) {
+        ctx.textAlign = 'center';
+        ctx.fillText(lineWords.join(' '), x + maxW / 2, y);
+      } else {
+        let cx = x;
+        ctx.textAlign = 'left';
+        for (let j = 0; j < lineWords.length; j++) {
+          ctx.fillText(lineWords[j], cx, y);
+          if (j < lineWords.length - 1) {
+            cx += ctx.measureText(lineWords[j]).width + gapW;
+          }
+        }
+      }
+      y += lh;
+    }
+    return y;
+  }
+
   /* ─── Helper: wrap text centered, returns next Y ────────────── */
   function wrapCentered(ctx, text, cx, y, maxW, size, color, lineHeightMult = 1.55) {
     ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
@@ -1016,21 +1089,14 @@
     // Logo top-left — invertida para aparecer preta no fundo branco
     await drawLogo(ctx, PAD, PAD, 50, true);
 
-    // "COMO PENSAM AS LIDERANÇAS" — label centralizado, maior
-    ctx.font         = `400 36px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = '#555555';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('COMO PENSAM AS LIDERANÇAS', SW / 2, 130);
-
     // Título do artigo — bold, acima da foto
     const titleSize = 68;
     const titleMaxW = SW - PAD * 2;
     ctx.font         = `800 ${titleSize}px "Neue Machina", sans-serif`;
     ctx.fillStyle    = '#111111';
-    ctx.textAlign    = 'left';
+    ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    const titleText = getArticleTitle();
+    const titleText = coverHook || getArticleTitle();
     const tWords = titleText.split(' ');
     const tLines = [];
     let tCur = '';
@@ -1040,9 +1106,9 @@
       else tCur = test;
     }
     if (tCur) tLines.push(tCur);
-    let titleY = 168;
+    let titleY = 130;
     const titleLH = titleSize * 1.18;
-    for (const line of tLines.slice(0, 4)) { ctx.fillText(line, PAD, titleY); titleY += titleLH; }
+    for (const line of tLines.slice(0, 4)) { ctx.fillText(line, SW / 2, titleY); titleY += titleLH; }
 
     // Foto colada no inferior — começa após o título, vai até a borda inferior
     const photoTop = titleY + 28;
@@ -1071,9 +1137,9 @@
     ctx.drawImage(photo, sx, sy, sw, sh, PAD, photoTop, photoW, photoH);
     ctx.restore();
 
-    // Gradiente + empresas na base da foto
-    if (companies) {
-      const ovH = 120;
+    // Gradiente + info do líder na base da foto
+    {
+      const ovH = 180;
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(PAD + r, photoTop);
@@ -1087,16 +1153,29 @@
       ctx.clip();
       const grad = ctx.createLinearGradient(0, SH - ovH, 0, SH);
       grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.88)');
       ctx.fillStyle = grad;
       ctx.fillRect(PAD, SH - ovH, photoW, ovH);
       ctx.restore();
 
-      ctx.font         = `400 28px "Neue Machina", sans-serif`;
-      ctx.fillStyle    = 'rgba(255,255,255,0.92)';
+      // Nome do líder — centralizado, destaque
+      ctx.font         = `800 42px "Neue Machina", sans-serif`;
+      ctx.fillStyle    = '#ffffff';
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(companies, SW / 2, SH - 42);
+      ctx.fillText(firstName + ' ' + lastName, SW / 2, SH - 118);
+
+      // Label "MINIBIO:"
+      ctx.font         = `400 20px "Neue Machina", sans-serif`;
+      ctx.fillStyle    = TEAL;
+      ctx.fillText('MINIBIO:', SW / 2, SH - 75);
+
+      // Empresas
+      if (companies) {
+        ctx.font         = `300 26px "Neue Machina", sans-serif`;
+        ctx.fillStyle    = 'rgba(255,255,255,0.82)';
+        ctx.fillText(companies, SW / 2, SH - 40);
+      }
     }
   }
 
@@ -1127,46 +1206,86 @@
       ctx.fill();
     });
 
-    const photoW = SW - PAD * 2;
+    const photoW   = SW - PAD * 2;
     const textMaxW = SW - PAD * 2;
-    const textCX = SW / 2;
-    const articleLabel = 'Título do artigo: ' + getArticleTitle();
+    const FONT_SIZE = 48;
+    const TEXT_COLOR = '#111111';
+    const articleLabel = firstName + ' ' + lastName;
+
+    // ── Box imaginária: área de conteúdo centralizada ─────────────
+    const BOX_TOP = 144;          // abaixo do logo/dots
+    const BOX_BOT = SH - 90;     // acima do label do nome
+    const BOX_H   = BOX_BOT - BOX_TOP;
+    const GAP     = 44;
+
+    // Pré-mede altura de um bloco de texto (sem desenhar)
+    function measureTextH(t, size) {
+      ctx.font = `400 ${size}px "Neue Machina", sans-serif`;
+      const words = t.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(test).width > textMaxW && cur) { lines.push(cur); cur = w; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
+      return lines.length * size * 1.35;
+    }
 
     if (num === '02') {
-      // Photo top, text bottom
-      const photoH = 380;
-      const photoTop = 144;
-      if (photo) drawPhotoCard(ctx, photo, PAD, photoTop, photoW, photoH, 28);
-      const textY = photoTop + photoH + 52;
-      wrapCentered(ctx, text, textCX, textY, textMaxW, 38, '#111111');
-    } else if (num === '03') {
-      // Text top, photo bottom
-      const textY = 144;
-      const textEnd = wrapCentered(ctx, text, textCX, textY, textMaxW, 38, '#111111');
-      if (photo) {
-        const photoTop = textEnd + 44;
-        const photoH   = Math.max(200, SH - photoTop - 120);
-        drawPhotoCard(ctx, photo, PAD, photoTop, photoW, photoH, 28);
-      }
-    } else {
-      // num === '04': text top half, photo middle, text bottom half
-      const words   = text.split(' ');
-      const half    = Math.ceil(words.length / 2);
-      const textTop = words.slice(0, half).join(' ');
-      const textBot = words.slice(half).join(' ');
+      // Foto em cima, texto embaixo — bloco centralizado verticalmente
+      const photoH  = 420;
+      const textH   = measureTextH(text, FONT_SIZE);
+      const totalH  = photoH + GAP + textH;
+      const startY  = BOX_TOP + Math.max(0, (BOX_H - totalH) / 2);
+      if (photo) drawPhotoCard(ctx, photo, PAD, startY, photoW, photoH, 28);
+      wrapLeft(ctx, text, PAD, startY + photoH + GAP, textMaxW, FONT_SIZE, TEXT_COLOR);
 
-      const t1End = wrapCentered(ctx, textTop, textCX, 144, textMaxW, 38, '#111111');
+    } else if (num === '03') {
+      // Texto em cima, foto maior embaixo — bloco centralizado verticalmente
+      const photoH  = 540;
+      const textH   = measureTextH(text, FONT_SIZE);
+      const totalH  = textH + GAP + photoH;
+      const startY  = BOX_TOP + Math.max(0, (BOX_H - totalH) / 2);
+      const textEnd = wrapLeft(ctx, text, PAD, startY, textMaxW, FONT_SIZE, TEXT_COLOR);
+      if (photo) drawPhotoCard(ctx, photo, PAD, textEnd + GAP, photoW, photoH, 28);
+
+    } else {
+      // 04: texto / foto / texto — divide por sentença mais próxima do meio
+      function splitBySentence(t) {
+        const sentences = t.match(/[^.!?]+[.!?]+\s*/g) || [t];
+        if (sentences.length < 2) {
+          // fallback: divide por vírgula mais próxima do meio
+          const mid = Math.floor(t.length / 2);
+          const comma = t.indexOf(',', mid - 60);
+          if (comma > 0) return [t.slice(0, comma + 1).trim(), t.slice(comma + 1).trim()];
+          const words = t.split(' ');
+          const h = Math.ceil(words.length / 2);
+          return [words.slice(0, h).join(' '), words.slice(h).join(' ')];
+        }
+        const mid = Math.ceil(sentences.length / 2);
+        return [
+          sentences.slice(0, mid).join('').trim(),
+          sentences.slice(mid).join('').trim()
+        ];
+      }
+      const [textTop, textBot] = splitBySentence(text);
+      const photoH  = 360;
+      const text1H  = measureTextH(textTop, FONT_SIZE);
+      const text2H  = measureTextH(textBot, FONT_SIZE);
+      const totalH  = text1H + GAP + photoH + GAP + text2H;
+      const startY  = BOX_TOP + Math.max(0, (BOX_H - totalH) / 2);
+      const t1End   = wrapLeft(ctx, textTop, PAD, startY, textMaxW, FONT_SIZE, TEXT_COLOR);
       if (photo) {
-        const photoTop = t1End + 40;
-        const photoH   = 360;
-        drawPhotoCard(ctx, photo, PAD, photoTop, photoW, photoH, 28);
-        wrapCentered(ctx, textBot, textCX, photoTop + photoH + 44, textMaxW, 38, '#111111');
+        drawPhotoCard(ctx, photo, PAD, t1End + GAP, photoW, photoH, 28);
+        wrapLeft(ctx, textBot, PAD, t1End + GAP + photoH + GAP, textMaxW, FONT_SIZE, TEXT_COLOR);
       } else {
-        wrapCentered(ctx, textBot, textCX, t1End + 44, textMaxW, 38, '#111111');
+        wrapLeft(ctx, textBot, PAD, t1End + GAP, textMaxW, FONT_SIZE, TEXT_COLOR);
       }
     }
 
-    // Article title bottom-left
+    // Nome do líder — rodapé fixo
     ctx.font         = `700 24px "Neue Machina", sans-serif`;
     ctx.fillStyle    = '#111111';
     ctx.textAlign    = 'left';
@@ -1220,30 +1339,9 @@
     ctx.lineTo(SW - PAD, lineY);
     ctx.stroke();
 
-    // ── Main CTA text below line — article title, wrapped left ───
-    const ctaFontSize = 86;
-    ctx.font         = `800 ${ctaFontSize}px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = '#ffffff';
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    const ctaWords = getArticleTitle().split(' ');
-    const ctaMaxW  = SW - PAD * 2;
-    const ctaLines = [];
-    let ctaCur = '';
-    for (const w of ctaWords) {
-      const test = ctaCur ? ctaCur + ' ' + w : w;
-      if (ctx.measureText(test).width > ctaMaxW) { ctaLines.push(ctaCur); ctaCur = w; }
-      else ctaCur = test;
-    }
-    if (ctaCur) ctaLines.push(ctaCur);
-    let ctaY = lineY + 40;
-    for (const line of ctaLines.slice(0, 4)) {
-      ctx.fillText(line, PAD, ctaY);
-      ctaY += ctaFontSize * 1.18;
-    }
-
-    // ── Chamada para bio ──────────────────────────────────────────
-    ctx.font         = `400 32px "Neue Machina", sans-serif`;
+    // ── Chamada para bio — DESTAQUE PRINCIPAL ────────────────────
+    const bioFontSize = 64;
+    ctx.font         = `800 ${bioFontSize}px "Neue Machina", sans-serif`;
     ctx.fillStyle    = TEAL;
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'top';
@@ -1258,12 +1356,34 @@
       else bioCur = test;
     }
     if (bioCur) bioLines.push(bioCur);
-    let bioY = ctaY + 24;
-    for (const line of bioLines) { ctx.fillText(line, PAD, bioY); bioY += 32 * 1.4; }
+    let bioY = lineY + 40;
+    for (const line of bioLines) { ctx.fillText(line, PAD, bioY); bioY += bioFontSize * 1.2; }
 
-    // ── Person attribution — very bottom ─────────────────────────
-    ctx.font         = `300 22px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(255,255,255,0.35)';
+    // ── Título do artigo — abaixo da chamada, menor ───────────────
+    const ctaFontSize = 52;
+    ctx.font         = `400 ${ctaFontSize}px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.72)';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    const ctaWords = getArticleTitle().split(' ');
+    const ctaMaxW  = SW - PAD * 2;
+    const ctaLines = [];
+    let ctaCur = '';
+    for (const w of ctaWords) {
+      const test = ctaCur ? ctaCur + ' ' + w : w;
+      if (ctx.measureText(test).width > ctaMaxW) { ctaLines.push(ctaCur); ctaCur = w; }
+      else ctaCur = test;
+    }
+    if (ctaCur) ctaLines.push(ctaCur);
+    let ctaY = bioY + 28;
+    for (const line of ctaLines.slice(0, 3)) {
+      ctx.fillText(line, PAD, ctaY);
+      ctaY += ctaFontSize * 1.18;
+    }
+
+    // ── Person attribution — bottom, maior e mais visível ────────
+    ctx.font         = `400 38px "Neue Machina", sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.75)';
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'bottom';
     ctx.fillText(firstName + ' ' + lastName, PAD, SH - PAD);

@@ -72,7 +72,8 @@ module.exports = async (req, res) => {
       name:     extractProp(props.user),
       cargo:    extractProp(props.cargo_rede),
       empresas: extractProp(props.ultimas_empresa),
-      linkedin
+      linkedin,
+      photoUrl: extractProp(props.foto_ia)
     };
   }).filter(r => r.name);
 
