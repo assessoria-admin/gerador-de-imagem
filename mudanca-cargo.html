@@ -790,8 +790,9 @@ async function cExportar() {
   const cloneBg = clone.querySelector('#c-bg-photo');
   const clonePh = clone.querySelector('#c-placeholder');
   if (bgImg.style.display !== 'none' && bgImg.src) {
-    cloneBg.src           = bgImg.src;
-    cloneBg.style.display = 'block';
+    const clonePhotoCol = clone.querySelector('.c-photo-col');
+    clonePhotoCol.style.cssText = 'position:relative; overflow:hidden; background-image:url(' + bgImg.src + '); background-size:cover; background-position:center top;';
+    cloneBg.style.display = 'none';
     clonePh.style.display = 'none';
   }
 
