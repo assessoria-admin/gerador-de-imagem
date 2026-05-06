@@ -356,6 +356,12 @@
       <div class="prompt-section-label">Escolha o estilo</div>
       <div class="prompt-grid" id="promptGrid"></div>
 
+      <!-- Opções -->
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;color:#aaa;font-size:14px;">
+        <input type="checkbox" id="chkRemoveBg" checked style="width:16px;height:16px;accent-color:#41c1c2;cursor:pointer;">
+        Remover fundo automaticamente
+      </label>
+
       <!-- Generate -->
       <button class="btn-generate" id="btnGenerate" disabled>
         ✨ &nbsp; Gerar Imagem
@@ -392,15 +398,15 @@ const PROMPTS = [
   },
   {
     label: 'Estilo 3',
-    text: 'Professional executive editorial portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person\'s exact appearance, clothing, and posture exactly as shown. ABSOLUTE PHYSICAL FIDELITY: zero alteration to body, clothing, or silhouette. Head-and-shoulders editorial frame — upper chest to crown, spacious proportions. Face slightly angled 15° toward light. Expression: composed, effortlessly confident. Background: solid pure white (#FFFFFF), clean, flat, seamless — optimised for background removal. Large softbox camera-left 45°, feathered and soft. Teal rim light (#03d8d2) tracing collar and shoulder edge. Teal-green shadow cast, cinematic grade. Ultra-realistic photography, hyper-realistic skin texture — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO logos. Clean photograph only. No visible lighting equipment, no ceiling in frame.'
+    text: 'Professional executive editorial portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person\'s exact appearance, clothing, and posture exactly as shown. ABSOLUTE PHYSICAL FIDELITY: zero alteration to body, clothing, or silhouette. Head-and-shoulders editorial frame — upper chest to crown, spacious proportions. Face slightly angled 15° toward light. Expression: composed, effortlessly confident. BACKGROUND: deep teal-black (#001E23) filling the entire frame edge to edge with NO white borders anywhere. The background has genuine physical depth — slightly warmer and lighter directly behind the subject\'s head fading organically to near-black at all four corners and edges. Subtle radial vignette from center outward. Faint atmospheric haze suggesting real three-dimensional studio space. The teal (#03d8d2) present only as a very subtle cool ambient glow in the deepest shadow areas — moody, not neon, not flat. Completely seamless — no horizon line, no transition, no floor, no ceiling, no objects, no equipment anywhere. LIGHTING: warm directional key light from upper left falling naturally across face and body. Gentle shadow on the right side with visible detail. Very subtle teal rim light (#03d8d2) at low intensity on the shoulder and side of the head — ambient, not a hard cutout rim. Cinematic grade: blacks lifted toward deep teal, warm skin tones preserved in midtones, highlights slightly crushed, teal-green shadow cast in dark areas. Large softbox camera-left 45°, feathered and soft. Ultra-realistic photography, hyper-realistic skin texture — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO logos. Clean photograph only. No visible lighting equipment, no ceiling in frame.'
   },
   {
     label: 'Estilo 4',
-    text: 'Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person\'s exact appearance, clothing, and posture exactly as shown. ABSOLUTE PHYSICAL FIDELITY: zero alteration to body, clothing, or silhouette. Body turned 30° right, head returning to camera. Rembrandt triangle of light on left shadow-side cheek. Right jaw exposed. Eyes hold camera with authority. Background: solid pure white (#FFFFFF), clean, flat, seamless — optimised for background removal. Rembrandt key camera-left 45° upper, 3:1 ratio. Hard teal rim light (#03d8d2) from behind-right tracing right jaw and shoulder. Teal-green shadow cast, cinematic grade. Ultra-realistic photography, hyper-realistic skin texture — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO logos. Clean photograph only. No visible lighting equipment, no ceiling in frame.'
+    text: 'Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the person\'s exact appearance, clothing, and posture exactly as shown. ABSOLUTE PHYSICAL FIDELITY: zero alteration to body, clothing, or silhouette. Body turned 30° right, head returning to camera. Rembrandt triangle of light on left shadow-side cheek. Right jaw exposed. Eyes hold camera with authority. BACKGROUND: deep teal-black (#001E23) filling the entire frame edge to edge with NO white borders anywhere. The background has genuine physical depth — slightly warmer and lighter directly behind the subject\'s head fading organically to near-black at all four corners and edges. Subtle radial vignette from center outward. Faint atmospheric haze suggesting real three-dimensional studio space. The teal (#03d8d2) present only as a very subtle cool ambient glow in the deepest shadow areas — moody, not neon, not flat. Completely seamless — no horizon line, no transition, no floor, no ceiling, no objects, no equipment anywhere. LIGHTING: warm directional key light from upper left falling naturally across face and body. Gentle shadow on the right side with visible detail. Very subtle teal rim light (#03d8d2) at low intensity on the shoulder and side of the head — ambient, not a hard cutout rim. Cinematic grade: blacks lifted toward deep teal, warm skin tones preserved in midtones, highlights slightly crushed, teal-green shadow cast in dark areas. Rembrandt key camera-left 45° upper, 3:1 ratio. Ultra-realistic photography, hyper-realistic skin texture — zero smoothing. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO logos. Clean photograph only. No visible lighting equipment, no ceiling in frame.'
   },
   {
     label: 'Estilo 5',
-    text: 'Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the persons exact appearance, clothing, and posture exactly as shown in the photo. ABSOLUTE PHYSICAL FIDELITY: replicate the subjects exact body shape, weight, build, clothing, and silhouette with zero alteration — do NOT change, slim, or idealise anything. Body turned 30° left, head returning to camera. Left jaw exposed. Eyes hold camera with authority. Background: solid pure white (#FFFFFF), clean, flat, seamless — optimised for background removal to PNG. Rembrandt inverted: key camera-right 45° upper, 3:1 ratio, Rembrandt triangle on right shadow cheek. Warm key light from large octabox camera-right — octabox catchlight visible as soft square reflection in the subjects eyes. Fill from camera-left at 1.5 stops below key — shadow side has detail, not pure black. Natural subject-background separation through light falloff. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Peter Hurley / Mark Seliger aesthetic: warm accurate skin tones, rich shadows with detail, natural highlight roll-off, photographic mid-tone contrast. The image must look like a high-end DSLR photograph in a real studio session. Shot on Canon R5 with 85mm f/1.8, ISO 400, 1/200s. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO publication names, NO equipment branding, NO logos visible anywhere. Do NOT render written words. Clean photograph only. No visible lighting equipment, no light stands, no overhead gear, no ceiling in frame. Camera stays at or below eye level. Subject must look naturally present — NOT pasted or composited.'
+    text: 'Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference — replicate the persons exact appearance, clothing, and posture exactly as shown in the photo. ABSOLUTE PHYSICAL FIDELITY: replicate the subjects exact body shape, weight, build, clothing, and silhouette with zero alteration — do NOT change, slim, or idealise anything. Body turned 30° left, head returning to camera. Left jaw exposed. Eyes hold camera with authority. BACKGROUND: deep teal-black (#001E23) filling the entire frame edge to edge with NO white borders anywhere. The background has genuine physical depth — slightly warmer and lighter directly behind the subject\'s head fading organically to near-black at all four corners and edges. Subtle radial vignette from center outward. Faint atmospheric haze suggesting real three-dimensional studio space. The teal (#03d8d2) present only as a very subtle cool ambient glow in the deepest shadow areas — moody, not neon, not flat. Completely seamless — no horizon line, no transition, no floor, no ceiling, no objects, no equipment anywhere. LIGHTING: warm directional key light from upper left falling naturally across face and body. Gentle shadow on the right side with visible detail. Very subtle teal rim light (#03d8d2) at low intensity on the shoulder and side of the head — ambient, not a hard cutout rim. Cinematic grade: blacks lifted toward deep teal, warm skin tones preserved in midtones, highlights slightly crushed, teal-green shadow cast in dark areas. Rembrandt inverted: key camera-right 45° upper, 3:1 ratio, Rembrandt triangle on right shadow cheek. Octabox catchlight visible as soft square reflection in the subjects eyes. Fill from camera-left at 1.5 stops below key — shadow side has detail, not pure black. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Peter Hurley / Mark Seliger aesthetic. Shot on Canon R5 with 85mm f/1.8, ISO 400, 1/200s. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO logos anywhere. Clean photograph only. No visible lighting equipment, no ceiling in frame. Camera stays at or below eye level. Subject must look naturally present — NOT pasted or composited.'
   },
   {
     label: 'Estilo 6',
@@ -588,7 +594,7 @@ async function generate() {
     const dataUrl   = await resizeDataUrl(notionPhotoDataUrl, 1024, 0.82);
     const base64Img = dataUrl.split(',')[1];
 
-    setStatus('Enviando para Gemini…');
+    setStatus('Enviando para Freepik…');
     const prompt = PROMPTS[selectedPromptIndex].text;
     const genResult = await startGeneration(base64Img, prompt);
 
@@ -600,8 +606,12 @@ async function generate() {
       imageSrc = await pollGeneration(genResult.taskId);
     }
 
-    setStatus('Removendo fundo com Remove.bg…');
-    const finalSrc = await removeBackground(imageSrc);
+    const removeBg = document.getElementById('chkRemoveBg').checked;
+    let finalSrc = imageSrc;
+    if (removeBg) {
+      setStatus('Removendo fundo com Remove.bg…');
+      finalSrc = await removeBackground(imageSrc);
+    }
 
     setStatus('Renderizando resultado…');
     await renderCanvas(finalSrc);
@@ -619,7 +629,7 @@ async function generate() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   GEMINI API
+   FREEPIK API
 ════════════════════════════════════════════════════════════════ */
 async function startGeneration(base64Image, prompt) {
   const body = {
@@ -633,11 +643,11 @@ async function startGeneration(base64Image, prompt) {
   });
   const json = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(`Gemini API (${res.status}): ${json?.message || res.statusText}`);
+    throw new Error(`Freepik API (${res.status}): ${json?.message || res.statusText}`);
   }
   const generated = json?.data?.generated;
   if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
-  throw new Error('Resposta inesperada da API Gemini — veja o console.');
+  throw new Error('Resposta inesperada da API Freepik — veja o console.');
 }
 
 /* ════════════════════════════════════════════════════════════════

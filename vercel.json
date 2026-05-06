@@ -10,6 +10,7 @@
   "routes": [
     { "src": "/api/generate/([^/]+)", "dest": "/api/generate/[taskId].js?taskId=$1" },
     { "src": "/api/notion/search",    "dest": "/api/notion/search.js" },
+    { "src": "/api/pb/search",        "dest": "/api/pocketbase/search.js" },
     { "src": "/api/proxy-image",      "dest": "/api/proxy-image.js" },
     { "src": "/api/generate",         "dest": "/api/generate.js" },
     { "src": "/api/summarize",        "dest": "/api/summarize.js" },

@@ -614,7 +614,7 @@
 
   async function notionSearch(q) {
     try {
-      const res  = await fetch(`/api/notion/search?q=${encodeURIComponent(q)}`);
+      const res  = await fetch(`/api/pb/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       acRender(data.results || []);
     } catch {
@@ -934,9 +934,16 @@
     }));
 
     await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies);
-    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02', bgImg, stockImgs[0] || photo);
-    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03', bgImg, stockImgs[1] || photo);
-    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04', bgImg, stockImgs[2] || photo);
+
+    // Randomiza os 3 layouts do miolo sem repetição
+    const layouts = ['photo-top', 'photo-bottom', 'photo-middle'];
+    for (let i = layouts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [layouts[i], layouts[j]] = [layouts[j], layouts[i]];
+    }
+    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02', bgImg, stockImgs[0] || photo, layouts[0]);
+    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03', bgImg, stockImgs[1] || photo, layouts[1]);
+    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04', bgImg, stockImgs[2] || photo, layouts[2]);
     await renderSlide5(document.getElementById('canvas5'), firstName, lastName, bgImg, photo);
   }
 
@@ -1180,7 +1187,7 @@
   }
 
   /* ─── Slides 2–4: Artigo ────────────────────────────────────── */
-  async function renderArticleSlide(canvas, text, firstName, lastName, num, bgImg, photo) {
+  async function renderArticleSlide(canvas, text, firstName, lastName, num, bgImg, photo, layout) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
     const PAD = 60;
@@ -1233,8 +1240,10 @@
       return lines.length * size * 1.35;
     }
 
-    if (num === '02') {
-      // Foto em cima, texto embaixo — bloco centralizado verticalmente
+    const slideLayout = layout || (num === '02' ? 'photo-top' : num === '03' ? 'photo-bottom' : 'photo-middle');
+
+    if (slideLayout === 'photo-top') {
+      // Foto em cima, texto embaixo
       const photoH  = 420;
       const textH   = measureTextH(text, FONT_SIZE);
       const totalH  = photoH + GAP + textH;
@@ -1242,8 +1251,8 @@
       if (photo) drawPhotoCard(ctx, photo, PAD, startY, photoW, photoH, 28);
       wrapLeft(ctx, text, PAD, startY + photoH + GAP, textMaxW, FONT_SIZE, TEXT_COLOR);
 
-    } else if (num === '03') {
-      // Texto em cima, foto maior embaixo — bloco centralizado verticalmente
+    } else if (slideLayout === 'photo-bottom') {
+      // Texto em cima, foto maior embaixo
       const photoH  = 540;
       const textH   = measureTextH(text, FONT_SIZE);
       const totalH  = textH + GAP + photoH;

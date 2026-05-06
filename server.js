@@ -3,7 +3,7 @@
 // Para Vercel: use api/index.js (serverless)
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
+const path    = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,8 +12,42 @@ const NOTION_KEY         = process.env.NOTION_KEY;
 const NOTION_DB          = process.env.NOTION_DB;
 const NOTION_COAUTORES_DB = process.env.NOTION_COAUTORES_DB;
 
-const GEMINI_KEY      = process.env.GEMINI_API_KEY;
-const GEMINI_IMG_URL  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const PB_BASE_URL        = process.env.PB_BASE_URL;
+const PB_ADMIN_EMAIL     = process.env.PB_ADMIN_EMAIL;
+const PB_ADMIN_PASSWORD  = process.env.PB_ADMIN_PASSWORD;
+
+let _pbToken = null;
+let _pbTokenExpiry = 0;
+
+async function getPbToken() {
+  if (_pbToken && Date.now() < _pbTokenExpiry) return _pbToken;
+
+  // PocketBase v0.23+ usa _superusers; versões anteriores usam /api/admins
+  const endpoints = [
+    `${PB_BASE_URL}/api/collections/_superusers/auth-with-password`,
+    `${PB_BASE_URL}/api/admins/auth-with-password`
+  ];
+
+  for (const url of endpoints) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity: PB_ADMIN_EMAIL, password: PB_ADMIN_PASSWORD })
+    });
+    const d = await r.json();
+    if (d.token) {
+      console.log('[pb-auth] autenticado via', url);
+      _pbToken = d.token;
+      _pbTokenExpiry = Date.now() + 50 * 60 * 1000;
+      return _pbToken;
+    }
+    console.warn('[pb-auth] falhou em', url, JSON.stringify(d).slice(0, 120));
+  }
+  throw new Error('PocketBase auth falhou em todos os endpoints');
+}
+
+const FREEPIK_KEY     = process.env.FREEPIK_KEY;
+const MYSTIC_URL      = 'https://api.magnific.com/v1/ai/mystic';
 const GROQ_KEY        = process.env.GROQ_KEY;
 const GROQ_URL        = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL      = 'llama-3.3-70b-versatile';
@@ -22,55 +56,70 @@ const GROQ_MODEL      = 'llama-3.3-70b-versatile';
 app.use(express.json({ limit: '30mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// ── POST /api/generate — geração de imagem via Gemini ────────────────────────
+// ── POST /api/generate — geração de imagem via Freepik Mystic ────────────────
 app.post('/api/generate', async (req, res) => {
-  if (!GEMINI_KEY) {
-    return res.status(500).json({ message: 'GEMINI_API_KEY não configurada no .env' });
+  if (!FREEPIK_KEY) {
+    return res.status(500).json({ message: 'FREEPIK_KEY não configurada no .env' });
   }
 
   const { prompt, reference_images } = req.body || {};
   if (!prompt) return res.status(400).json({ message: 'Campo "prompt" é obrigatório.' });
 
-  const parts = [{ text: prompt }];
-  if (Array.isArray(reference_images) && reference_images.length > 0) {
-    for (const ref of reference_images) {
-      parts.push({ inlineData: { mimeType: ref.mime_type || 'image/jpeg', data: ref.image } });
-    }
-  }
-
   try {
-    console.log('[generate] enviando para Gemini...');
-    const geminiRes = await fetch(`${GEMINI_IMG_URL}?key=${GEMINI_KEY}`, {
+    console.log('[generate] enviando para Mystic...');
+
+    const body = {
+      prompt,
+      model:        'realism',
+      resolution:   '2k',
+      aspect_ratio: 'traditional_3_4'
+    };
+
+    if (Array.isArray(reference_images) && reference_images.length > 0) {
+      body.structure_reference = reference_images[0].image;
+      body.structure_strength  = 80;
+    }
+
+    const startRes  = await fetch(MYSTIC_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-      })
+      headers: { 'Content-Type': 'application/json', 'x-freepik-api-key': FREEPIK_KEY },
+      body: JSON.stringify(body)
     });
 
-    const data = await geminiRes.json();
-    console.log('[generate] status Gemini:', geminiRes.status);
+    const startData = await startRes.json();
+    console.log('[generate] Mystic start:', startRes.status, JSON.stringify(startData).slice(0, 200));
 
-    if (!geminiRes.ok) {
-      const msg = data?.error?.message || geminiRes.statusText;
-      console.error('[generate] erro Gemini:', msg);
-      return res.status(geminiRes.status).json({ message: msg });
+    if (!startRes.ok) {
+      return res.status(startRes.status).json({ message: startData?.message || startRes.statusText });
     }
 
-    const parts_out = data?.candidates?.[0]?.content?.parts || [];
-    const imgPart   = parts_out.find(p => p.inlineData?.data);
+    const taskId = startData?.data?.task_id || startData?.task_id;
+    if (!taskId) throw new Error('Mystic não retornou task_id.');
 
-    if (!imgPart) {
-      console.error('[generate] sem imagem na resposta:', JSON.stringify(data).slice(0, 500));
-      return res.status(500).json({ message: 'Gemini não retornou imagem. Verifique o prompt ou a chave da API.' });
+    console.log('[generate] task_id:', taskId, '— aguardando...');
+
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 4000));
+      const pollRes = await fetch(`${MYSTIC_URL}/${taskId}`, {
+        headers: { 'x-freepik-api-key': FREEPIK_KEY }
+      });
+      const poll   = await pollRes.json();
+      const status = poll?.data?.status || poll?.status;
+      console.log(`[generate] poll ${i + 1} — status: ${status}`);
+
+      if (status === 'COMPLETED' || status === 'SUCCESS') {
+        const generated = poll?.data?.generated || poll?.generated || [];
+        const img = generated[0];
+        const url = img?.url || img?.base64 || img;
+        if (!url) throw new Error('Mystic retornou COMPLETED mas sem imagem.');
+        return res.json({ data: { generated: [url] } });
+      }
+      if (status === 'FAILED' || status === 'ERROR') {
+        throw new Error(`Mystic falhou: ${JSON.stringify(poll).slice(0, 200)}`);
+      }
     }
 
-    const { mimeType, data: b64 } = imgPart.inlineData;
-    const dataUrl = `data:${mimeType};base64,${b64}`;
-    console.log('[generate] imagem gerada —', mimeType, Math.round(b64.length / 1024), 'KB base64');
-
-    res.status(200).json({ data: { generated: [dataUrl] } });
+    throw new Error('Timeout: Mystic não retornou imagem em 80s.');
 
   } catch (err) {
     console.error('[generate] erro:', err.message);
@@ -162,6 +211,39 @@ app.get('/api/notion/search', async (req, res) => {
 
   } catch (err) {
     console.error('[notion-search] erro:', err.message);
+    res.json({ results: [] });
+  }
+});
+
+// ── GET /api/pb/search — busca líderes no PocketBase ─────────────────────────
+app.get('/api/pb/search', async (req, res) => {
+  const { q } = req.query;
+  if (!q || q.length < 2) return res.json({ results: [] });
+  if (!PB_BASE_URL || !PB_ADMIN_EMAIL) return res.json({ results: [] });
+
+  try {
+    const token  = await getPbToken();
+    const filter = encodeURIComponent(`nome ~ '${q}'`);
+const url = `${PB_BASE_URL}/api/collections/lideres/records?filter=${filter}&perPage=10`;
+    console.log('[pb-search] GET', url);
+    const pbRes  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await pbRes.json();
+    if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    const results = (data.items || []).map(r => ({
+      id:       r.id,
+      name:     r.nome            || '',
+      cargo:    Array.isArray(r.cargo_rede) ? r.cargo_rede.join(', ') : (r.cargo_rede || ''),
+      empresas: r.ultimas_empresa || '',
+      linkedin: r.url_linkedin    || '',
+      photoUrl: r.foto_ia
+        ? `${PB_BASE_URL}/api/files/lideres/${r.id}/${r.foto_ia}`
+        : ''
+    })).filter(r => r.name);
+
+    console.log(`[pb-search] "${q}" → ${results.length} resultado(s)`);
+    res.json({ results });
+  } catch (err) {
+    console.error('[pb-search] erro:', err.message);
     res.json({ results: [] });
   }
 });
@@ -514,12 +596,21 @@ ${article}
 Gere EXATAMENTE 4 blocos separados por linha em branco.
 
 BLOCO 1 — GANCHO DE CAPA:
-Crie UMA frase que instigue dúvida imediata e faça o leitor sentir que está perdendo algo importante se não ler o artigo. Máximo 10 palavras. Regras obrigatórias:
-- Deve gerar uma pergunta na cabeça do leitor, mesmo sem ser uma pergunta direta
-- Pode ser uma afirmação que contradiz o senso comum, uma provocação ou uma revelação incompleta que exige continuação
-- Extraia a ideia mais surpreendente ou contraintuitiva do artigo e use como base
-- PROIBIDO: frases genéricas, clichês executivos, palavras como "descubra", "aprenda", "conheça"
+Crie UMA frase de impacto máximo para parar o scroll. Máximo 10 palavras. Escolha UMA das técnicas abaixo e aplique com base no conteúdo do artigo:
+
+TÉCNICAS (escolha a mais poderosa para este artigo):
+A) GAP DE CURIOSIDADE — crie uma lacuna de informação irresistível. Insinue algo surpreendente sem revelar. Ex de estrutura: "O que [elemento do tema] nunca te contaram sobre [resultado inesperado]"
+B) AFIRMAÇÃO CONTRAINTUITIVA — contradiga o senso comum diretamente. Ex de estrutura: "[Crença comum] é o maior erro de quem [ação do tema]"
+C) PERGUNTA QUE DÓI — aponte uma dor ou medo real do leitor. Ex de estrutura: "Por que você [faz X] e ainda não [conseguiu Y]?"
+D) REVELAÇÃO INCOMPLETA — comece uma história ou dado chocante e pare no cliffhanger. Ex de estrutura: "Isso mudou tudo — e ninguém estava preparado"
+E) NÚMERO ESPECÍFICO COM PROMESSA — use especificidade para criar credibilidade e urgência. Ex de estrutura: "[N] coisas que separam quem [resultado A] de quem [resultado B]"
+
+REGRAS ABSOLUTAS:
+- Extraia a ideia mais surpreendente ou contraintuitiva do artigo como base
+- PROIBIDO: "descubra", "aprenda", "conheça", "entenda", frases genéricas ou motivacionais vazias
+- PROIBIDO: repetir literalmente palavras do título do artigo
 - Sem ponto final
+- A frase deve fazer o leitor pensar "preciso saber mais" em menos de 2 segundos
 
 BLOCO 2 — PRIMEIRO SLIDE:
 A frase mais instigante do artigo — uma provocação ou verdade que faz o leitor querer continuar. DEVE ter entre 42 e 60 palavras. Escreva frases completas com contexto e profundidade, não apenas slogans.
@@ -529,6 +620,9 @@ Aprofunda outra ideia central do artigo. DEVE ter entre 25 e 35 palavras. Frases
 
 BLOCO 4 — TERCEIRO SLIDE:
 Encerra com uma reflexão ou consequência prática. DEVE ter entre 25 e 35 palavras. Frases completas, linguagem executiva.
+
+REGRA CRÍTICA DE VARIEDADE — OBRIGATÓRIA:
+Os blocos 2, 3 e 4 NÃO podem começar com a mesma palavra nem com o mesmo substantivo central do tema. Se o artigo fala sobre "escrita", PROIBIDO iniciar qualquer bloco com "A escrita", "Escrever", "Escrita" ou qualquer variação da palavra-tema. Cada bloco deve abrir com uma construção completamente diferente: um pode começar com o sujeito humano (ex: "Quem escreve…"), outro com uma consequência (ex: "Ao colocar…"), outro com um contraste ou dado. A primeira palavra de cada bloco DEVE ser diferente das outras duas.
 
 Responda APENAS com os 4 blocos separados por linha em branco. Sem introdução, sem numeração, sem títulos.`;
 
@@ -554,7 +648,7 @@ Responda APENAS com os 4 blocos separados por linha em branco. Sem introdução,
     const parts = allParts.slice(1, 4);
 
     // Valida contagem de palavras dos blocos de conteúdo
-    const minWords = [42, 20, 20]; // bloco 2: 42+, blocos 3 e 4: 20+
+    const minWords = [0, 20, 20]; // bloco 2: sem mínimo, blocos 3 e 4: 20+
     for (let i = 0; i < parts.length; i++) {
       const count = parts[i].split(/\s+/).filter(Boolean).length;
       if (count < minWords[i]) throw new Error(`Bloco ${i + 2} veio com apenas ${count} palavras (mínimo ${minWords[i]}). Tente novamente.`);
