@@ -1,9 +1,9 @@
 // Vercel Serverless Function — POST /api/copywrite
 // Gera legendas para Instagram e LinkedIn na voz editorial da Rede Líderes
 
-const GROQ_KEY   = process.env.GROQ_KEY;
-const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_KEY   = process.env.OPENCODE_KEY;
+const GROQ_URL   = 'https://opencode.ai/zen/go/v1/chat/completions';
+const GROQ_MODEL = 'deepseek-v4-flash';
 
 const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
 
@@ -81,7 +81,8 @@ async function callGroq(prompt) {
       model:       GROQ_MODEL,
       messages:    [{ role: 'user', content: prompt }],
       max_tokens:  600,
-      temperature: 0.75
+      temperature: 0.75,
+      stream: false
     })
   });
   const data = await res.json();
@@ -96,7 +97,7 @@ module.exports = async (req, res) => {
   }
 
   if (!GROQ_KEY) {
-    return res.status(500).json({ message: 'GROQ_KEY não configurada no servidor.' });
+    return res.status(500).json({ message: 'OPENCODE_KEY não configurada no servidor.' });
   }
 
   const { tipo, lider, contexto, avoid } = req.body || {};

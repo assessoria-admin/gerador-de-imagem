@@ -48,9 +48,21 @@ async function getPbToken() {
 
 const FREEPIK_KEY     = process.env.FREEPIK_KEY;
 const MYSTIC_URL      = 'https://api.magnific.com/v1/ai/mystic';
-const GROQ_KEY        = process.env.GROQ_KEY;
-const GROQ_URL        = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL      = 'llama-3.3-70b-versatile';
+const OPENCODE_KEY         = process.env.OPENCODE_KEY;
+const OPENCODE_URL         = 'https://opencode.ai/zen/go/v1/chat/completions';
+const OPENCODE_MODEL       = 'deepseek-v4-flash';  // copywrite
+const OPENCODE_FAST_MODEL  = 'deepseek-v4-flash';  // keywords
+
+const GEMINI_KEY           = process.env.GEMINI_API_KEY;
+const GEMINI_URL           = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`;
+
+const GROQ_KEY             = process.env.GROQ_KEY;
+const GROQ_URL             = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL           = 'llama-3.3-70b-versatile';
+
+const ANTHROPIC_KEY        = process.env.ANTHROPIC_KEY;
+const ANTHROPIC_URL        = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_MODEL      = 'claude-haiku-4-5-20251001';
 
 // ── Middlewares ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '30mb' }));
@@ -155,6 +167,62 @@ app.get('/api/proxy-image', async (req, res) => {
   }
 });
 
+// ── GET /api/notion/members — lista todos os membros com artigo ───────────────
+let _membersCache = null;
+let _membersCacheTime = 0;
+
+const LIVRO_DB = '2a26cfa6dfd7812b9dd9e36c273e8bd7'; // Livro Produto e Tech
+
+app.get('/api/notion/members', async (req, res) => {
+  if (!NOTION_KEY) return res.json({ members: [] });
+
+  // Cache de 5 minutos
+  if (_membersCache && Date.now() - _membersCacheTime < 5 * 60 * 1000) {
+    return res.json({ members: _membersCache });
+  }
+
+  const notionHeaders = {
+    'Authorization': `Bearer ${NOTION_KEY}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const members = [];
+    let cursor = undefined;
+    do {
+      const body = {
+        page_size: 100,
+        sorts: [{ property: 'Nome', direction: 'ascending' }],
+        filter: { property: 'Artigo Finalizado', checkbox: { equals: true } }
+      };
+      if (cursor) body.start_cursor = cursor;
+      const r = await fetch(`https://api.notion.com/v1/databases/${LIVRO_DB}/query`, {
+        method: 'POST',
+        headers: notionHeaders,
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      if (data.object === 'error') throw new Error(data.message);
+      for (const page of data.results || []) {
+        const props = page.properties || {};
+        const name = (props.Nome?.title || []).map(t => t.plain_text).join('').trim();
+        if (!name) continue;
+        members.push({ id: page.id, name });
+      }
+      cursor = data.next_cursor;
+    } while (cursor);
+
+    _membersCache = members;
+    _membersCacheTime = Date.now();
+    console.log(`[notion/members] ${members.length} líderes com "Artigo Finalizado"`);
+    res.json({ members });
+  } catch (err) {
+    console.error('[notion/members] erro:', err.message);
+    res.json({ members: [] });
+  }
+});
+
 // ── GET /api/notion/search — busca pessoas no Notion ──────────────────────────
 app.get('/api/notion/search', async (req, res) => {
   const { q } = req.query;
@@ -229,16 +297,20 @@ const url = `${PB_BASE_URL}/api/collections/lideres/records?filter=${filter}&per
     const pbRes  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await pbRes.json();
     if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
-    const results = (data.items || []).map(r => ({
-      id:       r.id,
-      name:     r.nome            || '',
-      cargo:    Array.isArray(r.cargo_rede) ? r.cargo_rede.join(', ') : (r.cargo_rede || ''),
-      empresas: r.ultimas_empresa || '',
-      linkedin: r.url_linkedin    || '',
-      photoUrl: r.foto_ia
-        ? `${PB_BASE_URL}/api/files/lideres/${r.id}/${r.foto_ia}`
-        : ''
-    })).filter(r => r.name);
+    const results = (data.items || []).map(r => {
+      const cargoRede = Array.isArray(r.cargo_rede) ? r.cargo_rede.join(', ') : (r.cargo_rede || '');
+      return {
+        id:         r.id,
+        name:       r.nome            || '',
+        cargo:      cargoRede,
+        cargo_rede: cargoRede,
+        empresas:   r.ultimas_empresa || '',
+        linkedin:   r.url_linkedin    || '',
+        photoUrl:   r.foto_ia
+          ? `${PB_BASE_URL}/api/files/lideres/${r.id}/${r.foto_ia}`
+          : ''
+      };
+    }).filter(r => r.name);
 
     console.log(`[pb-search] "${q}" → ${results.length} resultado(s)`);
     res.json({ results });
@@ -414,70 +486,82 @@ app.get('/api/notion/article', async (req, res) => {
   }
 
   try {
-    // Busca flexível: cobre "ARTIGO - REDE LÍDERES (Nome)" e "Artigo - Nome"
-    const nameLower = name.toLowerCase();
-    const firstName = name.split(/\s+/)[0];
+    const firstName = name.trim().split(/\s+/)[0];
+    const lastName  = name.trim().split(/\s+/).slice(-1)[0];
 
-    const searchResp = await fetch('https://api.notion.com/v1/search', {
+    // 1. Busca o membro no LIVRO_DB pelo nome
+    const memberResp = await fetch(`https://api.notion.com/v1/databases/${LIVRO_DB}/query`, {
       method: 'POST',
       headers: notionHeaders,
       body: JSON.stringify({
-        query: `artigo ${firstName}`,
-        filter: { value: 'page', property: 'object' },
+        filter: { property: 'Nome', title: { contains: firstName } },
         page_size: 20
       })
     });
-    const searchData = await searchResp.json();
+    const memberData = await memberResp.json();
 
-    const artPage = (searchData.results || []).find(p => {
-      const title = (p.properties?.title?.title || []).map(t => t.plain_text).join('').toLowerCase();
-      return title.includes('artigo') && title.includes(nameLower);
+    const memberPage = (memberData.results || []).find(p => {
+      const title = (p.properties?.Nome?.title || []).map(t => t.plain_text).join('').toLowerCase().trim();
+      return title.includes(firstName.toLowerCase()) && title.includes(lastName.toLowerCase());
     });
 
-    if (!artPage) {
-      return res.status(404).json({ error: `Página de artigo não encontrada para "${name}"` });
+    if (!memberPage) {
+      return res.status(404).json({ error: `Membro não encontrado para "${name}"` });
     }
 
-    const articlePageId = artPage.id;
-    const pageTitle = (artPage.properties?.title?.title || []).map(t => t.plain_text).join('');
+    // 2. Percorre os blocos do membro procurando child_page "ARTIGOS"
+    const memberBlocks = await fetchBlocks(memberPage.id);
+    const artSubPage = memberBlocks.find(b =>
+      b.type === 'child_page' && b.child_page?.title?.toLowerCase().includes('artigo')
+    );
 
-    // Percorre os blocos procurando o título em CAPS LOCK e o corpo do artigo
-    const allBlocks = await fetchBlocks(articlePageId);
     let articleTitle = '';
-    let articleText = '';
+    let articleText  = '';
+    let pageTitle    = name;
 
-    for (const block of allBlocks) {
-      const type = block.type;
-      const content = block[type];
-      if (!content) continue;
-
-      // Ignora callout de instrução de revisão
-      if (type === 'callout') {
-        const calloutText = richTextToPlain(content.rich_text);
-        if (calloutText.includes(INSTRUCAO_REVISAO)) continue;
-      }
-
-      const richTypes = ['paragraph','heading_1','heading_2','heading_3','bulleted_list_item','numbered_list_item','quote','callout'];
-      if (richTypes.includes(type)) {
-        const line = richTextToPlain(content.rich_text).trim();
-        if (!line) continue;
-
-        // Detecta título em CAPS LOCK (se ainda não encontrou)
-        if (!articleTitle && isAllCapsTitle(line)) {
-          articleTitle = line;
-          continue; // não inclui o título no corpo do artigo
+    if (artSubPage) {
+      // 3. Dentro da sub-página ARTIGOS, busca o parágrafo com conteúdo real
+      const artBlocks = await fetchBlocks(artSubPage.id);
+      for (const block of artBlocks) {
+        const type = block.type;
+        const content = block[type];
+        if (!content) continue;
+        if (type === 'callout') {
+          const t = richTextToPlain(content.rich_text);
+          if (t.includes(INSTRUCAO_REVISAO)) continue;
         }
-
-        articleText += line + '\n\n';
+        const richTypes = ['paragraph','heading_1','heading_2','heading_3','bulleted_list_item','numbered_list_item','quote','callout'];
+        if (richTypes.includes(type)) {
+          const line = richTextToPlain(content.rich_text).trim();
+          if (!line) continue;
+          // Ignora cabeçalhos de separação (ex: "ARTIGO 1:\n---")
+          if (/^artigo\s+\d+\s*:/i.test(line) && line.length < 60 && !line.slice(10).trim()) continue;
+          if (!articleTitle && isAllCapsTitle(line)) { articleTitle = line; continue; }
+          articleText += line + '\n\n';
+        }
+        if (block.has_children && type !== 'child_page') {
+          articleText += await fetchBlocksText(block.id) + '\n\n';
+        }
       }
-
-      if (block.has_children && type !== 'child_page') {
-        articleText += await fetchBlocksText(block.id) + '\n\n';
+    } else {
+      // Fallback: conteúdo direto na página do membro
+      for (const block of memberBlocks) {
+        const type = block.type;
+        const content = block[type];
+        if (!content || type === 'child_page') continue;
+        const richTypes = ['paragraph','heading_1','heading_2','heading_3','bulleted_list_item','numbered_list_item','quote','callout'];
+        if (richTypes.includes(type)) {
+          const line = richTextToPlain(content.rich_text).trim();
+          if (!line) continue;
+          if (!articleTitle && isAllCapsTitle(line)) { articleTitle = line; continue; }
+          articleText += line + '\n\n';
+        }
+        if (block.has_children) articleText += await fetchBlocksText(block.id) + '\n\n';
       }
     }
 
     articleText = articleText.trim();
-    console.log(`[notion-article] "${pageTitle}" → título: "${articleTitle}", ${articleText.length} chars`);
+    console.log(`[notion-article] "${name}" → título: "${articleTitle}", ${articleText.length} chars`);
 
     res.json({ pageTitle, articleTitle, articleText });
   } catch (err) {
@@ -490,7 +574,7 @@ app.get('/api/notion/article', async (req, res) => {
 app.post('/api/stock-images', async (req, res) => {
   const PEXELS_KEY = process.env.PEXELS_KEY;
   if (!PEXELS_KEY) return res.status(500).json({ message: 'PEXELS_KEY não configurada no .env' });
-  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
+  if (!OPENCODE_KEY) return res.status(500).json({ message: 'OPENCODE_KEY não configurada no .env' });
 
   const { parts, articleTitle, articleFullText, leaderCargo, leaderEmpresas } = req.body || {};
   if (!Array.isArray(parts) || parts.length === 0) {
@@ -498,9 +582,13 @@ app.post('/api/stock-images', async (req, res) => {
   }
 
   // 1. Usa Groq para extrair palavras-chave visuais e específicas de cada parte
-  async function extractKeywords(slideText, title) {
+  async function extractKeywords(slideText, title, avoidKeywords = '') {
     const leaderContext = [leaderCargo, leaderEmpresas].filter(Boolean).join(' | ');
     const articleContext = articleFullText ? articleFullText.slice(0, 1200) : '';
+
+    const avoidLine = avoidKeywords
+      ? `ALREADY USED KEYWORDS (do NOT repeat similar themes): "${avoidKeywords}"`
+      : '';
 
     const prompt = `You are a visual content researcher for a premium Brazilian executive network (Rede Líderes).
 
@@ -508,6 +596,7 @@ LEADER CONTEXT: ${leaderContext || 'senior executive, business leader'}
 ARTICLE TITLE: ${title || 'executive article'}
 FULL ARTICLE EXCERPT: "${articleContext}"
 SLIDE TEXT TO ILLUSTRATE: "${slideText.slice(0, 400)}"
+${avoidLine}
 
 Return ONLY 3-4 English keywords for a Pexels stock photo search. Rules:
 - Keywords must be SPECIFIC and VISUAL — things you can actually photograph
@@ -515,27 +604,33 @@ Return ONLY 3-4 English keywords for a Pexels stock photo search. Rules:
 - Incorporate the leader's industry/sector from the leader context when relevant
 - Prefer concrete scenes: e.g. "CEO boardroom presentation", "tech startup team", "financial analyst charts"
 - Avoid standalone abstract words like "success", "leadership", "growth"
+- If avoid keywords are provided, choose a completely different scene/subject/setting
 - Return ONLY the keywords separated by spaces, nothing else
 
 Keywords:`;
 
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const r = await fetch(ANTHROPIC_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
+        model: ANTHROPIC_MODEL,
         max_tokens: 40,
-        temperature: 0.2
+        temperature: 0.8,
+        messages: [{ role: 'user', content: prompt }]
       })
     });
     const d = await r.json();
-    const raw = d?.choices?.[0]?.message?.content || '';
+    const raw = d?.content?.[0]?.text || '';
+    console.log(`[stock-images] raw keywords response: "${raw.slice(0, 100)}"`);
     const clean = raw.replace(/[\r\n]+/g, ' ').replace(/['".,\-]/g, '').replace(/\s+/g, ' ').trim();
     return clean || 'executive business meeting';
   }
 
-  // 2. Busca no Pexels — evita repetir fotos já usadas
+  // 2. Busca no Pexels — evita repetir fotos já usadas, escolhe aleatoriamente entre os primeiros resultados
   async function searchPexels(query, usedIds) {
     const safeQuery = query.replace(/[\r\n]/g, ' ').trim().slice(0, 100);
     if (!safeQuery) return null;
@@ -549,7 +644,9 @@ Keywords:`;
     const d = await r.json();
     const photos = (d.photos || []).filter(p => !usedIds.has(p.id));
     if (!photos.length) return null;
-    const pick = photos[0];
+    // Escolhe aleatoriamente entre os 5 primeiros resultados disponíveis
+    const pool = photos.slice(0, 5);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
     usedIds.add(pick.id);
     return pick.src.large2x || pick.src.large || pick.src.original;
   }
@@ -559,19 +656,25 @@ Keywords:`;
     const imageUrls = [];
     const usedIds = new Set();
 
-    for (const part of parts.slice(0, 3)) {
-      const keywords = await extractKeywords(part, title);
-      console.log(`[stock-images] keywords: "${keywords}"`);
-      const url = await searchPexels(keywords, usedIds);
-      if (!url) {
-        const fallbackUrl = await searchPexels(title.split(' ').slice(0, 3).join(' ') || 'business leadership', usedIds);
-        imageUrls.push(fallbackUrl || null);
-      } else {
-        imageUrls.push(url);
-      }
-    }
+    // Imagem 1 — baseada no bloco 1 (ou título)
+    const part1 = parts[0] || title;
+    const keywords1 = await extractKeywords(part1, title);
+    console.log(`[stock-images] keywords1: "${keywords1}"`);
+    const url1 = await searchPexels(keywords1, usedIds)
+      || await searchPexels(title.split(' ').slice(0, 3).join(' ') || 'business leadership', usedIds)
+      || null;
+    imageUrls.push(url1);
 
-    console.log(`[stock-images] ok — ${imageUrls.filter(Boolean).length}/3 imagens encontradas`);
+    // Imagem 2 — baseada no bloco 2, evitando temas e fotos já usados
+    const part2 = parts[1] || part1;
+    const keywords2 = await extractKeywords(part2, title, keywords1);
+    console.log(`[stock-images] keywords2: "${keywords2}"`);
+    const url2 = await searchPexels(keywords2, usedIds)
+      || await searchPexels('executive meeting strategy', usedIds)
+      || null;
+    imageUrls.push(url2);
+
+    console.log(`[stock-images] ok — ${imageUrls.filter(Boolean).length}/2 imagens encontradas`);
     res.json({ images: imageUrls });
   } catch (err) {
     console.error('[stock-images] erro:', err.message);
@@ -581,9 +684,49 @@ Keywords:`;
 
 // ── POST /api/summarize — resume artigo com Groq ─────────────────────────────
 app.post('/api/summarize', async (req, res) => {
-  const { article, title } = req.body || {};
+  const { article, title, promptOverride } = req.body || {};
   if (!article) return res.status(400).json({ message: 'Campo article obrigatório.' });
-  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
+  if (!ANTHROPIC_KEY) return res.status(500).json({ message: 'ANTHROPIC_KEY não configurada no .env' });
+
+  async function callClaude(promptText, temperature = 0.85, maxTokens = 800) {
+    const r = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [{ role: 'user', content: promptText }]
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d?.error?.message || r.statusText);
+    return (d?.content?.[0]?.text || '').trim();
+  }
+
+  // Prompt B2B LinkedIn — retorna { hook, bloco, bloco2 }
+  if (promptOverride) {
+    try {
+      const content = await callClaude(promptOverride, 0.72, 200);
+      console.log('[summarize/override] content:', content.slice(0, 300));
+      const parts = content.split(/\n\s*---\s*\n/).map(s => s.trim()).filter(Boolean);
+      const hook   = parts[0] || '';
+      const bloco  = parts[1] || '';
+      const bloco2 = parts[2] || '';
+      if (!hook || !bloco) throw new Error('Modelo não retornou hook/bloco separados por ---. Tente novamente.');
+
+
+      console.log('[summarize/override] hook:', hook.slice(0, 60));
+      return res.json({ hook, bloco, bloco2 });
+    } catch (err) {
+      console.error('[summarize/override] erro:', err.message);
+      return res.status(500).json({ message: err.message });
+    }
+  }
 
   const prompt = `Você é um editor de conteúdo para Instagram da Rede Líderes, rede de executivos do Brasil.
 
@@ -613,13 +756,13 @@ REGRAS ABSOLUTAS:
 - A frase deve fazer o leitor pensar "preciso saber mais" em menos de 2 segundos
 
 BLOCO 2 — PRIMEIRO SLIDE:
-A frase mais instigante do artigo — uma provocação ou verdade que faz o leitor querer continuar. DEVE ter entre 42 e 60 palavras. Escreva frases completas com contexto e profundidade, não apenas slogans.
+A frase mais instigante do artigo — uma provocação ou verdade que faz o leitor querer continuar. MÁXIMO 20 palavras. Uma ou duas frases curtas e diretas.
 
 BLOCO 3 — SEGUNDO SLIDE:
-Aprofunda outra ideia central do artigo. DEVE ter entre 25 e 35 palavras. Frases completas, ritmo fluido.
+Aprofunda outra ideia central do artigo. MÁXIMO 20 palavras. Uma ou duas frases curtas.
 
 BLOCO 4 — TERCEIRO SLIDE:
-Encerra com uma reflexão ou consequência prática. DEVE ter entre 25 e 35 palavras. Frases completas, linguagem executiva.
+Encerra com uma reflexão ou consequência prática. MÁXIMO 20 palavras. Uma ou duas frases curtas.
 
 REGRA CRÍTICA DE VARIEDADE — OBRIGATÓRIA:
 Os blocos 2, 3 e 4 NÃO podem começar com a mesma palavra nem com o mesmo substantivo central do tema. Se o artigo fala sobre "escrita", PROIBIDO iniciar qualquer bloco com "A escrita", "Escrever", "Escrita" ou qualquer variação da palavra-tema. Cada bloco deve abrir com uma construção completamente diferente: um pode começar com o sujeito humano (ex: "Quem escreve…"), outro com uma consequência (ex: "Ao colocar…"), outro com um contraste ou dado. A primeira palavra de cada bloco DEVE ser diferente das outras duas.
@@ -627,28 +770,14 @@ Os blocos 2, 3 e 4 NÃO podem começar com a mesma palavra nem com o mesmo subst
 Responda APENAS com os 4 blocos separados por linha em branco. Sem introdução, sem numeração, sem títulos.`;
 
   try {
-    const response = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1200,
-        temperature: 0.92
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error?.message || response.statusText);
-
-    const text  = data?.choices?.[0]?.message?.content || '';
+    const text = await callClaude(prompt, 0.92);
     const allParts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
     if (allParts.length < 4) throw new Error('Groq não retornou 4 blocos. Tente novamente.');
     const hook  = allParts[0];
     const parts = allParts.slice(1, 4);
 
     // Valida contagem de palavras dos blocos de conteúdo
-    const minWords = [0, 20, 20]; // bloco 2: sem mínimo, blocos 3 e 4: 20+
+    const minWords = [0, 15, 15]; // bloco 2: sem mínimo, blocos 3 e 4: 15+
     for (let i = 0; i < parts.length; i++) {
       const count = parts[i].split(/\s+/).filter(Boolean).length;
       if (count < minWords[i]) throw new Error(`Bloco ${i + 2} veio com apenas ${count} palavras (mínimo ${minWords[i]}). Tente novamente.`);
@@ -666,7 +795,7 @@ Responda APENAS com os 4 blocos separados por linha em branco. Sem introdução,
 app.post('/api/copywrite', async (req, res) => {
   const TIPOS_VALIDOS = ['imagem-perfil', 'carrossel-artigo', 'parabenizacao', 'mudanca-cargo', 'livre'];
 
-  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada no .env' });
+  if (!OPENCODE_KEY) return res.status(500).json({ message: 'OPENCODE_KEY não configurada no .env' });
 
   const { tipo, lider, contexto, avoid } = req.body || {};
 
@@ -678,14 +807,15 @@ app.post('/api/copywrite', async (req, res) => {
   }
 
   async function callGroq(prompt) {
-    const response = await fetch(GROQ_URL, {
+    const response = await fetch(OPENCODE_URL, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
       body:    JSON.stringify({
-        model:       GROQ_MODEL,
+        model:       OPENCODE_MODEL,
         messages:    [{ role: 'user', content: prompt }],
         max_tokens:  1400,
-        temperature: 0.75
+        temperature: 0.75,
+        stream: false
       })
     });
     const data = await response.json();
@@ -814,6 +944,37 @@ app.post('/api/removebg', async (req, res) => {
   } catch (err) {
     console.error('[removebg] erro:', err.message);
     res.status(500).json({ message: err.message });
+  }
+});
+
+// ── Conselho Image — Google Drive ─────────────────────────────────────────────
+// CONSELHO_DRIVE_FOLDER_ID: Google Drive folder ID with council meeting photos
+// GOOGLE_SERVICE_ACCOUNT_JSON: path to service account JSON (or inline JSON in env)
+app.get('/api/conselho-image', async (req, res) => {
+  try {
+    const folderId = process.env.CONSELHO_DRIVE_FOLDER_ID;
+    if (!folderId) return res.status(503).json({ error: 'CONSELHO_DRIVE_FOLDER_ID not configured' });
+
+    const avoid = JSON.parse(req.query.avoid || '[]');
+
+    // Use Google Drive API v3 with API key or service account
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+
+    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+mimeType+contains+'image/'&fields=files(id,name,webContentLink)&key=${apiKey}&pageSize=100`;
+    const listRes  = await fetch(listUrl);
+    const listData = await listRes.json();
+    const files    = (listData.files || []).filter(f => !avoid.includes(f.id));
+
+    if (!files.length) return res.status(404).json({ error: 'No unused images available' });
+
+    const chosen   = files[Math.floor(Math.random() * files.length)];
+    const imageUrl = `/api/proxy-image?url=${encodeURIComponent(`https://drive.google.com/uc?export=view&id=${chosen.id}`)}`;
+
+    res.json({ id: chosen.id, url: imageUrl });
+  } catch (err) {
+    console.error('[conselho-image]', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

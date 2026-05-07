@@ -1,13 +1,13 @@
 // Vercel Serverless Function — POST /api/summarize
-// Usa Gemini Flash (gratuito) para condensar artigo em 3 blocos para slides
+// Usa Claude Haiku para condensar artigo em blocos para slides
 
-const GROQ_KEY = process.env.GROQ_KEY;
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const ANTHROPIC_KEY   = process.env.ANTHROPIC_KEY;
+const ANTHROPIC_URL   = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
-  if (!GROQ_KEY) return res.status(500).json({ message: 'GROQ_KEY não configurada.' });
+  if (!ANTHROPIC_KEY) return res.status(500).json({ message: 'ANTHROPIC_KEY não configurada.' });
 
   const { article, title } = req.body || {};
   if (!article) return res.status(400).json({ message: 'Campo article obrigatório.' });
@@ -29,7 +29,7 @@ Regras para os 3 blocos:
 - Bloco 3: NO MÁXIMO 2 frases curtas e diretas, NO MÁXIMO 220 caracteres
 - Linguagem executiva, clara e impactante — direto ao ponto
 - NÃO usar bullet points, numeração ou títulos — apenas texto corrido
-- OBRIGATÓRIO: cada bloco deve começar com uma abertura diferente — não repita o mesmo tipo de construção de frase entre os blocos (ex: não inicie todos com verbo no imperativo, ou todos com substantivo, ou todos com "A/O...")
+- OBRIGATÓRIO: cada bloco deve começar com uma abertura diferente — não repita o mesmo tipo de construção de frase entre os blocos
 
 Regras para a frase de capa:
 - Uma pergunta curta e instigante que desperte curiosidade sobre o tema do artigo
@@ -49,24 +49,27 @@ Responda APENAS neste formato exato, sem introdução, sem explicação, sem num
 [frase de capa]`;
 
   try {
-    const response = await fetch(GROQ_URL, {
+    const r = await fetch(ANTHROPIC_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 512,
-        temperature: 0.3
+        model: ANTHROPIC_MODEL,
+        max_tokens: 800,
+        temperature: 0.85,
+        messages: [{ role: 'user', content: prompt }]
       })
     });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error?.message || r.statusText);
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data?.error?.message || response.statusText);
-
-    const text = data?.choices?.[0]?.message?.content || '';
+    const text = (data?.content?.[0]?.text || '').trim();
     const [bodyRaw, hookRaw] = text.split(/\n\s*---\s*\n/);
     const parts = (bodyRaw || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).slice(0, 3);
-    if (parts.length < 3) throw new Error('Modelo não retornou 3 blocos. Tente novamente.');
+    if (parts.length < 3) throw new Error('Claude não retornou 3 blocos. Tente novamente.');
     const hook = (hookRaw || '').trim();
 
     return res.status(200).json({ parts, hook });

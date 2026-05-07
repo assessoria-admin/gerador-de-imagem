@@ -388,7 +388,7 @@
         <h1>Carrossel de Artigo</h1>
         <span></span>
       </div>
-      <p>Gera 5 slides prontos para o Instagram · capa + artigo + CTA</p>
+      <p>Gera 4 slides prontos para o Instagram · capa + texto + conselho + CTA</p>
     </header>
 
     <div class="main-wrap">
@@ -396,6 +396,14 @@
       <!-- COLUNA ESQUERDA: form -->
       <div class="form-col">
         <div class="card">
+
+          <div class="field">
+            <label>Selecionar Líder com Artigo</label>
+            <select id="memberSelect">
+              <option value="">— carregando lista… —</option>
+            </select>
+            <div class="hint">Lista de membros com artigo no Notion</div>
+          </div>
 
           <div class="field">
             <label>Buscar na Rede Líderes</label>
@@ -421,6 +429,8 @@
               placeholder="Preenchido automaticamente pelo Notion"
               autocomplete="off" />
           </div>
+
+          <input type="hidden" id="cargoRede" />
 
           <div class="field">
             <label>3 Últimas Empresas</label>
@@ -457,10 +467,25 @@
           </div>
 
           <div class="field">
-            <label>Texto do Artigo</label>
-            <textarea id="articleText" rows="9"
-              placeholder="Cole aqui o texto completo do artigo e clique em Resumir com IA…"></textarea>
-            <div class="hint">Cole o artigo completo — a IA vai condensar em 3 blocos otimizados para slide</div>
+            <label>Hook da Capa</label>
+            <input type="text" id="coverHookInput"
+              placeholder="Ex: Enquanto você espera o relatório, quem está fechando seus deals?"
+              autocomplete="off" />
+            <div class="hint">Frase de impacto da capa — preenchida pela IA ou manualmente</div>
+          </div>
+
+          <div class="field">
+            <label>Bloco 1 (Slide 2) <span id="wc1" style="font-weight:400;font-size:12px;color:#888;margin-left:8px;">0 palavras</span></label>
+            <textarea id="articleText" rows="5"
+              placeholder="Opinião do líder sobre o hook — bloco 1 (preenchido pela IA ou manualmente)"></textarea>
+            <div class="hint">Aparece no slide 2 com imagem na parte superior</div>
+          </div>
+
+          <div class="field">
+            <label>Bloco 2 (Slide 3) <span id="wc2" style="font-weight:400;font-size:12px;color:#888;margin-left:8px;">0 palavras</span></label>
+            <textarea id="articleText2" rows="5"
+              placeholder="Opinião do líder sobre o hook — bloco 2 (preenchido pela IA ou manualmente)"></textarea>
+            <div class="hint">Aparece no slide 3 com imagem na parte inferior</div>
           </div>
 
           <div id="notionPermissionWarning" style="display:none; margin: 12px 0; padding: 14px 16px; background: #1a0f00; border: 1px solid #7a4500; border-radius: 10px; font-size: 13px; line-height: 1.6; color: #f0a050;">
@@ -543,19 +568,17 @@
           </div>
           <div class="slide-thumb">
             <canvas id="canvas2"></canvas>
-            <div class="slide-label">02 — Artigo</div>
+            <div class="slide-label">02 — Bloco 1</div>
+            <div id="slide2Text" style="font-size:11px;color:#444;line-height:1.5;padding:6px 4px;max-height:120px;overflow-y:auto;border-top:1px solid #eee;white-space:pre-wrap;"></div>
           </div>
           <div class="slide-thumb">
             <canvas id="canvas3"></canvas>
-            <div class="slide-label">03 — Artigo</div>
+            <div class="slide-label">03 — Bloco 2</div>
+            <div id="slide3Text" style="font-size:11px;color:#444;line-height:1.5;padding:6px 4px;max-height:120px;overflow-y:auto;border-top:1px solid #eee;white-space:pre-wrap;"></div>
           </div>
           <div class="slide-thumb">
             <canvas id="canvas4"></canvas>
-            <div class="slide-label">04 — Artigo</div>
-          </div>
-          <div class="slide-thumb">
-            <canvas id="canvas5"></canvas>
-            <div class="slide-label">05 — CTA</div>
+            <div class="slide-label">04 — CTA</div>
           </div>
         </div>
       </div><!-- /.preview-col -->
@@ -564,6 +587,22 @@
   </div><!-- /.wrap -->
 
   <script>
+  function updateWordCount(textareaId, badgeId) {
+    const el = document.getElementById(textareaId);
+    const badge = document.getElementById(badgeId);
+    if (!el || !badge) return;
+    const count = el.value.trim() ? el.value.trim().split(/\s+/).length : 0;
+    const over = count > 40;
+    badge.textContent = count + ' palavras';
+    badge.style.color = over ? '#e05555' : count >= 35 ? '#41c1c2' : '#888';
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    ['articleText', 'articleText2'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => updateWordCount(id, 'wc' + (i + 1)));
+    });
+  });
+
   /* ═══════════════════════════════════════════════════════════════
      CONFIG
   ═══════════════════════════════════════════════════════════════ */
@@ -571,7 +610,64 @@
   const TEAL      = '#41c1c2';
   const TEAL_DARK = '#001E23';
 
-  const COVER_TITLE = 'COMO PENSAM AS LIDERANÇAS';
+  const COVER_TITLE = 'ONDE ENCONTRAMOS AS MELHORES SOLUÇÕES DO MERCADO';
+
+  const PROMPT_LINKEDIN_BLOCO = `Você é o editor de conteúdo da Rede Líderes — ecossistema B2B premium onde líderes empresariais do Brasil se reúnem toda semana para discutir os problemas reais das grandes empresas.
+
+O formato que você vai criar simula o espírito de uma Reunião de Conselho da Rede Líderes: um problema real é colocado na mesa pelo hook, e o líder — com base no artigo que escreveu — compartilha sua visão sobre esse problema nos dois blocos seguintes.
+
+O público são diretores e C-levels de empresas brasileiras. Tom: direto, denso, sem rodeios. Fala de quem já viveu o problema, não de quem leu sobre ele.
+
+## HOOK — O PROBLEMA NA MESA
+O hook abre o carrossel como se fosse o momento em que alguém coloca um problema real na mesa da reunião.
+- Formato: afirmação ou pergunta curta que nomeia um problema concreto e incômodo
+- Máximo 12 palavras
+- Deve gerar o pensamento imediato: "isso acontece na minha empresa"
+- Conectado diretamente à dor central do artigo
+- Proibido: clichês motivacionais, palavras genéricas como "sucesso", "crescimento", "inovação", "transformação"
+- Proibido: travessões, reticências dramáticas, dois pontos no início
+- Estilo de referência: "Enquanto você espera o relatório, quem está fechando seus deals?" / "A maioria das empresas resolve o sintoma. O problema volta."
+
+## BLOCO 1 — A VISÃO DO LÍDER: DIAGNÓSTICO
+O líder responde ao hook com seu diagnóstico — o que ele vê acontecendo no mercado e por que esse problema persiste.
+- Escreva na primeira pessoa implícita do líder (sem usar "eu")
+- Deve revelar algo que quem está de fora não enxerga
+- Entre 25 e 40 palavras
+- Termine de forma que o leitor queira continuar — sem concluir, sem resolver
+- Sem listas, sem bullet points disfarçados, sem frases motivacionais
+- Proibido: travessões, reticências, dois pontos, ponto e vírgula, aspas, parênteses
+- Proibido: palavras de transição como "portanto", "assim", "logo", "ou seja", "afinal"
+- Escreva como se fosse uma fala direta numa conversa entre executivos — sem artifícios de texto
+
+## BLOCO 2 — A VISÃO DO LÍDER: O CAMINHO
+O líder aprofunda sua perspectiva — o que diferencia quem resolve esse problema de quem convive com ele.
+- Continuação natural do bloco 1, mas com um ângulo novo
+- Deve deixar o leitor instigado: com vontade de conversar com esse líder, de saber mais
+- Entre 25 e 40 palavras
+- Não entregue a solução completa — insinue o caminho, provoque a reflexão
+- Sem conclusões genéricas, sem "portanto", sem "em resumo"
+- Proibido: travessões, reticências, dois pontos, ponto e vírgula, aspas, parênteses
+- Proibido: palavras de transição como "portanto", "assim", "logo", "ou seja", "afinal"
+- Escreva como se fosse uma fala direta numa conversa entre executivos — sem artifícios de texto
+
+## ARTIGO DO LÍDER
+{{artigo}}
+
+## REGRA ABSOLUTA DE TAMANHO
+Bloco 1 e Bloco 2: MÍNIMO 35 palavras, MÁXIMO 40 palavras cada. Antes de escrever cada bloco, planeje mentalmente quantas palavras vai usar. Após escrever, conte. Se passar de 40, reescreva. Se ficar abaixo de 35, expanda. Esta é a regra mais importante do output — não há exceção.
+
+## OUTPUT
+Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
+
+[hook aqui]
+
+---
+
+[bloco 1 aqui]
+
+---
+
+[bloco 2 aqui]`;
 
   function getArticleTitle() {
     const val = (document.getElementById('articleTitle')?.value || '').trim().toUpperCase();
@@ -585,12 +681,53 @@
   let outfit = 'black';
   let slidesReady = false;
   let coverHook = '';
+  let articleBloco = '';
+  let articleBloco2 = '';
 
   function setOutfit(o) {
     outfit = o;
     document.getElementById('btnRoupaPreta').classList.toggle('active', o === 'black');
     document.getElementById('btnRoupaAtual').classList.toggle('active', o === 'current');
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SELETOR DE MEMBROS COM ARTIGO
+  ═══════════════════════════════════════════════════════════════ */
+  (async () => {
+    const sel = document.getElementById('memberSelect');
+    try {
+      const res  = await fetch('/api/notion/members');
+      const data = await res.json();
+      const members = data.members || [];
+      sel.innerHTML = '<option value="">— selecione um líder —</option>'
+        + members.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+      console.log(`[members] ${members.length} membros carregados`);
+    } catch (e) {
+      sel.innerHTML = '<option value="">Erro ao carregar lista</option>';
+    }
+
+    sel.addEventListener('change', async () => {
+      const name = sel.value;
+      if (!name) return;
+      setStatus('Carregando dados…');
+      try {
+        const r = await fetch(`/api/pb/search?q=${encodeURIComponent(name.trim().split(' ')[0])}`);
+        const d = await r.json();
+        const match = (d.results || []).find(p =>
+          p.name?.trim().toLowerCase() === name.trim().toLowerCase()
+        );
+        if (match) {
+          acSelect(match);
+        } else {
+          // Fallback: preenche só o nome e busca o artigo
+          document.getElementById('fullName').value = name;
+          loadNotionArticle(name);
+        }
+      } catch (err) {
+        setStatus('Erro ao carregar: ' + err.message, true);
+      }
+    });
+  })();
 
   /* ═══════════════════════════════════════════════════════════════
      NOTION AUTOCOMPLETE
@@ -644,9 +781,10 @@
 
   function acSelect(person) {
     nameInput.value = person.name || '';
-    if (person.cargo)    document.getElementById('jobTitle').value  = person.cargo;
-    if (person.empresas) document.getElementById('companies').value = person.empresas;
-    if (person.photoUrl) loadNotionPhoto(person.photoUrl);
+    if (person.cargo)      document.getElementById('jobTitle').value  = person.cargo;
+    if (person.cargo_rede) document.getElementById('cargoRede').value = person.cargo_rede;
+    if (person.empresas)   document.getElementById('companies').value = person.empresas;
+    if (person.photoUrl)   loadNotionPhoto(person.photoUrl);
     acClose();
     if (person.name) loadNotionArticle(person.name);
   }
@@ -671,7 +809,8 @@
       if (data.articleText) {
         document.getElementById('articleText').value = data.articleText;
         warning.style.display = 'none';
-        await resumirArtigo();
+        setStatus('Artigo carregado do Notion ✓ — clique em Resumir com IA para gerar o Hook.');
+        setTimeout(() => setStatus(''), 4000);
         return;
       }
 
@@ -737,16 +876,23 @@
     document.getElementById('spinner').style.display = 'block';
 
     try {
+      const promptFinal = PROMPT_LINKEDIN_BLOCO.replace('{{artigo}}', article);
       const res  = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ article, title })
+        body: JSON.stringify({ article, title, promptOverride: promptFinal })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || res.statusText);
 
-      coverHook = json.hook || '';
-      document.getElementById('articleText').value = json.parts.join('\n\n');
+      coverHook     = json.hook   || '';
+      articleBloco  = json.bloco  || (json.parts ? json.parts[0] || '' : '');
+      articleBloco2 = json.bloco2 || (json.parts ? json.parts[1] || '' : '');
+      document.getElementById('articleText').value  = articleBloco;
+      document.getElementById('articleText2').value = articleBloco2;
+      if (coverHook) document.getElementById('coverHookInput').value = coverHook;
+      updateWordCount('articleText',  'wc1');
+      updateWordCount('articleText2', 'wc2');
       setStatus('Artigo resumido ✓ — revise e clique em Gerar Carrossel.');
     } catch (err) {
       setStatus('Erro ao resumir: ' + err.message, true);
@@ -776,6 +922,9 @@
     const companies    = rawComp
       ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
       : '';
+    const cargoRede    = document.getElementById('cargoRede').value.trim()
+                      || document.getElementById('jobTitle').value.trim();
+    coverHook = document.getElementById('coverHookInput').value.trim() || coverHook;
     const articleParts = splitArticle(articleRaw || 'Texto de teste para visualização do layout.');
 
     setLoading(true);
@@ -797,7 +946,7 @@
       const articleTitle = document.getElementById('articleTitle')?.value?.trim() || '';
       const stockUrls = await fetchStockImages(articleParts, articleTitle);
 
-      await renderAllSlides(photoDataUrl, firstName, lastName, companies, articleParts, stockUrls);
+      await renderAllSlides(photoDataUrl, firstName, lastName, companies, cargoRede, articleParts, stockUrls);
       setStatus('Preview gerado (sem IA) ✓');
       setLoading(false);
       slidesReady = true;
@@ -826,6 +975,9 @@
     const companies  = rawComp
       ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
       : '';
+    const cargoRede  = document.getElementById('cargoRede').value.trim()
+                    || document.getElementById('jobTitle').value.trim();
+    coverHook = document.getElementById('coverHookInput').value.trim() || coverHook;
     const articleParts = splitArticle(articleRaw);
 
     setLoading(true);
@@ -853,7 +1005,7 @@
       const stockUrls = await fetchStockImages(articleParts, articleTitle);
 
       setStatus('Compondo slides…');
-      await renderAllSlides(imageSrc, firstName, lastName, companies, articleParts, stockUrls);
+      await renderAllSlides(imageSrc, firstName, lastName, companies, cargoRede, articleParts, stockUrls);
 
       setStatus('');
       setLoading(false);
@@ -895,30 +1047,31 @@
   ═══════════════════════════════════════════════════════════════ */
   async function fetchStockImages(articleParts, articleTitle) {
     try {
-      const articleFullText = document.getElementById('articleText').value.trim();
-      const leaderCargo     = document.getElementById('jobTitle').value.trim();
-      const leaderEmpresas  = document.getElementById('companies').value.trim();
+      const bloco1 = document.getElementById('articleText').value.trim();
+      const bloco2 = document.getElementById('articleText2').value.trim();
+      const leaderCargo    = document.getElementById('jobTitle').value.trim();
+      const leaderEmpresas = document.getElementById('companies').value.trim();
       const res = await fetch('/api/stock-images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parts: articleParts, articleTitle, articleFullText, leaderCargo, leaderEmpresas })
+        body: JSON.stringify({ parts: [bloco1, bloco2], articleTitle, articleFullText: bloco1, leaderCargo, leaderEmpresas })
       });
-      if (!res.ok) return [null, null, null];
+      if (!res.ok) return [null, null];
       const data = await res.json();
-      return data.images || [null, null, null];
+      return data.images || [null, null];
     } catch {
-      return [null, null, null];
+      return [null, null];
     }
   }
 
   /* ═══════════════════════════════════════════════════════════════
      SLIDE RENDERING
   ═══════════════════════════════════════════════════════════════ */
-  async function renderAllSlides(photoSrc, firstName, lastName, companies, articleParts, stockUrls) {
+  async function renderAllSlides(photoSrc, firstName, lastName, companies, cargoRede, articleParts, stockUrls) {
     await document.fonts.ready;
     try {
-      await document.fonts.load('800 80px "Neue Machina"');
-      await document.fonts.load('400 40px "Neue Machina"');
+      await document.fonts.load('800 80px "Helvetica Neue", Helvetica, Arial');
+      await document.fonts.load('400 40px "Helvetica Neue", Helvetica, Arial');
       await document.fonts.load('400 160px "Gobold"');
       await document.fonts.load('100 50px "Gobold"');
       await document.fonts.load('400 72px "Great Vibes"');
@@ -933,18 +1086,12 @@
       return loadImage(url).catch(() => null);
     }));
 
-    await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies);
-
-    // Randomiza os 3 layouts do miolo sem repetição
-    const layouts = ['photo-top', 'photo-bottom', 'photo-middle'];
-    for (let i = layouts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [layouts[i], layouts[j]] = [layouts[j], layouts[i]];
-    }
-    await renderArticleSlide(document.getElementById('canvas2'), articleParts[0], firstName, lastName, '02', bgImg, stockImgs[0] || photo, layouts[0]);
-    await renderArticleSlide(document.getElementById('canvas3'), articleParts[1], firstName, lastName, '03', bgImg, stockImgs[1] || photo, layouts[1]);
-    await renderArticleSlide(document.getElementById('canvas4'), articleParts[2], firstName, lastName, '04', bgImg, stockImgs[2] || photo, layouts[2]);
-    await renderSlide5(document.getElementById('canvas5'), firstName, lastName, bgImg, photo);
+    await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies, cargoRede);
+    const slide2Text = document.getElementById('articleText')?.value?.trim()  || articleBloco  || (articleParts[0] || '');
+    const slide3Text = document.getElementById('articleText2')?.value?.trim() || articleBloco2 || (articleParts[1] || '');
+    await renderSlide2(document.getElementById('canvas2'), slide2Text, firstName, lastName, stockImgs[0], false);
+    await renderSlide2(document.getElementById('canvas3'), slide3Text, firstName, lastName, stockImgs[1] || stockImgs[0], true);
+    await renderSlideCTA(document.getElementById('canvas4'));
   }
 
   /* ─── Helper: rounded rect path ────────────────────────────── */
@@ -985,7 +1132,7 @@
 
   /* ─── Helper: left-aligned wrap, returns next Y ────────────────── */
   function wrapLeft(ctx, text, x, y, maxW, size, color, lineHeightMult = 1.35) {
-    ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.font         = `400 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     ctx.fillStyle    = color;
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'top';
@@ -1005,7 +1152,7 @@
 
   /* ─── Helper: justified text, last line centered, returns next Y ── */
   function wrapJustified(ctx, text, x, y, maxW, size, color, lineHeightMult = 1.35) {
-    ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.font         = `400 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     ctx.fillStyle    = color;
     ctx.textBaseline = 'top';
 
@@ -1055,7 +1202,7 @@
 
   /* ─── Helper: wrap text centered, returns next Y ────────────── */
   function wrapCentered(ctx, text, cx, y, maxW, size, color, lineHeightMult = 1.55) {
-    ctx.font         = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.font         = `400 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     ctx.fillStyle    = color;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
@@ -1074,137 +1221,462 @@
   }
 
   /* ─── Helper: draw logo top-left ────────────────────────────── */
-  async function drawLogo(ctx, x, y, h, invert = false) {
+  async function drawLogo(ctx, x, y, h, invert = false, centered = false) {
     const logo = await loadImage('/logo-rl.png').catch(() => null);
     if (!logo) return;
     const w = logo.naturalWidth * (h / logo.naturalHeight);
+    const drawX = centered ? x - w / 2 : x;
     if (invert) ctx.filter = 'invert(1)';
-    ctx.drawImage(logo, x, y, w, h);
+    ctx.drawImage(logo, drawX, y, w, h);
     if (invert) ctx.filter = 'none';
   }
 
   /* ─── Slide 1: Capa ─────────────────────────────────────────── */
-  async function renderSlide1(canvas, photo, firstName, lastName, companies) {
+  async function renderSlide1(canvas, photo, firstName, lastName, companies, cargoRede) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
     const PAD = 60;
 
-    // White background
+    // ── Fundo branco base ─────────────────────────────────────────
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, SW, SH);
 
-    // Logo top-left — invertida para aparecer preta no fundo branco
-    await drawLogo(ctx, PAD, PAD, 50, true);
+    // ── Logo centralizada no topo ─────────────────────────────────
+    const logoH = 80;
+    const logoImg = await loadImage('/logo-rl.png').catch(() => null);
+    let logoBottom = 32 + logoH;
+    if (logoImg) {
+      const logoW = logoImg.naturalWidth * (logoH / logoImg.naturalHeight);
+      const logoX = (SW - logoW) / 2;
+      ctx.filter = 'invert(1)';
+      ctx.drawImage(logoImg, logoX, 32, logoW, logoH);
+      ctx.filter = 'none';
+    }
 
-    // Título do artigo — bold, acima da foto
-    const titleSize = 68;
-    const titleMaxW = SW - PAD * 2;
-    ctx.font         = `800 ${titleSize}px "Neue Machina", sans-serif`;
+    // ── Título padrão no header — máx 2 linhas, font auto-reduz para caber ──
+    const hookMaxW   = SW - PAD * 3;
+    const hookText   = COVER_TITLE;
+    const hWords     = hookText.split(' ');
+    let hookSize = 52;
+
+    // Reduz fonte até o hook caber em no máximo 2 linhas
+    const wrapHook = (size) => {
+      ctx.font = `800 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      const lines = []; let cur = '';
+      for (const w of hWords) {
+        const test = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(test).width > hookMaxW) { lines.push(cur); cur = w; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    };
+    let hLines = wrapHook(hookSize);
+    while (hLines.length > 2 && hookSize > 28) {
+      hookSize--;
+      hLines = wrapHook(hookSize);
+    }
+    hLines = hLines.slice(0, 2);
+
+    ctx.font = `800 ${hookSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    const hookLH     = hookSize * 1.18;
+    const hookStartY = logoBottom + 24;
+    const hookTotalH = hLines.length * hookLH;
+
     ctx.fillStyle    = '#111111';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    const titleText = coverHook || getArticleTitle();
-    const tWords = titleText.split(' ');
-    const tLines = [];
-    let tCur = '';
-    for (const w of tWords) {
-      const test = tCur ? tCur + ' ' + w : w;
-      if (ctx.measureText(test).width > titleMaxW) { tLines.push(tCur); tCur = w; }
-      else tCur = test;
-    }
-    if (tCur) tLines.push(tCur);
-    let titleY = 130;
-    const titleLH = titleSize * 1.18;
-    for (const line of tLines.slice(0, 4)) { ctx.fillText(line, SW / 2, titleY); titleY += titleLH; }
+    let hookY = hookStartY;
+    for (const line of hLines) { ctx.fillText(line, SW / 2, hookY); hookY += hookLH; }
 
-    // Foto colada no inferior — começa após o título, vai até a borda inferior
-    const photoTop = titleY + 28;
-    const photoW   = SW - PAD * 2;
+    const headerBottom = hookStartY + hookTotalH + 28;
+
+    // ── Foto com margem lateral de 60px ──────────────────────────
+    const PHOTO_MARGIN = 60;
+    const photoTop = headerBottom;
+    const photoW   = SW - PHOTO_MARGIN * 2;
     const photoH   = SH - photoTop;
-
-    // Clip com raio apenas nos cantos superiores, inferior segue a borda do canvas
-    ctx.save();
-    ctx.beginPath();
-    const r = 28;
-    ctx.moveTo(PAD + r, photoTop);
-    ctx.lineTo(PAD + photoW - r, photoTop);
-    ctx.quadraticCurveTo(PAD + photoW, photoTop, PAD + photoW, photoTop + r);
-    ctx.lineTo(PAD + photoW, photoTop + photoH);
-    ctx.lineTo(PAD, photoTop + photoH);
-    ctx.lineTo(PAD, photoTop + r);
-    ctx.quadraticCurveTo(PAD, photoTop, PAD + r, photoTop);
-    ctx.closePath();
-    ctx.clip();
+    const photoX   = PHOTO_MARGIN;
 
     const ar  = photo.naturalWidth / photo.naturalHeight;
     const dar = photoW / photoH;
     let sx = 0, sy = 0, sw = photo.naturalWidth, sh = photo.naturalHeight;
     if (ar > dar) { sw = photo.naturalHeight * dar; sx = (photo.naturalWidth - sw) / 2; }
     else          { sh = photo.naturalWidth / dar;  sy = (photo.naturalHeight - sh) / 2; }
-    ctx.drawImage(photo, sx, sy, sw, sh, PAD, photoTop, photoW, photoH);
-    ctx.restore();
+    ctx.drawImage(photo, sx, sy, sw, sh, photoX, photoTop, photoW, photoH);
 
-    // Gradiente + info do líder na base da foto
-    {
-      const ovH = 180;
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(PAD + r, photoTop);
-      ctx.lineTo(PAD + photoW - r, photoTop);
-      ctx.quadraticCurveTo(PAD + photoW, photoTop, PAD + photoW, photoTop + r);
-      ctx.lineTo(PAD + photoW, photoTop + photoH);
-      ctx.lineTo(PAD, photoTop + photoH);
-      ctx.lineTo(PAD, photoTop + r);
-      ctx.quadraticCurveTo(PAD, photoTop, PAD + r, photoTop);
-      ctx.closePath();
-      ctx.clip();
-      const grad = ctx.createLinearGradient(0, SH - ovH, 0, SH);
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.88)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(PAD, SH - ovH, photoW, ovH);
-      ctx.restore();
+    // ── Rodapé centralizado ───────────────────────────────────────
+    const footerPad      = 52;
+    const companiesSize  = 46;
+    const labelSize      = 28;
+    const cargoSize      = 30;
+    const CX             = SW / 2;
 
-      // Nome do líder — centralizado, destaque
-      ctx.font         = `800 42px "Neue Machina", sans-serif`;
-      ctx.fillStyle    = '#ffffff';
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(firstName + ' ' + lastName, SW / 2, SH - 118);
+    // Apenas primeiro nome + último sobrenome
+    const lastNamePart = lastName.trim().split(/\s+/).pop();
+    const nomePart     = firstName + ' ' + lastNamePart;
 
-      // Label "MINIBIO:"
-      ctx.font         = `400 20px "Neue Machina", sans-serif`;
-      ctx.fillStyle    = TEAL;
-      ctx.fillText('MINIBIO:', SW / 2, SH - 75);
-
-      // Empresas
-      if (companies) {
-        ctx.font         = `300 26px "Neue Machina", sans-serif`;
-        ctx.fillStyle    = 'rgba(255,255,255,0.82)';
-        ctx.fillText(companies, SW / 2, SH - 40);
-      }
+    // Reduz nameSize até nome caber
+    let nameSize = 68;
+    while (nameSize > 32) {
+      ctx.font = `800 ${nameSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      if (ctx.measureText(nomePart).width <= SW - PAD * 2) break;
+      nameSize--;
     }
+
+    // Monta linha de empresas
+    let companiesLine = '';
+    if (companies) {
+      const parts = companies.split(',').map(s => s.trim()).filter(Boolean);
+      companiesLine = parts.join('   |   ');
+    }
+
+    // Calcula posições de baixo para cima
+    const companiesY = SH - footerPad;
+    const miniBioY   = companiesY  - companiesSize * 1.55;
+    const cargoY     = miniBioY    - labelSize     * 1.6;
+    const nameY      = cargoY      - cargoSize     * 1.7;
+
+    // Gradiente suave sobre a foto, da base até acima do nome
+    const gradTop = nameY - nameSize * 1.1;
+    const grad = ctx.createLinearGradient(0, gradTop, 0, SH);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.45, 'rgba(0,0,0,0.45)');
+    grad.addColorStop(1,  'rgba(0,0,0,0.72)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, gradTop, SW, SH - gradTop);
+
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'alphabetic';
+
+    // Nome do líder
+    ctx.font      = `800 ${nameSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(nomePart, CX, nameY);
+
+    // Cargo ("Lider de X")
+    if (cargoRede) {
+      ctx.font      = `400 ${cargoSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(cargoRede, CX, cargoY);
+    }
+
+    // Label MINI BIO
+    ctx.font      = `800 ${labelSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle = TEAL;
+    ctx.fillText('MINI BIO', CX, miniBioY);
+
+    // Empresas (maiores, centralizadas)
+    ctx.font      = `300 ${companiesSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(companiesLine, CX, companiesY);
+
   }
 
-  /* ─── Slides 2–4: Artigo ────────────────────────────────────── */
+  /* ─── Slide 2: Texto do Artigo ─────────────────────────────── */
+  async function renderSlide2(canvas, bloco, firstName, lastName, stockImg, imgBottom = false) {
+    canvas.width = SW; canvas.height = SH;
+    const ctx = canvas.getContext('2d');
+    const LOGO_PAD  = 36;
+    const TEXT_PAD  = 60;  // padding horizontal interno dos boxes de texto
+    const GAP       = 16;  // espaço entre boxes
+    const FONT_SIZE = 44;
+    const LH        = FONT_SIZE * 1.48;
+
+    // Header box — full width, fundo branco, contém a logo
+    const HEADER_H   = LOGO_PAD + 50 + GAP;  // altura da barra do topo
+    // Footer box — full width, fundo branco, contém nome do líder
+    const FOOTER_H   = 80;                   // altura da barra de baixo
+
+    // Área de conteúdo entre as barras
+    const CONTENT_TOP = HEADER_H + GAP;
+    const CONTENT_BOT = SH - FOOTER_H - GAP;
+    const TOTAL_H     = CONTENT_BOT - CONTENT_TOP;
+
+    const IMG_MIN = 200;
+    const IMG_MAX = 580;
+
+    // Fundo branco total
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, SW, SH);
+
+    await drawLogo(ctx, LOGO_PAD, LOGO_PAD, 62, true);
+    ctx.font         = `700 30px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = '#111111';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(firstName + ' ' + lastName, TEXT_PAD, SH - FOOTER_H / 2);
+
+    // Normaliza texto
+    const normalized = bloco.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // Mede quantas linhas o texto ocupa dentro do box (full width com padding)
+    const textMaxW = SW - TEXT_PAD * 2;
+    ctx.font = `400 ${FONT_SIZE}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    const words = normalized.split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(test).width > textMaxW && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+
+    const TEXT_PAD_V = 36;
+    const textContentH = lines.length * LH;
+    const textBoxH     = textContentH + TEXT_PAD_V * 2;
+
+    // Imagem ocupa o restante (full width)
+    const imgH = Math.min(IMG_MAX, Math.max(IMG_MIN, TOTAL_H - textBoxH - GAP));
+
+    // Posição: slide 2 imagem em cima, slide 3 imagem embaixo
+    const imgOnTop = !imgBottom;
+    const imgY    = imgOnTop ? CONTENT_TOP : (CONTENT_BOT - imgH);
+    const textBoxY = imgOnTop ? (imgY + imgH + GAP) : CONTENT_TOP;
+
+    // ── Box da imagem (com margem lateral) ──
+    const IMG_MARGIN = 40;
+    const imgW = SW - IMG_MARGIN * 2;
+    if (stockImg) {
+      const ar  = stockImg.naturalWidth / stockImg.naturalHeight;
+      const dar = imgW / imgH;
+      let sx=0, sy=0, sw=stockImg.naturalWidth, sh=stockImg.naturalHeight;
+      if (ar > dar) { sw = stockImg.naturalHeight * dar; sx = (stockImg.naturalWidth - sw) / 2; }
+      else          { sh = stockImg.naturalWidth / dar;  sy = (stockImg.naturalHeight - sh) / 2; }
+      ctx.drawImage(stockImg, sx, sy, sw, sh, IMG_MARGIN, imgY, imgW, imgH);
+    }
+
+    ctx.font         = `400 ${FONT_SIZE}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = '#111111';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    let ty = textBoxY + TEXT_PAD_V;
+    for (const line of lines) { ctx.fillText(line, TEXT_PAD, ty); ty += LH; }
+
+    // Atualiza div de leitura no HTML
+    const readDiv = imgBottom
+      ? document.getElementById('slide3Text')
+      : document.getElementById('slide2Text');
+    if (readDiv) readDiv.textContent = normalized;
+  }
+
+  /* ─── Slide 3: Reunião de Conselho ──────────────────────────── */
+  async function renderSlide3(canvas) {
+    canvas.width = SW; canvas.height = SH;
+    const ctx = canvas.getContext('2d');
+    const PAD = 60;
+    const LOGO_PAD = 36;
+
+    // Busca imagem do Drive evitando as 10 últimas usadas
+    const driveImg = await fetchConselhoImage();
+
+    if (driveImg) {
+      // Full-bleed com a imagem da reunião
+      const ar  = driveImg.naturalWidth / driveImg.naturalHeight;
+      const car = SW / SH;
+      let sx=0,sy=0,sw=driveImg.naturalWidth,sh=driveImg.naturalHeight;
+      if(ar>car){sw=driveImg.naturalHeight*car;sx=(driveImg.naturalWidth-sw)/2;}
+      else{sh=driveImg.naturalWidth/car;sy=0;}
+      ctx.drawImage(driveImg, sx, sy, sw, sh, 0, 0, SW, SH);
+    } else {
+      // Fallback: gradiente escuro
+      const bg = ctx.createLinearGradient(0, 0, 0, SH);
+      bg.addColorStop(0, '#001E23');
+      bg.addColorStop(1, '#080808');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, SW, SH);
+    }
+
+    // Overlay escuro para legibilidade
+    const overlay = ctx.createLinearGradient(0, 0, 0, SH);
+    overlay.addColorStop(0,   'rgba(4,8,10,0.45)');
+    overlay.addColorStop(0.5, 'rgba(4,8,10,0.62)');
+    overlay.addColorStop(1,   'rgba(4,8,10,0.92)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, SW, SH);
+
+    await drawLogo(ctx, LOGO_PAD, LOGO_PAD, 62);
+
+    // Título fixo
+    const titleSize = 72;
+    ctx.font         = `800 ${titleSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = '#ffffff';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('REUNIÃO DE', SW / 2, SH * 0.38);
+    ctx.fillStyle = TEAL;
+    ctx.fillText('CONSELHO', SW / 2, SH * 0.38 + titleSize * 1.2);
+
+    // Dias fixos
+    ctx.font         = `400 34px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.72)';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Toda quinta e sexta', SW / 2, SH * 0.38 + titleSize * 2.6);
+
+    // Linha separadora
+    const lineY = SH * 0.72;
+    ctx.strokeStyle = TEAL;
+    ctx.lineWidth   = 3;
+    ctx.beginPath();
+    ctx.moveTo(PAD * 2, lineY);
+    ctx.lineTo(SW - PAD * 2, lineY);
+    ctx.stroke();
+
+    // Chamada de ação
+    ctx.font         = `400 36px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.85)';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Onde líderes se encontram', SW / 2, lineY + 32);
+    ctx.font         = `400 36px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.55)';
+    ctx.fillText('e negócios acontecem.', SW / 2, lineY + 32 + 50);
+  }
+
+  // Histórico de imagens de conselho usadas (últimas 10)
+  function getConselhoHistory() {
+    try { return JSON.parse(localStorage.getItem('conselho_img_history') || '[]'); }
+    catch { return []; }
+  }
+  function addConselhoHistory(id) {
+    const h = getConselhoHistory();
+    h.unshift(id);
+    localStorage.setItem('conselho_img_history', JSON.stringify(h.slice(0, 10)));
+  }
+
+  // Busca imagem do Drive diferente das últimas 10 usadas
+  async function fetchConselhoImage() {
+    try {
+      const history = getConselhoHistory();
+      const res = await fetch('/api/conselho-image?avoid=' + encodeURIComponent(JSON.stringify(history)));
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.url) {
+        if (data.id) addConselhoHistory(data.id);
+        return await loadImage(data.url).catch(() => null);
+      }
+      return null;
+    } catch { return null; }
+  }
+
+  /* ─── Slide 4: CTA ──────────────────────────────────────────── */
+  async function renderSlideCTA(canvas) {
+    canvas.width = SW; canvas.height = SH;
+    const ctx = canvas.getContext('2d');
+    const PAD = 60;
+
+    // Fundo escuro gradiente
+    const bg = ctx.createLinearGradient(0, 0, 0, SH);
+    bg.addColorStop(0, '#001E23');
+    bg.addColorStop(1, '#080808');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, SW, SH);
+
+    // Logo
+    await drawLogo(ctx, 36, 36, 62);
+
+    // ── Imagem do CTA — aleatória do Drive ──
+    const BOX_MARGIN_H = 60;
+    const BOX_TOP      = 140;
+    const BOX_W        = SW - BOX_MARGIN_H * 2;
+    const BOX_H        = Math.round(SH * 0.38);
+    let ctaPhotoUrl = '/cta-photo.jpg';
+    try {
+      const driveRes = await fetch('/api/conselho-image');
+      const driveData = await driveRes.json();
+      console.log('[CTA drive]', driveRes.status, driveData);
+      if (driveRes.ok && driveData.url) ctaPhotoUrl = driveData.url;
+    } catch (err) { console.warn('[CTA drive] fetch falhou:', err.message); }
+    const ctaPhoto = await loadImage(ctaPhotoUrl).catch(() => null);
+    if (ctaPhoto) {
+      const ar  = ctaPhoto.naturalWidth / ctaPhoto.naturalHeight;
+      const dar = BOX_W / BOX_H;
+      let sx=0, sy=0, sw=ctaPhoto.naturalWidth, sh=ctaPhoto.naturalHeight;
+      if (ar > dar) { sw = ctaPhoto.naturalHeight * dar; sx = (ctaPhoto.naturalWidth - sw) / 2; }
+      else          { sh = ctaPhoto.naturalWidth / dar;  sy = (ctaPhoto.naturalHeight - sh) / 2; }
+      ctx.drawImage(ctaPhoto, sx, sy, sw, sh, BOX_MARGIN_H, BOX_TOP, BOX_W, BOX_H);
+    } else {
+      ctx.fillStyle = '#888888';
+      ctx.fillRect(BOX_MARGIN_H, BOX_TOP, BOX_W, BOX_H);
+    }
+
+    // ── Textos — ancorados 40px abaixo da imagem, crescendo para baixo ──
+    const BOX_BOT     = BOX_TOP + BOX_H;
+    const TEXT_BOTTOM = SH - 60; // âncora base do CTA
+    const bodyText = 'As soluções dos problemas reais das grandes empresas são discutidas aqui todas as semanas o ano todo.';
+    const bodySize = 40;
+    const bodyMaxW = SW - PAD * 2;
+    ctx.font = `400 ${bodySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    const bodyWords = bodyText.split(' ');
+    const bodyLines = [];
+    let bodyCur = '';
+    for (const w of bodyWords) {
+      const test = bodyCur ? bodyCur + ' ' + w : w;
+      if (ctx.measureText(test).width > bodyMaxW) { bodyLines.push(bodyCur); bodyCur = w; }
+      else bodyCur = test;
+    }
+    if (bodyCur) bodyLines.push(bodyCur);
+
+    const ctaSize  = 58;
+    const ctaLH    = ctaSize * 1.35;
+    const bodyLH   = bodySize * 1.55;
+    const BLOCK_GAP  = 40; // espaço entre linha separadora e bloco CTA
+    const LINE_GAP   = 28; // espaço entre corpo e linha separadora
+    const LINE_W     = 200;
+    const LINE_Y_PAD = 20;
+
+    // Corpo — ancorado 40px abaixo da imagem, de cima para baixo
+    ctx.font         = `400 ${bodySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = 'rgba(255,255,255,0.75)';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    let ty = BOX_BOT + 120;
+    for (const line of bodyLines) { ctx.fillText(line, PAD, ty); ty += bodyLH; }
+
+    // Linha branca separadora — abaixo do corpo
+    ty += LINE_GAP;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(PAD, ty);
+    ctx.lineTo(PAD + LINE_W, ty);
+    ctx.stroke();
+    ty += BLOCK_GAP;
+
+    // "Quer saber mais?"
+    ctx.font         = `800 ${ctaSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = TEAL;
+    ctx.textBaseline = 'top';
+    ctx.fillText('Quer saber mais?', PAD, ty);
+    ty += ctaLH;
+
+    // "Entre em contato."
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Entre em contato', PAD, ty);
+  }
+
+  /* ─── [LEGACY] Slides 2–4: Artigo (mantido como referência) ─── */
   async function renderArticleSlide(canvas, text, firstName, lastName, num, bgImg, photo, layout) {
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
     const PAD = 60;
+    const LOGO_PAD = 36;
 
     // White background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, SW, SH);
 
     // Logo top-left — invertida para aparecer preta no fundo branco
-    await drawLogo(ctx, PAD, PAD, 50, true);
+    await drawLogo(ctx, LOGO_PAD, LOGO_PAD, 62, true);
 
     // Dot indicators top-right
     const dotSlides = ['02', '03', '04'];
     const dotR   = 11;
     const dotGap = 32;
-    const dotsBaseX = SW - PAD;
-    const dotsY = PAD + 25;
+    const dotsBaseX = SW - LOGO_PAD;
+    const dotsY = LOGO_PAD + 20;
     dotSlides.forEach((s, i) => {
       const x = dotsBaseX - (dotSlides.length - 1 - i) * dotGap;
       ctx.beginPath();
@@ -1227,7 +1699,7 @@
 
     // Pré-mede altura de um bloco de texto (sem desenhar)
     function measureTextH(t, size) {
-      ctx.font = `400 ${size}px "Neue Machina", sans-serif`;
+      ctx.font = `400 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
       const words = t.split(' ');
       const lines = [];
       let cur = '';
@@ -1295,108 +1767,13 @@
     }
 
     // Nome do líder — rodapé fixo
-    ctx.font         = `700 24px "Neue Machina", sans-serif`;
+    ctx.font         = `700 24px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     ctx.fillStyle    = '#111111';
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'bottom';
     ctx.fillText(articleLabel, PAD, SH - PAD);
   }
 
-  /* ─── Slide 5: CTA ──────────────────────────────────────────── */
-  async function renderSlide5(canvas, firstName, lastName, bgImg, photo) {
-    canvas.width = SW; canvas.height = SH;
-    const ctx = canvas.getContext('2d');
-    const PAD = 60;
-
-    // ── Full-bleed background: leader photo blurred, or spheres ──
-    const bgSource = photo || bgImg;
-    if (bgSource) {
-      const BLEED = 60;
-      ctx.filter = 'blur(10px)';
-      const bgar = bgSource.naturalWidth / bgSource.naturalHeight;
-      const cgar = SW / SH;
-      let bsx=0,bsy=0,bsw=bgSource.naturalWidth,bsh=bgSource.naturalHeight;
-      if(bgar>cgar){bsw=bgSource.naturalHeight*cgar;bsx=(bgSource.naturalWidth-bsw)/2;}
-      else{bsh=bgSource.naturalWidth/cgar;bsy=0;}
-      ctx.drawImage(bgSource, bsx, bsy, bsw, bsh, -BLEED, -BLEED, SW+BLEED*2, SH+BLEED*2);
-      ctx.filter = 'none';
-    } else {
-      const bg = ctx.createLinearGradient(0, 0, 0, SH);
-      bg.addColorStop(0, '#001E23');
-      bg.addColorStop(1, '#080808');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, SW, SH);
-    }
-
-    // ── Dark overlay — heavier at bottom ─────────────────────────
-    const overlay = ctx.createLinearGradient(0, 0, 0, SH);
-    overlay.addColorStop(0,   'rgba(4,8,10,0.55)');
-    overlay.addColorStop(0.45,'rgba(4,8,10,0.72)');
-    overlay.addColorStop(1,   'rgba(4,8,10,0.93)');
-    ctx.fillStyle = overlay;
-    ctx.fillRect(0, 0, SW, SH);
-
-    // ── Logo top-left ─────────────────────────────────────────────
-    await drawLogo(ctx, PAD, PAD, 52);
-
-    // ── Teal separator line (horizontal, ~60% height) ─────────────
-    const lineY = Math.round(SH * 0.58);
-    ctx.strokeStyle = TEAL;
-    ctx.lineWidth   = 3;
-    ctx.beginPath();
-    ctx.moveTo(PAD, lineY);
-    ctx.lineTo(SW - PAD, lineY);
-    ctx.stroke();
-
-    // ── Chamada para bio — DESTAQUE PRINCIPAL ────────────────────
-    const bioFontSize = 64;
-    ctx.font         = `800 ${bioFontSize}px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = TEAL;
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    const bioText  = 'Acesse o link na bio e leia o artigo completo →';
-    const bioMaxW  = SW - PAD * 2;
-    const bioWords = bioText.split(' ');
-    const bioLines = [];
-    let bioCur = '';
-    for (const w of bioWords) {
-      const test = bioCur ? bioCur + ' ' + w : w;
-      if (ctx.measureText(test).width > bioMaxW) { bioLines.push(bioCur); bioCur = w; }
-      else bioCur = test;
-    }
-    if (bioCur) bioLines.push(bioCur);
-    let bioY = lineY + 40;
-    for (const line of bioLines) { ctx.fillText(line, PAD, bioY); bioY += bioFontSize * 1.2; }
-
-    // ── Título do artigo — abaixo da chamada, menor ───────────────
-    const ctaFontSize = 52;
-    ctx.font         = `400 ${ctaFontSize}px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(255,255,255,0.72)';
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'top';
-    const ctaWords = getArticleTitle().split(' ');
-    const ctaMaxW  = SW - PAD * 2;
-    const ctaLines = [];
-    let ctaCur = '';
-    for (const w of ctaWords) {
-      const test = ctaCur ? ctaCur + ' ' + w : w;
-      if (ctx.measureText(test).width > ctaMaxW) { ctaLines.push(ctaCur); ctaCur = w; }
-      else ctaCur = test;
-    }
-    if (ctaCur) ctaLines.push(ctaCur);
-    let ctaY = bioY + 28;
-    for (const line of ctaLines.slice(0, 3)) {
-      ctx.fillText(line, PAD, ctaY);
-      ctaY += ctaFontSize * 1.18;
-    }
-
-    // ── Person attribution — bottom, maior e mais visível ────────
-    ctx.font         = `400 38px "Neue Machina", sans-serif`;
-    ctx.fillStyle    = 'rgba(255,255,255,0.75)';
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(firstName + ' ' + lastName, PAD, SH - PAD);
-  }
 
 
   /* ═══════════════════════════════════════════════════════════════
@@ -1404,10 +1781,10 @@
   ═══════════════════════════════════════════════════════════════ */
   function renderFitTitle(ctx, text, cx, y, maxW) {
     let size = 88;
-    ctx.font = `800 ${size}px "Neue Machina", sans-serif`;
+    ctx.font = `800 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     while (ctx.measureText(text).width > maxW && size > 30) {
       size -= 2;
-      ctx.font = `800 ${size}px "Neue Machina", sans-serif`;
+      ctx.font = `800 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     }
     if (ctx.measureText(text).width <= maxW) {
       ctx.fillText(text, cx, y);
@@ -1428,7 +1805,7 @@
     const lineH = () => size * 1.55;
 
     const computeLines = (sz) => {
-      ctx.font = `400 ${sz}px "Neue Machina", sans-serif`;
+      ctx.font = `400 ${sz}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
       const words = text.split(' ');
       const lines = [];
       let cur = '';
@@ -1456,7 +1833,7 @@
     const totalH  = lines.length * lineH();
     const startY  = areaTop + (areaH - totalH) / 2;
 
-    ctx.font      = `400 ${size}px "Neue Machina", sans-serif`;
+    ctx.font      = `400 ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
     ctx.fillStyle = '#ffffff';
     let curY = startY;
     for (const line of lines) {
@@ -1500,7 +1877,7 @@
 
     setStatus('Compactando slides…');
     const zip  = new JSZip();
-    const ids  = ['canvas1', 'canvas2', 'canvas3', 'canvas4', 'canvas5'];
+    const ids  = ['canvas1', 'canvas2', 'canvas3', 'canvas4'];
     for (let i = 0; i < ids.length; i++) {
       const canvas = document.getElementById(ids[i]);
       const dataUrl = canvas.toDataURL('image/png');
@@ -1586,7 +1963,7 @@
   });
 
   // Attach click listeners to all slide thumbs
-  ['canvas1','canvas2','canvas3','canvas4','canvas5'].forEach(id => {
+  ['canvas1','canvas2','canvas3','canvas4'].forEach(id => {
     const canvas = document.getElementById(id);
     if (canvas) canvas.parentElement.addEventListener('click', () => openModal(id));
   });
