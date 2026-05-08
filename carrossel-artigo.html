@@ -1577,35 +1577,69 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     // Logo
     await drawLogo(ctx, 36, 36, 62);
 
-    // ── Imagem do CTA — aleatória do Drive ──
+    // ── Imagem do CTA — aleatória do Drive, preto e branco ──
     const BOX_MARGIN_H = 60;
     const BOX_TOP      = 140;
     const BOX_W        = SW - BOX_MARGIN_H * 2;
     const BOX_H        = Math.round(SH * 0.38);
-    let ctaPhotoUrl = '/cta-photo.jpg';
+    let ctaPhoto = null;
     try {
-      const driveRes = await fetch('/api/conselho-image');
+      const driveRes  = await fetch('/api/conselho-image?t=' + Date.now());
       const driveData = await driveRes.json();
-      console.log('[CTA drive]', driveRes.status, driveData);
-      if (driveRes.ok && driveData.url) ctaPhotoUrl = driveData.url;
-    } catch (err) { console.warn('[CTA drive] fetch falhou:', err.message); }
-    const ctaPhoto = await loadImage(ctaPhotoUrl).catch(() => null);
+      if (driveRes.ok && driveData.url) ctaPhoto = await loadImage(driveData.url).catch(() => null);
+    } catch (e) { /* fallback abaixo */ }
     if (ctaPhoto) {
       const ar  = ctaPhoto.naturalWidth / ctaPhoto.naturalHeight;
       const dar = BOX_W / BOX_H;
       let sx=0, sy=0, sw=ctaPhoto.naturalWidth, sh=ctaPhoto.naturalHeight;
       if (ar > dar) { sw = ctaPhoto.naturalHeight * dar; sx = (ctaPhoto.naturalWidth - sw) / 2; }
       else          { sh = ctaPhoto.naturalWidth / dar;  sy = (ctaPhoto.naturalHeight - sh) / 2; }
-      ctx.drawImage(ctaPhoto, sx, sy, sw, sh, BOX_MARGIN_H, BOX_TOP, BOX_W, BOX_H);
+      // Desenha em canvas temporário e converte para preto e branco via getImageData
+      const tmp = document.createElement('canvas');
+      tmp.width = BOX_W; tmp.height = BOX_H;
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(ctaPhoto, sx, sy, sw, sh, 0, 0, BOX_W, BOX_H);
+      try {
+        const imgd = tctx.getImageData(0, 0, BOX_W, BOX_H);
+        const d = imgd.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const g = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
+          d[i] = d[i+1] = d[i+2] = g;
+        }
+        tctx.putImageData(imgd, 0, 0);
+      } catch (_) { /* imagem com CORS — usa filter como fallback */ }
+      ctx.drawImage(tmp, BOX_MARGIN_H, BOX_TOP);
     } else {
-      ctx.fillStyle = '#888888';
-      ctx.fillRect(BOX_MARGIN_H, BOX_TOP, BOX_W, BOX_H);
+      // Fallback: foto local em preto e branco
+      const fallback = await loadImage('/cta-photo.jpg').catch(() => null);
+      if (fallback) {
+        const ar  = fallback.naturalWidth / fallback.naturalHeight;
+        const dar = BOX_W / BOX_H;
+        let sx=0, sy=0, sw=fallback.naturalWidth, sh=fallback.naturalHeight;
+        if (ar > dar) { sw = fallback.naturalHeight * dar; sx = (fallback.naturalWidth - sw) / 2; }
+        else          { sh = fallback.naturalWidth / dar;  sy = (fallback.naturalHeight - sh) / 2; }
+        const tmp2 = document.createElement('canvas');
+        tmp2.width = BOX_W; tmp2.height = BOX_H;
+        const tctx2 = tmp2.getContext('2d');
+        tctx2.drawImage(fallback, sx, sy, sw, sh, 0, 0, BOX_W, BOX_H);
+        const imgd2 = tctx2.getImageData(0, 0, BOX_W, BOX_H);
+        const d2 = imgd2.data;
+        for (let i = 0; i < d2.length; i += 4) {
+          const g = d2[i] * 0.299 + d2[i+1] * 0.587 + d2[i+2] * 0.114;
+          d2[i] = d2[i+1] = d2[i+2] = g;
+        }
+        tctx2.putImageData(imgd2, 0, 0);
+        ctx.drawImage(tmp2, BOX_MARGIN_H, BOX_TOP);
+      } else {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(BOX_MARGIN_H, BOX_TOP, BOX_W, BOX_H);
+      }
     }
 
     // ── Textos — ancorados 40px abaixo da imagem, crescendo para baixo ──
     const BOX_BOT     = BOX_TOP + BOX_H;
     const TEXT_BOTTOM = SH - 60; // âncora base do CTA
-    const bodyText = 'As soluções dos problemas reais das grandes empresas são discutidas aqui todas as semanas o ano todo.';
+    const bodyText = 'Toda semana, reunimos decisores das principais empresas do Brasil para encontrar as melhores soluções do mercado';
     const bodySize = 40;
     const bodyMaxW = SW - PAD * 2;
     ctx.font = `400 ${bodySize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
@@ -1645,16 +1679,16 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     ctx.stroke();
     ty += BLOCK_GAP;
 
-    // "Quer saber mais?"
+    // "Faça parte."
     ctx.font         = `800 ${ctaSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
-    ctx.fillStyle    = TEAL;
+    ctx.fillStyle    = '#ffffff';
     ctx.textBaseline = 'top';
-    ctx.fillText('Quer saber mais?', PAD, ty);
+    ctx.fillText('Faça parte', PAD, ty);
     ty += ctaLH;
 
-    // "Entre em contato."
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('Entre em contato', PAD, ty);
+    // "redelideres.com" em teal
+    ctx.fillStyle = TEAL;
+    ctx.fillText('redelideres.com', PAD, ty);
   }
 
   /* ─── [LEGACY] Slides 2–4: Artigo (mantido como referência) ─── */
@@ -1937,6 +1971,7 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
       const final = src.startsWith('http')
         ? `/api/proxy-image?url=${encodeURIComponent(src)}`
         : src;
+      img.crossOrigin = 'anonymous';
       img.onload  = () => resolve(img);
       img.onerror = () => reject(new Error('Não foi possível carregar a imagem.'));
       img.src = final;
