@@ -779,8 +779,11 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     acDropdown.classList.add('open');
   }
 
+  let selectedPbId = '';
+
   function acSelect(person) {
     nameInput.value = person.name || '';
+    selectedPbId    = person.id   || '';
     if (person.cargo)      document.getElementById('jobTitle').value  = person.cargo;
     if (person.cargo_rede) document.getElementById('cargoRede').value = person.cargo_rede;
     if (person.empresas)   document.getElementById('companies').value = person.empresas;
@@ -1089,7 +1092,7 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     await renderSlide1(document.getElementById('canvas1'), photo, firstName, lastName, companies, cargoRede);
     const slide2Text = document.getElementById('articleText')?.value?.trim()  || articleBloco  || (articleParts[0] || '');
     const slide3Text = document.getElementById('articleText2')?.value?.trim() || articleBloco2 || (articleParts[1] || '');
-    await renderSlide2(document.getElementById('canvas2'), slide2Text, firstName, lastName, stockImgs[0], false);
+    await renderSlide2(document.getElementById('canvas2'), slide2Text, firstName, lastName, stockImgs[0], false, coverHook);
     await renderSlide2(document.getElementById('canvas3'), slide3Text, firstName, lastName, stockImgs[1] || stockImgs[0], true);
     await renderSlideCTA(document.getElementById('canvas4'));
   }
@@ -1374,7 +1377,8 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
   }
 
   /* ─── Slide 2: Texto do Artigo ─────────────────────────────── */
-  async function renderSlide2(canvas, bloco, firstName, lastName, stockImg, imgBottom = false) {
+  async function renderSlide2(canvas, bloco, firstName, lastName, stockImg, imgBottom = false, hook = '') {
+    console.log('[renderSlide2] hook recebido:', JSON.stringify(hook), '| imgBottom:', imgBottom);
     canvas.width = SW; canvas.height = SH;
     const ctx = canvas.getContext('2d');
     const LOGO_PAD  = 36;
@@ -1388,17 +1392,51 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     // Footer box — full width, fundo branco, contém nome do líder
     const FOOTER_H   = 80;                   // altura da barra de baixo
 
-    // Área de conteúdo entre as barras
-    const CONTENT_TOP = HEADER_H + GAP;
+    // Fundo branco total
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, SW, SH);
+
+    // Hook box — exibida apenas no bloco 1, abaixo do header
+    let HOOK_H = 0;
+    const hookNorm = (hook || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (hookNorm) {
+      const HOOK_FONT = 44;
+      const HOOK_LH   = HOOK_FONT * 1.42;
+      const HOOK_PAD_H = 36;
+      const HOOK_PAD_V = 24;
+      const hookMaxW = SW - TEXT_PAD * 2 - HOOK_PAD_H * 2;
+      ctx.font = `800 ${HOOK_FONT}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      const hookWords = hookNorm.split(' ');
+      const hookLines = [];
+      let hCur = '';
+      for (const w of hookWords) {
+        const test = hCur ? hCur + ' ' + w : w;
+        if (ctx.measureText(test).width > hookMaxW && hCur) { hookLines.push(hCur); hCur = w; }
+        else hCur = test;
+      }
+      if (hCur) hookLines.push(hCur);
+      HOOK_H = hookLines.length * HOOK_LH + HOOK_PAD_V * 2 + GAP;
+
+      // Texto do hook
+      const hookBoxY = HEADER_H + GAP;
+      ctx.font         = `800 ${HOOK_FONT}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+      ctx.fillStyle    = '#111111';
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'top';
+      let hy = hookBoxY + HOOK_PAD_V;
+      for (const line of hookLines) {
+        ctx.fillText(line, TEXT_PAD + HOOK_PAD_H, hy);
+        hy += HOOK_LH;
+      }
+    }
+
+    // Área de conteúdo entre as barras (deslocada pelo hook)
+    const CONTENT_TOP = HEADER_H + GAP + HOOK_H;
     const CONTENT_BOT = SH - FOOTER_H - GAP;
     const TOTAL_H     = CONTENT_BOT - CONTENT_TOP;
 
     const IMG_MIN = 200;
     const IMG_MAX = 580;
-
-    // Fundo branco total
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, SW, SH);
 
     await drawLogo(ctx, LOGO_PAD, LOGO_PAD, 62, true);
     ctx.font         = `700 30px "Helvetica Neue", Helvetica, Arial, sans-serif`;
@@ -1926,6 +1964,16 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     a.click();
     URL.revokeObjectURL(a.href);
     setStatus('Download concluído ✓');
+
+    // Marca carrossel_feito no PocketBase
+    if (selectedPbId) {
+      fetch('/api/pb/mark-carrossel', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selectedPbId })
+      }).catch(e => console.warn('[mark-carrossel] erro:', e.message));
+    }
+
     setTimeout(() => setStatus(''), 3000);
   }
 
