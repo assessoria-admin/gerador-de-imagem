@@ -213,10 +213,30 @@ app.get('/api/notion/members', async (req, res) => {
       cursor = data.next_cursor;
     } while (cursor);
 
-    _membersCache = members;
+    // Filtra líderes que já têm carrossel_feito = true no PocketBase
+    let filtered = members;
+    if (PB_BASE_URL && PB_ADMIN_EMAIL) {
+      try {
+        const token = await getPbToken();
+        const pbFilter = encodeURIComponent('carrossel_feito = true');
+        const pbRes = await fetch(
+          `${PB_BASE_URL}/api/collections/lideres/records?filter=${pbFilter}&fields=nome&perPage=500`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const pbData = await pbRes.json();
+        const done = new Set(
+          (pbData.items || []).map(r => r.nome?.trim().toLowerCase()).filter(Boolean)
+        );
+        filtered = members.filter(m => !done.has(m.name.trim().toLowerCase()));
+        console.log(`[notion/members] ${members.length} total → ${filtered.length} sem carrossel`);
+      } catch (pbErr) {
+        console.warn('[notion/members] falha ao filtrar PocketBase:', pbErr.message);
+      }
+    }
+
+    _membersCache = filtered;
     _membersCacheTime = Date.now();
-    console.log(`[notion/members] ${members.length} líderes com "Artigo Finalizado"`);
-    res.json({ members });
+    res.json({ members: filtered });
   } catch (err) {
     console.error('[notion/members] erro:', err.message);
     res.json({ members: [] });
@@ -291,7 +311,7 @@ app.get('/api/pb/search', async (req, res) => {
 
   try {
     const token  = await getPbToken();
-    const filter = encodeURIComponent(`nome ~ '${q}'`);
+    const filter = encodeURIComponent(`nome ~ '${q}' && carrossel_feito = false`);
 const url = `${PB_BASE_URL}/api/collections/lideres/records?filter=${filter}&perPage=10`;
     console.log('[pb-search] GET', url);
     const pbRes  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
