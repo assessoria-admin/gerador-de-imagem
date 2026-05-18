@@ -303,40 +303,102 @@ app.get('/api/notion/search', async (req, res) => {
   }
 });
 
-// ── GET /api/pb/search — busca líderes no PocketBase ─────────────────────────
+// ── Helper: busca no Notion por query ────────────────────────────────────────
+async function searchNotion(q) {
+  if (!NOTION_KEY || !NOTION_DB) return [];
+  const headers = {
+    'Authorization':  `Bearer ${NOTION_KEY}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type':   'application/json'
+  };
+  for (const filterType of ['title', 'rich_text']) {
+    try {
+      const resp = await fetch(`https://api.notion.com/v1/databases/${NOTION_DB}/query`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          filter:    { property: 'user', [filterType]: { contains: q } },
+          page_size: 10,
+          sorts:     [{ property: 'user', direction: 'ascending' }]
+        })
+      });
+      const data = await resp.json();
+      if (data.object !== 'error') return mapNotionResults(data.results || []);
+    } catch (_) {}
+  }
+  return [];
+}
+
+// ── GET /api/pb/search — busca líderes no PocketBase (fallback: Notion) ──────
 app.get('/api/pb/search', async (req, res) => {
   const { q } = req.query;
   if (!q || q.length < 2) return res.json({ results: [] });
-  if (!PB_BASE_URL || !PB_ADMIN_EMAIL) return res.json({ results: [] });
 
+  // Tenta PocketBase primeiro
+  if (PB_BASE_URL && PB_ADMIN_EMAIL) {
+    try {
+      const token  = await getPbToken();
+      const filter = encodeURIComponent(`nome ~ '${q}' && carrossel_feito = false`);
+      const url = `${PB_BASE_URL}/api/collections/lideres/records?filter=${filter}&perPage=10`;
+      console.log('[pb-search] GET', url);
+      const pbRes = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data  = await pbRes.json();
+      if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
+      const results = (data.items || []).map(r => {
+        const cargoRede = Array.isArray(r.cargo_rede) ? r.cargo_rede.join(', ') : (r.cargo_rede || '');
+        return {
+          id:         r.id,
+          name:       r.nome            || '',
+          cargo:      cargoRede,
+          cargo_rede: cargoRede,
+          empresas:   r.ultimas_empresa || '',
+          linkedin:   r.url_linkedin    || '',
+          photoUrl:   r.foto_ia
+            ? `${PB_BASE_URL}/api/files/lideres/${r.id}/${r.foto_ia}`
+            : ''
+        };
+      }).filter(r => r.name);
+
+      if (results.length > 0) {
+        console.log(`[pb-search] "${q}" → ${results.length} resultado(s)`);
+        return res.json({ results });
+      }
+      console.log(`[pb-search] "${q}" → 0 resultados, tentando Notion...`);
+    } catch (err) {
+      console.error('[pb-search] erro:', err.message, '— tentando Notion...');
+    }
+  }
+
+  // Fallback: Notion
   try {
-    const token  = await getPbToken();
-    const filter = encodeURIComponent(`nome ~ '${q}' && carrossel_feito = false`);
-const url = `${PB_BASE_URL}/api/collections/lideres/records?filter=${filter}&perPage=10`;
-    console.log('[pb-search] GET', url);
-    const pbRes  = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const results = await searchNotion(q);
+    console.log(`[notion-fallback] "${q}" → ${results.length} resultado(s)`);
+    res.json({ results, source: 'notion' });
+  } catch (err) {
+    console.error('[notion-fallback] erro:', err.message);
+    res.json({ results: [] });
+  }
+});
+
+// ── PATCH /api/pb/mark-carrossel — marca carrossel_feito=true no registro ─────
+app.patch('/api/pb/mark-carrossel', async (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: 'id obrigatório' });
+  try {
+    const token = await getPbToken();
+    const pbRes = await fetch(`${PB_BASE_URL}/api/collections/lideres/records/${id}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ carrossel_feito: true })
+    });
+
     const data = await pbRes.json();
     if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
-    const results = (data.items || []).map(r => {
-      const cargoRede = Array.isArray(r.cargo_rede) ? r.cargo_rede.join(', ') : (r.cargo_rede || '');
-      return {
-        id:         r.id,
-        name:       r.nome            || '',
-        cargo:      cargoRede,
-        cargo_rede: cargoRede,
-        empresas:   r.ultimas_empresa || '',
-        linkedin:   r.url_linkedin    || '',
-        photoUrl:   r.foto_ia
-          ? `${PB_BASE_URL}/api/files/lideres/${r.id}/${r.foto_ia}`
-          : ''
-      };
-    }).filter(r => r.name);
-
-    console.log(`[pb-search] "${q}" → ${results.length} resultado(s)`);
-    res.json({ results });
+    console.log(`[pb-mark] carrossel_feito=true para id=${id}`);
+    res.json({ ok: true });
   } catch (err) {
-    console.error('[pb-search] erro:', err.message);
-    res.json({ results: [] });
+    console.error('[pb-mark] erro:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -372,12 +434,10 @@ function mapNotionResults(pages) {
       if (k.includes('linkedin') && !linkedin) {
         linkedin = extractProp(val);
       }
-      if (k === 'foto_ia') {
-        fotoProp = val; // foto_ia tem prioridade
-        console.log(`[notion-debug] prop foto_ia raw:`, JSON.stringify(val).slice(0, 300));
+      if (k === 'foto_ia' && (val?.files?.length > 0 || val?.url)) {
+        fotoProp = val; // foto_ia tem prioridade, mas só se tiver conteúdo
       } else if ((k === 'foto' || k === 'photo') && !fotoProp) {
         fotoProp = val;
-        console.log(`[notion-debug] prop foto raw:`, JSON.stringify(val).slice(0, 300));
       }
     }
 
