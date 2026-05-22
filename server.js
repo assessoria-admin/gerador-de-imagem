@@ -243,6 +243,97 @@ app.get('/api/notion/members', async (req, res) => {
   }
 });
 
+// ── GET /api/pb/artigos-disponiveis — lista artigos pendentes de carrossel ───
+app.get('/api/pb/artigos-disponiveis', async (req, res) => {
+  if (!PB_BASE_URL || !PB_ADMIN_EMAIL) return res.json({ artigos: [] });
+  try {
+    const token = await getPbToken();
+    const filter = encodeURIComponent('carrossel_criado = false');
+    const expand = 'co_autor';
+
+    // Fetch a small batch and pick 1 randomly (fast + variety)
+    const url = `${PB_BASE_URL}/api/collections/db_artigos/records?filter=${filter}&expand=${expand}&perPage=10`;
+    const pbRes = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await pbRes.json();
+    if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
+
+    const raw = data.items || [];
+    const validos = raw.map(r => {
+      const coAutor = r.expand?.co_autor;
+      if (!coAutor || !coAutor.foto_ia) return null;
+      return {
+        id:     r.id,
+        artigo: r.artigo || '',
+        texto:  r.texto || '',
+        lider:  {
+          id:         coAutor.id,
+          name:       coAutor.nome || '',
+          cargo:      coAutor.cargo_rede || coAutor.cargo_atual || '',
+          cargo_rede: coAutor.cargo_rede || '',
+          empresas:   coAutor.ultimas_empresa || '',
+          linkedin:   coAutor.url_linkedin || '',
+          photoUrl:   `${PB_BASE_URL}/api/files/lideres/${coAutor.id}/${coAutor.foto_ia}`
+        }
+      };
+    }).filter(a => a && a.artigo && a.lider?.photoUrl);
+
+    // Pick 1 randomly
+    const artigos = validos.length > 0 ? [validos[Math.floor(Math.random() * validos.length)]] : [];
+    console.log(`[artigos-disponiveis] ${validos.length} válidos → sorteou 1`);
+
+    const artigos = raw.map(r => {
+      const coAutor = r.expand?.co_autor;
+      if (!coAutor || !coAutor.foto_ia) return null;
+      return {
+        id:     r.id,
+        artigo: r.artigo || '',
+        texto:  r.texto || '',
+        lider:  {
+          id:         coAutor.id,
+          name:       coAutor.nome || '',
+          cargo:      coAutor.cargo_rede || coAutor.cargo_atual || '',
+          cargo_rede: coAutor.cargo_rede || '',
+          empresas:   coAutor.ultimas_empresa || '',
+          linkedin:   coAutor.url_linkedin || '',
+          photoUrl:   `${PB_BASE_URL}/api/files/lideres/${coAutor.id}/${coAutor.foto_ia}`
+        }
+      };
+    }).filter(a => {
+      if (!a) return false;
+      if (!a.artigo) { console.log(`[artigos-disponiveis] drop: empty artigo`); return false; }
+      if (!a.lider?.photoUrl) { console.log(`[artigos-disponiveis] drop: no photoUrl`); return false; }
+      return true;
+    });
+
+    console.log(`[artigos-disponiveis] ${artigos.length} artigos pendentes`);
+    res.json({ artigos });
+  } catch (err) {
+    console.error('[artigos-disponiveis] erro:', err.message);
+    res.json({ artigos: [] });
+  }
+});
+
+// ── PATCH /api/pb/mark-done — marca carrossel_criado=true ────────────────────
+app.patch('/api/pb/mark-done', async (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: 'id obrigatório' });
+  try {
+    const token = await getPbToken();
+    const pbRes = await fetch(`${PB_BASE_URL}/api/collections/db_artigos/records/${id}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ carrossel_criado: true })
+    });
+    const data = await pbRes.json();
+    if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    console.log(`[artigos-mark-done] carrossel_criado=true para id=${id}`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[artigos-mark-done] erro:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /api/notion/search — busca pessoas no Notion ──────────────────────────
 app.get('/api/notion/search', async (req, res) => {
   const { q } = req.query;
@@ -348,6 +439,7 @@ app.get('/api/pb/search', async (req, res) => {
         const cargoRede = Array.isArray(r.cargo_rede) ? r.cargo_rede.join(', ') : (r.cargo_rede || '');
         return {
           id:         r.id,
+          source:     'pb',
           name:       r.nome            || '',
           cargo:      cargoRede,
           cargo_rede: cargoRede,
@@ -447,6 +539,7 @@ function mapNotionResults(pages) {
 
     return {
       id:       page.id,
+      source:   'notion',
       name,
       cargo:    extractProp(props.cargo_rede),
       empresas: extractProp(props.ultimas_empresa),
@@ -1056,6 +1149,93 @@ app.get('/api/conselho-image', async (req, res) => {
     console.error('[conselho-image]', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── POST /api/pb/update-cargo — atualiza cargo e histórico de empresas ────────
+app.post('/api/pb/update-cargo', async (req, res) => {
+  const { pbId, notionId, nome, cargo, empresa, empresasFull } = req.body || {};
+  if (!pbId && !notionId) return res.status(400).json({ error: 'pbId ou notionId obrigatório' });
+  if (!cargo || !empresa)  return res.status(400).json({ error: 'cargo e empresa obrigatórios' });
+
+  // Rotaciona histórico: prepend nova empresa, mantém 2 mais recentes → 3 total
+  const oldList    = (empresasFull || '').split(',').map(s => s.trim()).filter(Boolean);
+  const newEmpresas = [empresa, ...oldList.slice(0, 2)].join(', ');
+
+  const errors = [];
+  const notionHeaders = {
+    'Authorization':  `Bearer ${NOTION_KEY}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type':   'application/json'
+  };
+
+  // ── Atualiza PocketBase ───────────────────────────────────────────────────
+  if (pbId && PB_BASE_URL) {
+    try {
+      const token  = await getPbToken();
+      const pbRes  = await fetch(`${PB_BASE_URL}/api/collections/lideres/records/${pbId}`, {
+        method:  'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ cargo_atual: cargo, ultimas_empresa: newEmpresas })
+      });
+      const data = await pbRes.json();
+      if (!pbRes.ok) throw new Error(`PB ${pbRes.status}: ${JSON.stringify(data).slice(0, 200)}`);
+      console.log(`[update-cargo] PB atualizado id=${pbId} cargo="${cargo}" empresas="${newEmpresas}"`);
+    } catch (err) {
+      console.error('[update-cargo] PB erro:', err.message);
+      errors.push(`PocketBase: ${err.message}`);
+    }
+  }
+
+  // ── Resolve Notion page ID ────────────────────────────────────────────────
+  let resolvedNotionId = notionId;
+  if (!resolvedNotionId && nome && NOTION_KEY && NOTION_DB) {
+    try {
+      const notionResults = await searchNotion(nome.trim().split(/\s+/)[0]);
+      const match = notionResults.find(r => r.name.toLowerCase().includes(nome.trim().split(/\s+/)[0].toLowerCase()));
+      if (match) resolvedNotionId = match.id;
+    } catch (_) {}
+  }
+
+  // ── Atualiza Notion ───────────────────────────────────────────────────────
+  if (resolvedNotionId && NOTION_KEY) {
+    try {
+      // Lê tipos das propriedades para montar o payload correto
+      const pageRes  = await fetch(`https://api.notion.com/v1/pages/${resolvedNotionId}`, {
+        headers: notionHeaders
+      });
+      const page  = await pageRes.json();
+      const props = page.properties || {};
+      const updates = {};
+
+      if (props.ultimas_empresa) {
+        const type = props.ultimas_empresa.type;
+        if (type === 'multi_select') {
+          updates.ultimas_empresa = {
+            multi_select: newEmpresas.split(',').map(s => ({ name: s.trim() })).filter(s => s.name)
+          };
+        } else {
+          updates.ultimas_empresa = { rich_text: [{ text: { content: newEmpresas } }] };
+        }
+      }
+
+      const notionRes  = await fetch(`https://api.notion.com/v1/pages/${resolvedNotionId}`, {
+        method:  'PATCH',
+        headers: notionHeaders,
+        body:    JSON.stringify({ properties: updates })
+      });
+      const notionData = await notionRes.json();
+      if (!notionRes.ok) throw new Error(`Notion ${notionRes.status}: ${JSON.stringify(notionData).slice(0, 200)}`);
+      console.log(`[update-cargo] Notion atualizado id=${resolvedNotionId}`);
+    } catch (err) {
+      console.error('[update-cargo] Notion erro:', err.message);
+      errors.push(`Notion: ${err.message}`);
+    }
+  }
+
+  if (errors.length && errors.length >= 2) {
+    return res.status(500).json({ error: errors.join(' | ') });
+  }
+  res.json({ ok: true, newEmpresas, errors: errors.length ? errors : undefined });
 });
 
 // ── Health check ──────────────────────────────────────────────────────────────

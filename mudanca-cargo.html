@@ -402,12 +402,8 @@
 <body>
 
   <nav class="tool-nav">
-    <a href="/minibio.html">✨ Mini Bio</a>
     <a class="active" href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
-    <a href="/aniversario-lider.html">🎂 Aniversário</a>
     <a href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
-    <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
-    <a href="/remove-fundo.html">✂️ Remove Fundo</a>
   </nav>
 
 <div class="wrap">
@@ -498,6 +494,8 @@
         <input type="hidden" id="c-inp-nome" />
         <input type="hidden" id="c-inp-sobrenome" />
         <input type="hidden" id="c-inp-empresas-full" />
+        <input type="hidden" id="c-inp-pb-id" />
+        <input type="hidden" id="c-inp-notion-id" />
 
         <div class="c-field">
           <label>Cargo</label>
@@ -516,13 +514,13 @@
             📷 Selecionar foto
             <input type="file" accept="image/*" id="c-file-foto" onchange="cCarregarFoto(this)">
           </button>
-          <button class="c-btn" onclick="cGerarFotoIA(window._cFotoDataUrl)"
-            id="c-btn-ia" style="opacity:.4; cursor:not-allowed;" disabled>
-            ✨ Enviar para IA
-          </button>
         </div>
         <div class="c-actions" style="margin-top:0;">
           <button class="c-btn" onclick="cExportar()" style="flex:1;">⬇ Exportar PNG</button>
+          <button class="c-btn" id="c-btn-salvar" onclick="cSalvarNoBanco()"
+            style="opacity:.4; cursor:not-allowed;" disabled>
+            💾 Salvar
+          </button>
         </div>
 
         <!-- CopyWriter Panel -->
@@ -666,12 +664,24 @@ function cAcSelect(person) {
   document.getElementById('c-inp-nome-full').value = name;
   document.getElementById('c-inp-nome').value      = parts[0] || '';
   document.getElementById('c-inp-sobrenome').value = parts.slice(1).join(' ') || '';
+
+  // Armazena IDs por fonte
+  document.getElementById('c-inp-pb-id').value     = person.source === 'pb'     ? (person.id || '') : '';
+  document.getElementById('c-inp-notion-id').value = person.source === 'notion' ? (person.id || '') : '';
+
   if (person.cargo)    document.getElementById('c-inp-cargo').value   = person.cargo;
   if (person.empresas) {
     const firstEmpresa = (person.empresas || '').split(',')[0].trim();
     document.getElementById('c-inp-empresa').value = firstEmpresa;
     document.getElementById('c-inp-empresas-full').value = person.empresas;
   }
+
+  // Habilita botão Salvar
+  const btnSalvar = document.getElementById('c-btn-salvar');
+  btnSalvar.disabled = false;
+  btnSalvar.style.opacity = '1';
+  btnSalvar.style.cursor  = 'pointer';
+
   document.getElementById('cAcDropdown').classList.remove('open');
   cAtualizar();
   document.getElementById('cwPlaceholder').style.display = 'block';
@@ -1032,6 +1042,41 @@ function _cwSetCaption(net, text) {
 function _cwShowError() {
   ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('cwError').style.display = 'block';
+}
+
+/* ── Salvar cargo e histórico no PocketBase e Notion ──────────────────── */
+async function cSalvarNoBanco() {
+  const pbId     = document.getElementById('c-inp-pb-id').value.trim();
+  const notionId = document.getElementById('c-inp-notion-id').value.trim();
+  const nome     = document.getElementById('c-inp-nome-full').value.trim();
+  const cargo    = document.getElementById('c-inp-cargo').value.trim();
+  const empresa  = document.getElementById('c-inp-empresa').value.trim();
+  const empresas = document.getElementById('c-inp-empresas-full').value.trim();
+
+  if (!pbId && !notionId) { cSetStatus('Nenhum líder selecionado.', false); return; }
+  if (!cargo || !empresa) { cSetStatus('Preencha o cargo e a empresa.', false); return; }
+
+  cSetStatus('Salvando no banco…', true);
+  try {
+    const res  = await fetch('/api/pb/update-cargo', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ pbId, notionId, nome, cargo, empresa, empresasFull: empresas })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
+
+    // Atualiza campo oculto com o novo histórico
+    if (data.newEmpresas) document.getElementById('c-inp-empresas-full').value = data.newEmpresas;
+
+    const msg = data.errors?.length
+      ? `Salvo parcialmente — ${data.errors.join('; ')}`
+      : 'Salvo no PocketBase e Notion ✓';
+    cSetStatus(msg, false);
+    setTimeout(() => cSetStatus('', false), 5000);
+  } catch (err) {
+    cSetStatus('Erro ao salvar: ' + err.message, false);
+  }
 }
 </script>
 </body>

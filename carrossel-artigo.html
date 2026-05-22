@@ -114,22 +114,6 @@
     textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
     .hint { font-size: 11px; color: #333; margin-top: 6px; }
 
-    /* ─── Gender toggle ─────────────────────────────────────────── */
-    .gender-toggle { display: flex; gap: 8px; }
-    .gender-btn {
-      flex: 1; padding: 10px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border); border-radius: 8px;
-      color: var(--muted); font-family: var(--font);
-      font-size: 11px; font-weight: 800; letter-spacing: 2px;
-      text-transform: uppercase; cursor: pointer; transition: all .2s;
-    }
-    .gender-btn.active {
-      border-color: rgba(65,193,194,.45);
-      background: rgba(65,193,194,.08);
-      color: var(--teal);
-    }
-
     /* ─── Autocomplete ──────────────────────────────────────────── */
     .ac-wrap { position: relative; }
     .ac-dropdown {
@@ -211,6 +195,18 @@
     }
 
     /* ─── Buttons ───────────────────────────────────────────────── */
+    .btn-random {
+      width: 100%; margin-top: 10px; margin-bottom: 22px;
+      background: transparent;
+      border: 1px solid rgba(65,193,194,.35);
+      color: var(--teal); border-radius: 8px; padding: 12px;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-random:hover:not(:disabled) { background: rgba(65,193,194,.08); }
+    .btn-random:disabled { opacity: .3; cursor: not-allowed; }
+
     .btn-summarize {
       width: 100%; margin-top: 10px;
       background: transparent;
@@ -304,73 +300,13 @@
       .slide-thumb { flex-shrink: 0; width: 140px; }
     }
 
-    /* ── CopyWriter Panel ──────────────────────────────────────── */
-    .cw-panel {
-      display: block;
-      margin-top: 32px;
-      padding: 24px;
-      background: rgba(65,193,194,.08);
-      border: 1px solid rgba(65,193,194,.45);
-      border-radius: 12px;
-    }
-    .cw-panel-title {
-      font-size: 10px; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--teal);
-      margin-bottom: 14px;
-    }
-    .cw-cards {
-      display: none;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-    .cw-cards.visible { display: flex; }
-    .cw-card {
-      flex: 1; min-width: 220px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 16px;
-    }
-    .cw-card-label {
-      font-size: 9px; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--teal); margin-bottom: 10px;
-    }
-    .cw-caption {
-      font-size: 13px; line-height: 1.7; color: rgba(255,255,255,.88);
-      white-space: pre-wrap; margin-bottom: 14px;
-    }
-    .cw-skeleton { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
-    .cw-skel-line {
-      height: 3px; border-radius: 2px;
-      background: rgba(65,193,194,.2);
-      animation: cwPulse 1.2s ease-in-out infinite;
-    }
-    @keyframes cwPulse { 0%,100% { opacity: .3; } 50% { opacity: .9; } }
-    .cw-actions { display: flex; gap: 16px; }
-    .cw-action {
-      background: none; border: none; padding: 0;
-      color: rgba(255,255,255,.4); font-family: var(--font);
-      font-size: 10px; font-weight: 800; letter-spacing: 2px;
-      text-transform: uppercase; cursor: pointer;
-      border-bottom: 1px solid transparent;
-      transition: color .2s, border-color .2s;
-    }
-    .cw-action:hover { color: var(--teal); border-bottom-color: var(--teal); }
-    .cw-placeholder {
-      font-size: 12px; color: var(--muted); letter-spacing: .5px; padding: 4px 0 8px;
-    }
-    .cw-error {
-      font-size: 12px; color: #e05555; margin-top: 8px; display: none;
-    }
   </style>
 </head>
 <body>
 
   <nav class="tool-nav">
-    <a href="/minibio.html">✨ Mini Bio</a>
     <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
-    <a href="/aniversario-lider.html">🎂 Aniversário</a>
     <a class="active" href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
-    <a href="/seletor-prompts.html">🎨 Seletor de Prompts</a>
-    <a href="/remove-fundo.html">✂️ Remove Fundo</a>
   </nav>
 
   <!-- Modal de preview ampliado -->
@@ -397,37 +333,22 @@
       <div class="form-col">
         <div class="card">
 
-          <div class="field">
-            <label>Selecionar Líder com Artigo</label>
-            <select id="memberSelect">
-              <option value="">— carregando lista… —</option>
-            </select>
-            <div class="hint">Lista de membros com artigo no Notion</div>
-          </div>
+          <button class="btn-random" id="btnRandom" onclick="puxarArtigoAleatorio()">
+            🎲 &nbsp; Puxar Artigo Aleatório
+          </button>
 
           <div class="field">
-            <label>Buscar na Rede Líderes</label>
-            <div class="ac-wrap" id="acWrap">
-              <input type="text" id="fullName"
-                placeholder="Digite o nome para buscar…"
-                autocomplete="off" />
-              <div class="ac-dropdown" id="acDropdown"></div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Roupa na Foto</label>
-            <div class="gender-toggle">
-              <button type="button" class="gender-btn active" id="btnRoupaPreta" onclick="setOutfit('black')">Roupa Preta</button>
-              <button type="button" class="gender-btn" id="btnRoupaAtual" onclick="setOutfit('current')">Roupa Atual</button>
-            </div>
+            <label>Nome do Líder</label>
+            <input type="text" id="fullName"
+              placeholder="Preenchido automaticamente"
+              autocomplete="off" readonly style="opacity:.6; cursor:default;" />
           </div>
 
           <div class="field">
             <label>Cargo</label>
             <input type="text" id="jobTitle"
-              placeholder="Preenchido automaticamente pelo Notion"
-              autocomplete="off" />
+              placeholder="Preenchido automaticamente"
+              autocomplete="off" readonly style="opacity:.6; cursor:default;" />
           </div>
 
           <input type="hidden" id="cargoRede" />
@@ -435,23 +356,22 @@
           <div class="field">
             <label>3 Últimas Empresas</label>
             <input type="text" id="companies"
-              placeholder="Preenchido automaticamente pelo Notion"
-              autocomplete="off" />
+              placeholder="Preenchido automaticamente"
+              autocomplete="off" readonly style="opacity:.6; cursor:default;" />
             <div class="hint">Separadas por vírgula — exibidas como Empresa | Empresa | Empresa</div>
           </div>
 
           <div class="field">
-            <label>Foto de Referência</label>
-            <div class="upload-zone" id="uploadZone">
-              <input type="file" id="photoFile" accept="image/*" />
+            <label>Foto do Líder</label>
+            <div class="upload-zone" id="uploadZone" style="pointer-events:none; cursor:default;">
               <div class="upload-idle" id="uploadIdle">
                 <div class="arrow">↑</div>
-                <p><strong>Escolher foto</strong>&nbsp;ou arrastar aqui</p>
+                <p><strong>Selecionado automaticamente</strong>&nbsp;ao puxar artigo</p>
               </div>
-              <div class="upload-preview" id="uploadPreview">
+              <div class="upload-preview" id="uploadPreview" style="display:none;">
                 <img id="photoThumb" alt="" />
                 <div class="upload-preview-info">
-                  <div class="label-ok">Foto selecionada</div>
+                  <div class="label-ok">Foto do líder (foto_ia)</div>
                   <div class="fname" id="photoFname"></div>
                 </div>
               </div>
@@ -489,13 +409,8 @@
           </div>
 
           <div id="notionPermissionWarning" style="display:none; margin: 12px 0; padding: 14px 16px; background: #1a0f00; border: 1px solid #7a4500; border-radius: 10px; font-size: 13px; line-height: 1.6; color: #f0a050;">
-            <strong>⚠️ Lembrete: liberar acesso da integração no Notion</strong><br><br>
-            O artigo desta pessoa não foi encontrado automaticamente porque a integração ainda não tem acesso às páginas de COAUTORES.<br><br>
-            <strong>O que fazer:</strong><br>
-            1. Peça para o <strong>dono do workspace Notion</strong> abrir a página <strong>"CONTROLE - LIVROS"</strong><br>
-            2. Clicar nos <strong>...</strong> (três pontos) no canto superior direito → <strong>Connections</strong><br>
-            3. Adicionar a integração <strong>NOTION_KEY</strong> do projeto<br><br>
-            Isso libera acesso automático para todos os livros e coautores. Enquanto isso, cole o artigo manualmente no campo acima.
+            <strong>⚠️ Artigo não carregado automaticamente</strong><br><br>
+            Cole o texto do artigo manualmente no campo abaixo.
           </div>
 
           <button class="btn-summarize" id="btnResumir" onclick="resumirArtigo()">
@@ -514,46 +429,6 @@
           <button class="btn-download" id="btnDownload" disabled onclick="downloadAll()">
             ↓ &nbsp; Baixar Todos os Slides (PNG)
           </button>
-
-          <!-- CopyWriter Panel -->
-          <div class="cw-panel" id="cwPanel">
-            <div class="cw-panel-title">Legenda para publicação</div>
-            <div class="cw-placeholder" id="cwPlaceholder">
-              <span>Selecione um líder para gerar a legenda automaticamente</span>
-            </div>
-            <div class="cw-cards" id="cwCards">
-              <div class="cw-card">
-                <div class="cw-card-label">Instagram</div>
-                <div class="cw-skeleton" id="cwSkeletonIG">
-                  <div class="cw-skel-line" style="width:100%"></div>
-                  <div class="cw-skel-line" style="width:85%"></div>
-                  <div class="cw-skel-line" style="width:70%"></div>
-                  <div class="cw-skel-line" style="width:90%"></div>
-                </div>
-                <div class="cw-caption" id="cwCaptionIG" style="display:none"></div>
-                <div class="cw-actions">
-                  <button class="cw-action" id="cwCopiarIG" onclick="cwCopiar('ig')">Copiar</button>
-                  <button class="cw-action" onclick="cwRegerar('ig')">Regenerar</button>
-                </div>
-              </div>
-              <div class="cw-card">
-                <div class="cw-card-label">LinkedIn</div>
-                <div class="cw-skeleton" id="cwSkeletonLI">
-                  <div class="cw-skel-line" style="width:100%"></div>
-                  <div class="cw-skel-line" style="width:75%"></div>
-                  <div class="cw-skel-line" style="width:90%"></div>
-                  <div class="cw-skel-line" style="width:65%"></div>
-                  <div class="cw-skel-line" style="width:80%"></div>
-                </div>
-                <div class="cw-caption" id="cwCaptionLI" style="display:none"></div>
-                <div class="cw-actions">
-                  <button class="cw-action" id="cwCopiarLI" onclick="cwCopiar('li')">Copiar</button>
-                  <button class="cw-action" onclick="cwRegerar('li')">Regenerar</button>
-                </div>
-              </div>
-            </div>
-            <div class="cw-error" id="cwError">Erro ao gerar legenda. Tente novamente.</div>
-          </div>
 
         </div>
       </div><!-- /.form-col -->
@@ -674,196 +549,81 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     return val || COVER_TITLE;
   }
 
-  const PROMPT_BLACK = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference ONLY for the person's face, features, and physical build — do NOT replicate the pose, position, or framing from the reference photo. Generate a new natural pose for the subject. ABSOLUTE PHYSICAL FIDELITY: replicate the subject's exact body shape, weight, build, and silhouette with zero alteration — do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. OUTFIT: dress the subject in a fitted solid black garment (shirt, blouse, or blazer) — do NOT use the clothing from the reference photo. POSE: the subject stands naturally and relaxed — no forced studio pose, no stiff posture. Natural weight distribution, arms relaxed at sides or loosely in pockets. Expression: calm, confident, present — not performing for the camera. FRAMING: the subject occupies the BOTTOM 75% of the frame — cropped from just below the chest up to the top of the head, tight medium bust frame. The TOP 25% of the image must be completely empty background — intentional negative space reserved for text, with no subject visible in that area. The subject's head sits at approximately the 30% mark from the top of the image — well below the top edge but filling the frame generously below. Subject perfectly centered horizontally. The person occupies approximately 75% of the frame height — close and present, not distant. BACKGROUND: deep teal-black environment (#001E23) with genuine physical depth and atmosphere — NOT flat or uniform. Slightly warmer and lighter in the center directly behind the subject, fading organically into near-black at the corners and edges. Subtle radial gradient from the center outward, like a real painted studio backdrop under professional lighting with natural light falloff. Faint atmospheric haze between subject and background suggesting real three-dimensional space. The teal (#03d8d2) appears as a very subtle cool ambient glow in the deepest shadow areas — moody and dimensional, not neon, not flat. The empty top quarter must be the same seamless continuous background colour — no transition line, no horizon, completely continuous with the rest of the background. No objects, no equipment, no furniture, no floor, no ceiling visible anywhere. LIGHTING: warm directional key light from upper left falling naturally across the face and upper body. Gentle shadow side on the right with visible detail. Very subtle teal rim light (#03d8d2) at low intensity tracing the shoulder edge and side of the head — integrated as ambient environment, not hard cutout. Cinematic grade: lifted blacks toward deep teal, warm accurate skin tones in midtones, slightly crushed highlights, teal-green shadow cast in darker areas. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Shot on Canon R5 with 85mm f/1.8, ISO 800 — natural depth of field. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO logos, NO equipment visible anywhere. Clean photograph only. Subject must look naturally present and physically integrated — NOT pasted or composited`;
-
-  const PROMPT_CURRENT = `Professional executive portrait for Rede Líderes. Use the uploaded photo as face and identity reference ONLY for the person's face, features, and physical build — do NOT replicate the pose, position, or framing from the reference photo. Generate a new natural pose for the subject. ABSOLUTE PHYSICAL FIDELITY: replicate the subject's exact body shape, weight, build, and silhouette with zero alteration — do NOT slim, thin, reduce, reshape, or idealise the person's body in any way. OUTFIT: preserve the subject's current clothing exactly as worn in the reference photo — do NOT change, replace, recolour, or reinterpret any garment. POSE: the subject stands naturally and relaxed — no forced studio pose, no stiff posture. Natural weight distribution, arms relaxed at sides or loosely in pockets. Expression: calm, confident, present — not performing for the camera. FRAMING: the subject occupies the BOTTOM 75% of the frame — cropped from just below the chest up to the top of the head, tight medium bust frame. The TOP 25% of the image must be completely empty background — intentional negative space reserved for text, with no subject visible in that area. The subject's head sits at approximately the 30% mark from the top of the image — well below the top edge but filling the frame generously below. Subject perfectly centered horizontally. The person occupies approximately 75% of the frame height — close and present, not distant. BACKGROUND: deep teal-black environment (#001E23) with genuine physical depth and atmosphere — NOT flat or uniform. Slightly warmer and lighter in the center directly behind the subject, fading organically into near-black at the corners and edges. Subtle radial gradient from the center outward, like a real painted studio backdrop under professional lighting with natural light falloff. Faint atmospheric haze between subject and background suggesting real three-dimensional space. The teal (#03d8d2) appears as a very subtle cool ambient glow in the deepest shadow areas — moody and dimensional, not neon, not flat. The empty top quarter must be the same seamless continuous background colour — no transition line, no horizon, completely continuous with the rest of the background. No objects, no equipment, no furniture, no floor, no ceiling visible anywhere. LIGHTING: warm directional key light from upper left falling naturally across the face and upper body. Gentle shadow side on the right with visible detail. Very subtle teal rim light (#03d8d2) at low intensity tracing the shoulder edge and side of the head — integrated as ambient environment, not hard cutout. Cinematic grade: lifted blacks toward deep teal, warm accurate skin tones in midtones, slightly crushed highlights, teal-green shadow cast in darker areas. Ultra-realistic photography, hyper-realistic skin texture, authentic imperfections preserved — zero smoothing. Shot on Canon R5 with 85mm f/1.8, ISO 800 — natural depth of field. 4:5 vertical. CRITICAL: NO text overlays, NO watermarks, NO labels, NO captions, NO logos, NO equipment visible anywhere. Clean photograph only. Subject must look naturally present and physically integrated — NOT pasted or composited.`;
-
-  let outfit = 'black';
+  let selectedArtigoId = '';
   let slidesReady = false;
   let coverHook = '';
   let articleBloco = '';
   let articleBloco2 = '';
 
-  function setOutfit(o) {
-    outfit = o;
-    document.getElementById('btnRoupaPreta').classList.toggle('active', o === 'black');
-    document.getElementById('btnRoupaAtual').classList.toggle('active', o === 'current');
-  }
-
   /* ═══════════════════════════════════════════════════════════════
-     SELETOR DE MEMBROS COM ARTIGO
+     PUXAR ARTIGO ALEATÓRIO (PocketBase db_artigos com foto_ia)
   ═══════════════════════════════════════════════════════════════ */
-  (async () => {
-    const sel = document.getElementById('memberSelect');
-    try {
-      const res  = await fetch('/api/notion/members');
-      const data = await res.json();
-      const members = data.members || [];
-      sel.innerHTML = '<option value="">— selecione um líder —</option>'
-        + members.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-      console.log(`[members] ${members.length} membros carregados`);
-    } catch (e) {
-      sel.innerHTML = '<option value="">Erro ao carregar lista</option>';
-    }
+  async function puxarArtigoAleatorio() {
+    const btn = document.getElementById('btnRandom');
+    btn.disabled = true;
+    setStatus('Buscando artigo disponível…');
 
-    sel.addEventListener('change', async () => {
-      const name = sel.value;
-      if (!name) return;
-      setStatus('Carregando dados…');
-      try {
-        const r = await fetch(`/api/pb/search?q=${encodeURIComponent(name.trim().split(' ')[0])}`);
-        const d = await r.json();
-        const match = (d.results || []).find(p =>
-          p.name?.trim().toLowerCase() === name.trim().toLowerCase()
-        );
-        if (match) {
-          acSelect(match);
-        } else {
-          // Fallback: preenche só o nome e busca o artigo
-          document.getElementById('fullName').value = name;
-          loadNotionArticle(name);
+    try {
+      const res  = await fetch('/api/pb/artigos-disponiveis');
+      const data = await res.json();
+      const artigos = data.artigos || [];
+
+      if (artigos.length === 0) {
+        setStatus('Nenhum artigo pendente com foto do líder.', true);
+        btn.disabled = false;
+        return;
+      }
+
+      const artigo = artigos[0];
+      selectedArtigoId = artigo.id;
+
+      // Preenche título do artigo
+      document.getElementById('articleTitle').value = artigo.artigo;
+
+      // Preenche texto do artigo
+      document.getElementById('articleText').value = artigo.texto;
+
+      // Preenche dados do líder
+      if (artigo.lider) {
+        document.getElementById('fullName').value = artigo.lider.name;
+        document.getElementById('jobTitle').value = artigo.lider.cargo || '';
+        document.getElementById('cargoRede').value = artigo.lider.cargo_rede || '';
+        document.getElementById('companies').value = artigo.lider.empresas || '';
+
+        // Carrega foto do líder
+        if (artigo.lider.photoUrl) {
+          try {
+            setStatus('Carregando foto do líder…');
+            const proxied = `/api/proxy-image?url=${encodeURIComponent(artigo.lider.photoUrl)}`;
+            const res2    = await fetch(proxied);
+            const blob    = await res2.blob();
+            const dataUrl = await new Promise(resolve => {
+              const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob);
+            });
+            document.getElementById('photoThumb').src         = dataUrl;
+            document.getElementById('photoFname').textContent = artigo.lider.name;
+            document.getElementById('uploadIdle').style.display    = 'none';
+            document.getElementById('uploadPreview').style.display = 'flex';
+            window._notionPhotoDataUrl = dataUrl;
+            setStatus(`"${artigo.artigo}" — ${artigo.lider.name} ✓`);
+            setTimeout(() => setStatus(''), 4000);
+          } catch {
+            setStatus('Não foi possível carregar a foto.', true);
+          }
         }
-      } catch (err) {
-        setStatus('Erro ao carregar: ' + err.message, true);
       }
-    });
-  })();
-
-  /* ═══════════════════════════════════════════════════════════════
-     NOTION AUTOCOMPLETE
-  ═══════════════════════════════════════════════════════════════ */
-  let acTimer = null;
-  const nameInput  = document.getElementById('fullName');
-  const acDropdown = document.getElementById('acDropdown');
-  const acWrap     = document.getElementById('acWrap');
-
-  nameInput.addEventListener('input', () => {
-    const q = nameInput.value.trim();
-    clearTimeout(acTimer);
-    if (q.length < 2) { acClose(); return; }
-    acDropdown.innerHTML = '<div class="ac-loading"><div class="ac-spin"></div>Buscando…</div>';
-    acDropdown.classList.add('open');
-    acTimer = setTimeout(() => notionSearch(q), 350);
-  });
-
-  document.addEventListener('click', e => { if (!acWrap.contains(e.target)) acClose(); });
-  nameInput.addEventListener('keydown', e => { if (e.key === 'Escape') acClose(); });
-
-  async function notionSearch(q) {
-    try {
-      const res  = await fetch(`/api/pb/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      acRender(data.results || []);
-    } catch {
-      acDropdown.innerHTML = '<div class="ac-empty">Erro ao buscar no Notion</div>';
-    }
-  }
-
-  function acRender(results) {
-    if (!results.length) {
-      acDropdown.innerHTML = '<div class="ac-empty">Nenhum resultado encontrado</div>';
-      acDropdown.classList.add('open');
-      return;
-    }
-    acDropdown.innerHTML = '';
-    results.forEach(person => {
-      const el = document.createElement('div');
-      el.className = 'ac-item';
-      el.innerHTML = `
-        <div class="ac-item-name">${esc(person.name)}</div>
-        ${person.cargo ? `<div class="ac-item-role">${esc(person.cargo)}</div>` : ''}
-      `;
-      el.addEventListener('mousedown', e => { e.preventDefault(); acSelect(person); });
-      acDropdown.appendChild(el);
-    });
-    acDropdown.classList.add('open');
-  }
-
-  let selectedPbId = '';
-
-  function acSelect(person) {
-    nameInput.value = person.name || '';
-    selectedPbId    = person.id   || '';
-    if (person.cargo)      document.getElementById('jobTitle').value  = person.cargo;
-    if (person.cargo_rede) document.getElementById('cargoRede').value = person.cargo_rede;
-    if (person.empresas)   document.getElementById('companies').value = person.empresas;
-    if (person.photoUrl)   loadNotionPhoto(person.photoUrl);
-    acClose();
-    if (person.name) loadNotionArticle(person.name);
-  }
-
-  async function loadNotionArticle(name) {
-    const warning = document.getElementById('notionPermissionWarning');
-    warning.style.display = 'none';
-    setStatus('Buscando artigo no Notion…');
-    try {
-      const res  = await fetch(`/api/notion/article?name=${encodeURIComponent(name)}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        warning.style.display = 'block';
-        setStatus('');
-        return;
-      }
-
-      if (data.articleTitle) {
-        document.getElementById('articleTitle').value = data.articleTitle;
-      }
-      if (data.articleText) {
-        document.getElementById('articleText').value = data.articleText;
-        warning.style.display = 'none';
-        setStatus('Artigo carregado do Notion ✓ — clique em Resumir com IA para gerar o Hook.');
-        setTimeout(() => setStatus(''), 4000);
-        return;
-      }
-
-      warning.style.display = 'none';
-      setStatus('Artigo carregado do Notion ✓');
-      setTimeout(() => setStatus(''), 3000);
     } catch (err) {
-      warning.style.display = 'block';
-      setStatus('');
+      setStatus('Erro ao buscar artigo: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
     }
   }
 
-  async function loadNotionPhoto(url) {
-    try {
-      setStatus('Carregando foto do Notion…');
-      const proxied = `/api/proxy-image?url=${encodeURIComponent(url)}`;
-      const res     = await fetch(proxied);
-      const blob    = await res.blob();
-      const dataUrl = await new Promise(resolve => {
-        const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob);
-      });
-      document.getElementById('photoThumb').src         = dataUrl;
-      document.getElementById('photoFname').textContent = 'Foto do Notion';
-      document.getElementById('uploadIdle').style.display    = 'none';
-      document.getElementById('uploadPreview').style.display = 'flex';
-      window._notionPhotoDataUrl = dataUrl;
-      setStatus('Foto carregada ✓'); setTimeout(() => setStatus(''), 2000);
-    } catch { setStatus('Não foi possível carregar a foto.', true); }
-  }
+  const nameInput = document.getElementById('fullName');
 
-  function acClose() { acDropdown.classList.remove('open'); }
   function esc(str) {
     return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
-
-  /* ═══════════════════════════════════════════════════════════════
-     FILE UPLOAD
-  ═══════════════════════════════════════════════════════════════ */
-  document.getElementById('photoFile').addEventListener('change', function () {
-    const file = this.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('photoThumb').src         = e.target.result;
-      document.getElementById('photoFname').textContent = file.name;
-      document.getElementById('uploadIdle').style.display    = 'none';
-      document.getElementById('uploadPreview').style.display = 'flex';
-      window._notionPhotoDataUrl = null;
-    };
-    reader.readAsDataURL(file);
-  });
 
   /* ═══════════════════════════════════════════════════════════════
      RESUMIR COM IA
@@ -910,12 +670,11 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
   ═══════════════════════════════════════════════════════════════ */
   async function gerarSemIA() {
     const fullName   = nameInput.value.trim();
-    const photoFile  = document.getElementById('photoFile').files[0];
     const articleRaw = document.getElementById('articleText').value.trim();
 
-    if (!fullName)   { setStatus('Informe o nome da pessoa.', true); return; }
-    if (!photoFile && !window._notionPhotoDataUrl) {
-      setStatus('Selecione uma foto de referência.', true); return;
+    if (!fullName)   { setStatus('Puxe um artigo aleatório primeiro.', true); return; }
+    if (!window._notionPhotoDataUrl) {
+      setStatus('Foto do líder não carregada.', true); return;
     }
 
     const nameParts    = fullName.split(/\s+/);
@@ -935,13 +694,8 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     document.getElementById('btnDownload').disabled = true;
 
     try {
-      setStatus('Compondo slides com foto original…');
-      let photoDataUrl;
-      if (photoFile) {
-        photoDataUrl = await resizeImage(photoFile, 1024, 0.82);
-      } else {
-        photoDataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
-      }
+      setStatus('Compondo slides com foto do líder…');
+      const photoDataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
 
       await document.fonts.ready;
 
@@ -955,68 +709,6 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
       slidesReady = true;
       document.getElementById('btnDownload').disabled = false;
     } catch (err) {
-      setStatus('Erro: ' + err.message, true);
-      setLoading(false);
-    }
-  }
-
-  async function gerarCarrossel() {
-    const fullName   = nameInput.value.trim();
-    const photoFile  = document.getElementById('photoFile').files[0];
-    const articleRaw = document.getElementById('articleText').value.trim();
-
-    if (!fullName)   { setStatus('Informe o nome da pessoa.', true); return; }
-    if (!photoFile && !window._notionPhotoDataUrl) {
-      setStatus('Selecione ou carregue uma foto de referência.', true); return;
-    }
-    if (!articleRaw) { setStatus('Cole o texto do artigo.', true); return; }
-
-    const nameParts  = fullName.split(/\s+/);
-    const firstName  = nameParts[0] || '';
-    const lastName   = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-    const rawComp    = document.getElementById('companies').value.trim();
-    const companies  = rawComp
-      ? rawComp.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' | ')
-      : '';
-    const cargoRede  = document.getElementById('cargoRede').value.trim()
-                    || document.getElementById('jobTitle').value.trim();
-    coverHook = document.getElementById('coverHookInput').value.trim() || coverHook;
-    const articleParts = splitArticle(articleRaw);
-
-    setLoading(true);
-    slidesReady = false;
-    document.getElementById('btnDownload').disabled = true;
-
-    try {
-      setStatus('Preparando foto de referência…');
-      let dataUrl;
-      if (photoFile) {
-        dataUrl = await resizeImage(photoFile, 1024, 0.82);
-      } else {
-        dataUrl = await resizeDataUrl(window._notionPhotoDataUrl, 1024, 0.82);
-      }
-      const base64Img = dataUrl.split(',')[1];
-
-      setStatus('Enviando para Gemini…');
-      const prompt    = outfit === 'black' ? PROMPT_BLACK : PROMPT_CURRENT;
-      const genResult = await startGeneration(base64Img, prompt);
-
-      const imageSrc = genResult.data;
-
-      setStatus('Buscando imagens do artigo…');
-      const articleTitle = document.getElementById('articleTitle')?.value?.trim() || '';
-      const stockUrls = await fetchStockImages(articleParts, articleTitle);
-
-      setStatus('Compondo slides…');
-      await renderAllSlides(imageSrc, firstName, lastName, companies, cargoRede, articleParts, stockUrls);
-
-      setStatus('');
-      setLoading(false);
-      slidesReady = true;
-      document.getElementById('btnDownload').disabled = false;
-
-    } catch (err) {
-      console.error(err);
       setStatus('Erro: ' + err.message, true);
       setLoading(false);
     }
@@ -1915,29 +1607,6 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     GEMINI API
-  ═══════════════════════════════════════════════════════════════ */
-  async function startGeneration(base64Image, prompt) {
-    const body = {
-      prompt,
-      reference_images: [{ image: base64Image, mime_type: 'image/jpeg' }]
-    };
-    const res  = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:   JSON.stringify(body)
-    });
-    const json = await res.json().catch(() => null);
-    if (!res.ok) {
-      console.error('[gemini] resposta completa:', JSON.stringify(json));
-      throw new Error(`Gemini API (${res.status}): ${json?.message || res.statusText}`);
-    }
-    const generated = json?.data?.generated;
-    if (Array.isArray(generated) && generated.length > 0) return { type: 'immediate', data: generated[0] };
-    throw new Error('Resposta inesperada da API Gemini.');
-  }
-
-  /* ═══════════════════════════════════════════════════════════════
      DOWNLOAD
   ═══════════════════════════════════════════════════════════════ */
   async function downloadAll() {
@@ -1965,13 +1634,13 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     URL.revokeObjectURL(a.href);
     setStatus('Download concluído ✓');
 
-    // Marca carrossel_feito no PocketBase
-    if (selectedPbId) {
-      fetch('/api/pb/mark-carrossel', {
+    // Marca carrossel_criado no PocketBase db_artigos
+    if (selectedArtigoId) {
+      fetch('/api/pb/mark-done', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: selectedPbId })
-      }).catch(e => console.warn('[mark-carrossel] erro:', e.message));
+        body: JSON.stringify({ id: selectedArtigoId })
+      }).catch(e => console.warn('[mark-done] erro:', e.message));
     }
 
     setTimeout(() => setStatus(''), 3000);
@@ -1980,24 +1649,6 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
   /* ═══════════════════════════════════════════════════════════════
      HELPERS
   ═══════════════════════════════════════════════════════════════ */
-  function resizeImage(file, maxSide = 1024, quality = 0.82) {
-    return new Promise(resolve => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
-        const w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(c.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(URL.createObjectURL(file)); };
-      img.src = url;
-    });
-  }
-
   function resizeDataUrl(dataUrl, maxSide = 1024, quality = 0.82) {
     return new Promise(resolve => {
       const img = new Image();
@@ -2064,111 +1715,6 @@ Retorne APENAS o texto abaixo, sem introdução, sem numeração, sem markdown:
     const btn = document.getElementById('btnGerar');
     btn.disabled    = on;
     btn.style.opacity = on ? '.4' : '1';
-  }
-
-  /* ── CopyWriter ──────────────────────────────────────────── */
-  let _cwIG = '', _cwLI = '';
-
-  function cwAutoGerar() {
-    document.getElementById('cwPlaceholder').style.display = 'none';
-    document.getElementById('cwCards').classList.add('visible');
-    cwGerar();
-  }
-
-  function cwGerar(avoidIG, avoidLI) {
-    const lider = { name: nameInput.value.trim() };
-    const titulo = document.getElementById('articleTitle')?.value?.trim() || '';
-    const contexto = titulo ? `Carrossel do artigo: ${titulo}` : 'Carrossel de artigo da Rede Líderes';
-
-    _cwShowLoading();
-
-    fetch('/api/copywrite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tipo: 'carrossel-artigo',
-        lider: lider.name ? lider : null,
-        contexto,
-        avoid: avoidIG || avoidLI || null
-      })
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.instagram && data.linkedin) {
-        _cwLI = ''; _cwIG = '';
-        _cwShowResult(data.instagram, data.linkedin);
-      } else {
-        _cwShowError();
-      }
-    })
-    .catch(() => _cwShowError());
-  }
-
-  function cwRegerar(net) {
-    const avoid = net === 'ig' ? _cwIG : _cwLI;
-    _cwShowLoadingOne(net);
-    const lider = { name: nameInput.value.trim() };
-    const titulo = document.getElementById('articleTitle')?.value?.trim() || '';
-    const contexto = titulo ? `Carrossel do artigo: ${titulo}` : 'Carrossel de artigo da Rede Líderes';
-
-    fetch('/api/copywrite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo: 'carrossel-artigo', lider: lider.name ? lider : null, contexto, avoid })
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (net === 'ig' && data.instagram) { _cwIG = data.instagram; _cwSetCaption('ig', data.instagram); }
-      if (net === 'li' && data.linkedin)  { _cwLI = data.linkedin;  _cwSetCaption('li', data.linkedin); }
-      if (!data.instagram && !data.linkedin) _cwShowError();
-    })
-    .catch(() => _cwShowError());
-  }
-
-  function cwCopiar(net) {
-    const text = net === 'ig' ? _cwIG : _cwLI;
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = document.getElementById(net === 'ig' ? 'cwCopiarIG' : 'cwCopiarLI');
-      const orig = btn.textContent;
-      btn.textContent = 'Copiado ✓';
-      setTimeout(() => { btn.textContent = orig; }, 1500);
-    });
-  }
-
-  function _cwShowLoading() {
-    document.getElementById('cwPlaceholder').style.display = 'none';
-    document.getElementById('cwCards').classList.add('visible');
-    document.getElementById('cwError').style.display = 'none';
-    ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'flex');
-    ['cwCaptionIG','cwCaptionLI'].forEach(id => { document.getElementById(id).style.display = 'none'; document.getElementById(id).textContent = ''; });
-  }
-
-  function _cwShowLoadingOne(net) {
-    const skelId = net === 'ig' ? 'cwSkeletonIG' : 'cwSkeletonLI';
-    const capId  = net === 'ig' ? 'cwCaptionIG'  : 'cwCaptionLI';
-    document.getElementById(skelId).style.display = 'flex';
-    document.getElementById(capId).style.display  = 'none';
-  }
-
-  function _cwShowResult(ig, li) {
-    _cwIG = ig; _cwLI = li;
-    _cwSetCaption('ig', ig);
-    _cwSetCaption('li', li);
-  }
-
-  function _cwSetCaption(net, text) {
-    const skelId = net === 'ig' ? 'cwSkeletonIG' : 'cwSkeletonLI';
-    const capId  = net === 'ig' ? 'cwCaptionIG'  : 'cwCaptionLI';
-    document.getElementById(skelId).style.display = 'none';
-    const el = document.getElementById(capId);
-    el.textContent = text;
-    el.style.display = 'block';
-  }
-
-  function _cwShowError() {
-    ['cwSkeletonIG','cwSkeletonLI'].forEach(id => document.getElementById(id).style.display = 'none');
-    document.getElementById('cwError').style.display = 'block';
   }
   </script>
 </body>
