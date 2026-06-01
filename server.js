@@ -281,30 +281,6 @@ app.get('/api/pb/artigos-disponiveis', async (req, res) => {
     const artigos = validos.length > 0 ? [validos[Math.floor(Math.random() * validos.length)]] : [];
     console.log(`[artigos-disponiveis] ${validos.length} válidos → sorteou 1`);
 
-    const artigos = raw.map(r => {
-      const coAutor = r.expand?.co_autor;
-      if (!coAutor || !coAutor.foto_ia) return null;
-      return {
-        id:     r.id,
-        artigo: r.artigo || '',
-        texto:  r.texto || '',
-        lider:  {
-          id:         coAutor.id,
-          name:       coAutor.nome || '',
-          cargo:      coAutor.cargo_rede || coAutor.cargo_atual || '',
-          cargo_rede: coAutor.cargo_rede || '',
-          empresas:   coAutor.ultimas_empresa || '',
-          linkedin:   coAutor.url_linkedin || '',
-          photoUrl:   `${PB_BASE_URL}/api/files/lideres/${coAutor.id}/${coAutor.foto_ia}`
-        }
-      };
-    }).filter(a => {
-      if (!a) return false;
-      if (!a.artigo) { console.log(`[artigos-disponiveis] drop: empty artigo`); return false; }
-      if (!a.lider?.photoUrl) { console.log(`[artigos-disponiveis] drop: no photoUrl`); return false; }
-      return true;
-    });
-
     console.log(`[artigos-disponiveis] ${artigos.length} artigos pendentes`);
     res.json({ artigos });
   } catch (err) {
