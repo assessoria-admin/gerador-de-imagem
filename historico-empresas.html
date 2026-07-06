@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rede Líderes — Mini Bio</title>
+
+  <script>
+    if (!sessionStorage.getItem('unlocked')) {
+      window.location.replace('/');
+    }
+  </script>
+
+  <style>
+    /* ─── Fontes locais ─────────────────────────────────────────── */
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Light.otf') format('opentype');
+      font-weight: 300; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Neue Machina';
+      src: url('/fonts/NeueMachina-Ultrabold.otf') format('opentype');
+      font-weight: 800; font-style: normal; font-display: swap;
+    }
+
+    /* ─── Reset & Variables ─────────────────────────────────────── */
+    :root {
+      --teal:   #41c1c2;
+      --bg:     #080808;
+      --card:   #0f0f0f;
+      --border: #1c1c1c;
+      --muted:  #555;
+      --font:   'Neue Machina', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 96px 20px 80px;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────── */
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    /* ─── Header ────────────────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 44px; }
+    .header-rule {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; margin-bottom: 10px;
+    }
+    .header-rule span {
+      flex: 1; height: 1px; max-width: 60px;
+      background: linear-gradient(to right, transparent, var(--teal));
+    }
+    .header-rule span:last-child {
+      background: linear-gradient(to left, transparent, var(--teal));
+    }
+    h1 { font-size: 20px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; }
+    header p { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; }
+    .back-link {
+      display: inline-block; margin-bottom: 28px;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+      text-decoration: none; transition: color .2s;
+    }
+    .back-link:hover { color: var(--teal); }
+
+    /* ─── Card ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    /* ─── Form fields ───────────────────────────────────────────── */
+    .field { margin-bottom: 22px; }
+    label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 9px;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 15px;
+      color: #fff; font-family: var(--font);
+      font-size: 14px; outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    input[type="text"]:focus {
+      border-color: rgba(65,193,194,.45);
+      background: rgba(65,193,194,.03);
+    }
+    input[type="text"]::placeholder { color: #2a2a2a; }
+    .hint { font-size: 11px; color: #333; margin-top: 6px; }
+
+    /* ─── Autocomplete ──────────────────────────────────────────── */
+    .ac-wrap { position: relative; }
+    .ac-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      z-index: 200; background: #141414;
+      border: 1px solid rgba(65,193,194,.25);
+      border-radius: 8px; overflow: hidden;
+      display: none; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+      padding: 11px 15px; cursor: pointer;
+      border-bottom: 1px solid var(--border); transition: background .15s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover { background: rgba(65,193,194,.08); }
+    .ac-item-name { font-size: 14px; color: #fff; }
+    .ac-item-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ac-empty {
+      padding: 13px 15px; font-size: 12px;
+      color: var(--muted); text-align: center; letter-spacing: .5px;
+    }
+    .ac-loading {
+      padding: 13px 15px; font-size: 12px; color: var(--teal);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ac-spin {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(65,193,194,.2);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin .7s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Generate / export button ───────────────────────────────── */
+    .btn-download {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; margin-top: 8px; background: transparent;
+      border: 1px solid var(--teal); color: var(--teal); border-radius: 8px; padding: 13px;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .btn-download:hover { background: var(--teal); color: #000; }
+    .btn-download:disabled { opacity: .3; cursor: not-allowed; }
+
+    /* ─── Status bar ────────────────────────────────────────────── */
+    .status-bar { display: flex; align-items: center; gap: 10px; min-height: 28px; margin-top: 18px; }
+    .spinner {
+      display: none; flex-shrink: 0; width: 15px; height: 15px;
+      border: 2px solid rgba(65,193,194,.2); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin .75s linear infinite;
+    }
+    .status-msg { font-size: 12px; color: var(--teal); letter-spacing: .5px; }
+    .status-msg.err { color: #ff6b6b; }
+
+    /* ─── Layout lado a lado ────────────────────────────────────── */
+    .mb-wrap { display: flex; gap: 36px; align-items: flex-start; }
+    .mb-col-form { flex: 1; min-width: 0; }
+    .mb-col-preview { flex-shrink: 0; width: 340px; position: sticky; top: 24px; }
+
+    /* ─── Preview card (fundo escuro só para visualização; export é transparente) ─── */
+    .mb-prev-outer {
+      width: 340px; border-radius: 14px;
+      border: 1px dashed var(--border);
+      background:
+        linear-gradient(45deg, #151515 25%, transparent 25%) 0 0/16px 16px,
+        linear-gradient(-45deg, #151515 25%, transparent 25%) 0 0/16px 16px,
+        linear-gradient(45deg, transparent 75%, #151515 75%) 0 0/16px 16px,
+        linear-gradient(-45deg, transparent 75%, #151515 75%) 0 0/16px 16px,
+        #0a0a0a;
+      padding: 16px;
+      overflow: hidden;
+    }
+    /* Wrapper que escala o card nativo (1080px) para caber no preview */
+    .mb-card-scale-wrap {
+      position: relative; width: 100%; overflow: hidden;
+    }
+    /* Card nas dimensões nativas do export: largura fixa de 1080px */
+    .mb-card {
+      width: 1080px;
+      padding: 90px 40px;
+      background: transparent;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center;
+      transform-origin: top left;
+    }
+    .mb-textbox {
+      width: 580px;
+      max-width: 580px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .mb-nome {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 50px; font-weight: 700; letter-spacing: -0.01em;
+      color: #ffffff; text-transform: uppercase;
+      white-space: nowrap; line-height: 1.15; margin-bottom: 26px;
+    }
+    .mb-label {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 20px; font-weight: 700; color: #ffffff;
+      letter-spacing: 4px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .mb-empresas {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 35px; font-weight: 400; color: #ffffff;
+      white-space: nowrap; line-height: 1.3;
+    }
+    .mb-hint-preview {
+      font-size: 10px; color: var(--muted); text-align: center;
+      letter-spacing: .5px; margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .mb-wrap { flex-direction: column; }
+      .mb-col-preview { width: 100%; position: static; }
+      .mb-prev-outer { width: 100%; }
+    }
+
+    /* ─── Tool Nav ──────────────────────────────────────────────── */
+    .tool-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+      background: rgba(8,8,8,.88); backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1c1c1c; padding: 10px 16px;
+    }
+    .tool-nav a {
+      font-family: 'Neue Machina', sans-serif;
+      font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; text-decoration: none;
+      color: #555; padding: 7px 18px; border-radius: 8px;
+      border: 1px solid transparent;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .tool-nav a:hover { color: #fff; }
+    .tool-nav a.active {
+      color: #41c1c2; border-color: rgba(65,193,194,.35);
+      background: rgba(65,193,194,.07);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="tool-nav">
+    <a class="active" href="/historico-empresas.html">✨ Mini Bio</a>
+    <a href="/mudanca-cargo.html">🏆 Mudança de Cargo</a>
+    <a href="/carrossel-artigo.html">📰 Carrossel de Artigo</a>
+  </nav>
+
+<div class="wrap">
+
+  <a class="back-link" href="/app.html">← Voltar ao hub</a>
+
+  <header>
+    <div class="header-rule">
+      <span></span>
+      <h1>Mini&nbsp;Bio</h1>
+      <span></span>
+    </div>
+    <p>Card de nome + últimas empresas, pronto para exportar em PNG transparente</p>
+  </header>
+
+  <div class="mb-wrap">
+
+    <!-- COLUNA ESQUERDA: form -->
+    <div class="mb-col-form">
+      <div class="card">
+
+        <div class="field">
+          <label>Buscar na Rede Líderes</label>
+          <div class="ac-wrap" id="acWrap">
+            <input type="text" id="fullName"
+              placeholder="Digite o nome para buscar…"
+              autocomplete="off" required />
+            <div class="ac-dropdown" id="acDropdown"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Últimas Empresas</label>
+          <input type="text" id="companies"
+            placeholder="Preenchido automaticamente pelo Notion"
+            autocomplete="off" oninput="mbAtualizar()" />
+          <div class="hint">Editável — confira ou ajuste antes de exportar</div>
+        </div>
+
+        <div class="status-bar">
+          <div class="spinner" id="spinner"></div>
+          <span class="status-msg" id="statusMsg"></span>
+        </div>
+
+        <button class="btn-download" id="btnExportar" onclick="mbExportar()">
+          ↓ &nbsp; Exportar PNG (fundo transparente)
+        </button>
+
+      </div>
+    </div><!-- /.mb-col-form -->
+
+    <!-- COLUNA DIREITA: preview -->
+    <div class="mb-col-preview">
+      <div class="mb-prev-outer">
+        <div class="mb-card-scale-wrap" id="mb-scale-wrap">
+          <div class="mb-card" id="mb-card">
+            <div class="mb-textbox">
+              <div class="mb-nome" id="mb-nome">Nome Sobrenome</div>
+              <div class="mb-label">MINI BIO</div>
+              <div class="mb-empresas" id="mb-empresas">Empresa | Empresa | Empresa</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-hint-preview">Xadrez = fundo transparente no export</div>
+    </div><!-- /.mb-col-preview -->
+
+  </div><!-- /.mb-wrap -->
+
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   NOTION / POCKETBASE AUTOCOMPLETE
+════════════════════════════════════════════════════════════════ */
+let acTimer = null;
+
+const nameInput  = document.getElementById('fullName');
+const acDropdown = document.getElementById('acDropdown');
+const acWrap     = document.getElementById('acWrap');
+
+nameInput.addEventListener('input', () => {
+  const q = nameInput.value.trim();
+  clearTimeout(acTimer);
+  if (q.length < 2) { acClose(); return; }
+  acDropdown.innerHTML = '<div class="ac-loading"><div class="ac-spin"></div>Buscando…</div>';
+  acDropdown.classList.add('open');
+  acTimer = setTimeout(() => notionSearch(q), 350);
+});
+
+document.addEventListener('click', e => {
+  if (!acWrap.contains(e.target)) acClose();
+});
+
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') acClose();
+});
+
+async function notionSearch(q) {
+  try {
+    const res  = await fetch(`/api/pb/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    acRender(data.results || []);
+  } catch (err) {
+    acDropdown.innerHTML = '<div class="ac-empty">Erro ao buscar</div>';
+  }
+}
+
+function acRender(results) {
+  if (results.length === 0) {
+    acDropdown.innerHTML = '<div class="ac-empty">Nenhum resultado encontrado</div>';
+    acDropdown.classList.add('open');
+    return;
+  }
+  acDropdown.innerHTML = '';
+  results.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'ac-item';
+    el.innerHTML = `
+      <div class="ac-item-name">${esc(person.name)}</div>
+      ${person.cargo ? `<div class="ac-item-role">${esc(person.cargo)}</div>` : ''}
+    `;
+    el.addEventListener('mousedown', e => { e.preventDefault(); acSelect(person); });
+    acDropdown.appendChild(el);
+  });
+  acDropdown.classList.add('open');
+}
+
+function acSelect(person) {
+  nameInput.value = person.name || '';
+  if (person.empresas) {
+    const formatted = person.empresas.split(',').map(s => s.trim()).filter(Boolean).join(' | ');
+    document.getElementById('companies').value = formatted;
+  }
+  mbAtualizar();
+  acClose();
+}
+
+function acClose() { acDropdown.classList.remove('open'); }
+
+function esc(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   REGRA DE TAMANHO/ESPAÇAMENTO
+   Largura máxima de texto: 580px (card nativo de 1080px de largura)
+   Fonte reduz automaticamente até caber no limite, sem quebrar linha.
+════════════════════════════════════════════════════════════════ */
+const MB_MAX_TEXT_WIDTH = 580;
+const MB_MIN_FONT_SIZE  = 14;
+let _mbMeasureCanvas = null;
+
+function mbFitTextWidth(el, baseSize, displayText) {
+  if (!_mbMeasureCanvas) _mbMeasureCanvas = document.createElement('canvas');
+  const ctx = _mbMeasureCanvas.getContext('2d');
+  const weight = getComputedStyle(el).fontWeight || '400';
+  const text = displayText != null ? displayText : el.textContent;
+
+  let size = baseSize;
+  el.style.fontSize = size + 'px';
+  while (size > MB_MIN_FONT_SIZE) {
+    ctx.font = `${weight} ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    if (ctx.measureText(text).width <= MB_MAX_TEXT_WIDTH) break;
+    size--;
+    el.style.fontSize = size + 'px';
+  }
+}
+
+function mbFitAll() {
+  const nomeEl = document.getElementById('mb-nome');
+  const empEl  = document.getElementById('mb-empresas');
+  mbFitTextWidth(nomeEl, 50, nomeEl.textContent.toUpperCase());
+  mbFitTextWidth(empEl,  35, empEl.textContent);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PREVIEW AO VIVO
+════════════════════════════════════════════════════════════════ */
+function mbAtualizar() {
+  const fullName = document.getElementById('fullName').value.trim();
+  const comp     = document.getElementById('companies').value.trim() || 'Empresa | Empresa';
+
+  document.getElementById('mb-nome').textContent      = fullName || 'Nome Sobrenome';
+  document.getElementById('mb-empresas').textContent  = comp;
+
+  mbFitAll();
+  mbRescale();
+}
+
+document.getElementById('fullName').addEventListener('input', mbAtualizar);
+
+/* ════════════════════════════════════════════════════════════════
+   RESCALE DO PREVIEW (card nativo 1080px → largura da coluna de preview)
+════════════════════════════════════════════════════════════════ */
+function mbRescale() {
+  const wrap = document.getElementById('mb-scale-wrap');
+  const card = document.getElementById('mb-card');
+  const previewWidth = wrap.clientWidth;
+  const scale = previewWidth / 1080;
+
+  card.style.transform = `scale(${scale})`;
+  requestAnimationFrame(() => {
+    wrap.style.height = Math.ceil(card.offsetHeight * scale) + 'px';
+  });
+}
+
+window.addEventListener('resize', mbRescale);
+
+/* ════════════════════════════════════════════════════════════════
+   EXPORTAR PNG — FUNDO TRANSPARENTE
+════════════════════════════════════════════════════════════════ */
+async function mbExportar() {
+  const fullName = document.getElementById('fullName').value.trim() || 'minibio';
+  setStatus('Exportando…');
+  await document.fonts.ready;
+
+  const card = document.getElementById('mb-card');
+
+  // Clona o card na resolução nativa (1080px), sem o scale aplicado no preview
+  const clone = card.cloneNode(true);
+  clone.style.cssText = [
+    'position:fixed',
+    'top:-9999px',
+    'left:-9999px',
+    'width:1080px',
+    'background:transparent',
+    'padding:' + getComputedStyle(card).padding,
+    'display:flex',
+    'flex-direction:column',
+    'align-items:center',
+    'text-align:center',
+    'transform:none',
+  ].join(';');
+
+  document.body.appendChild(clone);
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 1,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: null,
+      logging: false,
+    });
+
+    const slug = fullName.toLowerCase()
+      .replace(/\s+/g, '-')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+    const link = document.createElement('a');
+    link.download = 'minibio-' + slug + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    document.body.removeChild(clone);
+  }
+  setStatus('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════════════ */
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className   = 'status-msg' + (isError ? ' err' : '');
+}
+
+document.addEventListener('DOMContentLoaded', mbAtualizar);
+</script>
+</body>
+</html>
